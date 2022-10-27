@@ -45,7 +45,7 @@ jobs:
       schedule: true
     custom_environment_variables: null
   - account_id: 1
-  - identifier: "job2"
+    identifier: "job2"
     # id: 16 # most likely we don't want this
     dbt_version: null
     deactivated: false
