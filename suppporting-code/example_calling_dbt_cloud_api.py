@@ -13,19 +13,19 @@ def _get_mismatched_dict_entries(
 
 
 def _job_to_dict(job: DbtJob):
-        dict_vals = job.dict(
-            exclude={
-                "id", # we want to exclude id because our YAML file will not have it
-                "created_at",
-                "updated_at",
-                "cron_humanized",
-                "next_run",
-                "next_run_humanized",
-                "run_failure_count",
-                "is_deferrable",
-            }
-        )
-        return dict_vals
+    dict_vals = job.dict(
+        exclude={
+            "id", # we want to exclude id because our YAML file will not have it
+            "created_at",
+            "updated_at",
+            "cron_humanized",
+            "next_run",
+            "next_run_humanized",
+            "run_failure_count",
+            "is_deferrable",
+        }
+    )
+    return dict_vals
 
 
 def check_job_mapping_same(source_job: DbtJob, dest_job: DbtJob) -> bool:
