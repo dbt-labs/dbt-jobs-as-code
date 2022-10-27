@@ -10,7 +10,7 @@ class CustomEnvironmentVariable(pydantic.BaseModel):
 
     value: Optional[str]
 
-    def validate(self):
+    def do_validate(self):
         if not self.value:
             return "Value must be defined!"
         if not self.name.startswith('DBT_'):
