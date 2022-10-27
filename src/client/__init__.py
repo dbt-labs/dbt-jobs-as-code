@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 import requests
+from loguru import logger
 
 from schemas.job import JobDefinition
 
@@ -47,7 +48,9 @@ class DBTCloud:
             data=job.to_payload()
         )
 
-        return JobDefinition(**response.json()['data'])
+        logger.debug(response.json())
+
+        return JobDefinition(**(response.json()['data']))
 
     def get_jobs(self) -> List[JobDefinition]:
         """Return a list of Jobs for all the dbt Cloud jobs in an environment."""
