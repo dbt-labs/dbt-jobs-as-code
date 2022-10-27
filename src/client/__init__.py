@@ -93,6 +93,7 @@ class DBTCloud:
 
     def create_job(self, job: JobDefinition) -> Dict:
         """Create a dbt Cloud Job using a JobDefinition"""
+        payload = job.to_payload()
 
         response = requests.post(
                 url=f"https://cloud.getdbt.com/api/v2/accounts/{self.account_id}/jobs/",
@@ -100,8 +101,10 @@ class DBTCloud:
                     "Authorization": f"Bearer {self._api_key}",
                     "Content-Type": "application/json",
                 },
-                json=job.json()
+                data=payload
             )
+
+        print(response.request.__dict__)
 
         print(response.json())
 

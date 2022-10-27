@@ -8,6 +8,7 @@ from .custom_environment_variable import CustomEnvironmentVariable
 
 # Main model for loader
 class JobDefinition(pydantic.BaseModel):
+    id: Optional[int]
     identifier: str
     account_id: int
     dbt_version: Optional[str] = "1.3.1"
@@ -17,13 +18,14 @@ class JobDefinition(pydantic.BaseModel):
     execution: Optional[Execution]
     generate_docs: bool
     generate_sources: bool
-    id: Optional[int] = None
+    id: Optional[int]
     name: str = "New Job"
     project_id: int
     run_generate_sources: bool
     schedule: Optional[Schedule]
     settings: Optional[Settings]
     triggers: Triggers
+    state: int = 1
     custom_environment_variables: Optional[
         List[CustomEnvironmentVariable]
     ] = []

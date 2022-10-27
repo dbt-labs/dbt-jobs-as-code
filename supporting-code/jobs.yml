@@ -2,7 +2,7 @@ jobs:
   - identifier: "job1"
     # id: 2 # most likely we don't want this
     account_id: 43791
-    dbt_version: "1.3.0"
+    dbt_version: null
     deactivated: false
     deferring_job_definition_id: null
     environment_id: 134459
@@ -20,11 +20,10 @@ jobs:
       cron: "0 */2 * * *"
       date:
         cron: "0 */2 * * *"
-        type: "every_day"
+        type: "custom_cron"
       time:
-        hours: null
-        interval: null
         type: "every_hour"
+        interval: 1
     settings:
       target_name: production
       threads: 4
