@@ -1,0 +1,85 @@
+jobs:
+  - identifier: "job1"
+    # id: 2 # most likely we don't want this
+    account_id: 1
+    dbt_version: null
+    deactivated: false
+    deferring_job_definition_id: null
+    environment_id: 2
+    execute_steps:
+    - "dbt run model1+"
+    - "dbt run model2+"
+    execution:
+      timeout_seconds: 0
+    generate_docs: false
+    generate_sources: true
+    name: "My Job 1"
+    project_id: 1
+    run_generate_sources: true
+    schedule:
+      cron: 0 14 * * 0,1,2,3,4,5,6
+      date:
+        cron: null
+        days:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        type: days_of_week
+      time:
+        hours:
+        - 14
+        interval: null
+        type: at_exact_hours
+    settings:
+      target_name: production
+      threads: 4
+    state: 1
+    triggers:
+      custom_branch_only: true
+      git_provider_webhook: false
+      github_webhook: false
+      schedule: true
+    custom_environment_variables: null
+  - account_id: 1
+  - identifier: "job2"
+    # id: 16 # most likely we don't want this
+    dbt_version: null
+    deactivated: false
+    deferring_job_definition_id: 7
+    environment_id: 3
+    execute_steps:
+    - dbt run-operation clone_all_production_schemas
+    - dbt compile
+    execution:
+      timeout_seconds: 0
+    generate_docs: false
+    generate_sources: false
+    name: CI/CD run
+    project_id: 1
+    run_generate_sources: false
+    schedule:
+      cron: 0 * * * *
+      date:
+        cron: null
+        days: null
+        type: every_day
+      time:
+        hours: null
+        interval: 1
+        type: every_hour
+    settings:
+      target_name: TEST
+      threads: 4
+    state: 1
+    triggers:
+      custom_branch_only: true
+      git_provider_webhook: false
+      github_webhook: true # this job runs from webhooks
+      schedule: false # this doesn't run on a schedule
+    custom_environment_variables:
+      - DBT_ENV1: My val
+      - DBT_ENV2: My val2
