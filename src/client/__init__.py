@@ -21,7 +21,7 @@ class DBTCloud:
         if not self.account_id:
             raise Exception("An account_id is required to get dbt Cloud jobs.")
 
-    def create_job(self, job: JobDefinition) -> Dict:
+    def create_job(self, job: JobDefinition) -> JobDefinition:
         """Create a dbt Cloud Job using a JobDefinition"""
         payload = job.to_payload()
 
@@ -34,27 +34,18 @@ class DBTCloud:
             data=payload
         )
 
-        print(response.request.__dict__)
+        return JobDefinition(**response.json()['data'])
 
-        print(response.json())
-
-        return response.json()
-
-    # TODO: Return a List[JobDefinition] instead!
-    def get_jobs(self) -> List[Dict]:
+    def get_jobs(self) -> List[JobDefinition]:
         """Return a list of Jobs for all the dbt Cloud jobs in an environment."""
 
         self._check_for_creds()
 
         offset = 0
-
         jobs = []
 
         while True:
             parameters = {"offset": offset}
-
-            # if project_id:
-            #     parameters['project_id'] = project_id
 
             response = requests.get(
                 url=f"https://cloud.getdbt.com/api/v2/accounts/{self.account_id}/jobs/",
@@ -77,7 +68,7 @@ class DBTCloud:
 
             offset += job_data["extra"]["filters"]["limit"]
 
-        return jobs
+        return [JobDefinition(**job) for job in jobs]
 
     def get_job(self, job_id: int) -> Dict:
         """Generate a Job based on a dbt Cloud job."""
