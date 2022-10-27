@@ -1,0 +1,25 @@
+name: sqlfluff with reviewdog
+on:
+  workflow_dispatch:
+  pull_request:
+jobs:
+  test-check:
+    name: runner / sqlfluff (github-check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: yu-iskw/action-sqlfluff@v3
+        id: lint-sql
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          sqlfluff_version: '0.13.1'
+          sqlfluff_command: 'fix' # Or "lint"
+          config: '${{ github.workspace }}/.sqlfluff'
+          paths: '${{ github.workspace }}/models'
+          dialect: 'snowflake'
+      - name: 'Show outputs (Optional)'
+        shell: bash
+        run: |
+          echo '${{ steps.lint-sql.outputs.sqlfluff-results }}' | jq -r '.'
+          echo '${{ steps.lint-sql.outputs.sqlfluff-results-rdjson }}' | jq -r '.' 
