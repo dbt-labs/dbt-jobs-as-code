@@ -2,6 +2,7 @@ import os
 import yaml
 
 from schemas.job import JobDefinition
+from client import DBTCloud
 
 if __name__ == '__main__':
     absolute_path = os.path.dirname(__file__)
@@ -13,3 +14,11 @@ if __name__ == '__main__':
     pyconfigs = yaml.safe_load(configs)
     pydantic_job_definition = JobDefinition(**pyconfigs['jobs'][0])
     print(pydantic_job_definition)
+
+    print(pydantic_job_definition.to_payload())
+
+    dbt_cloud = DBTCloud(account_id=43791, api_key=os.environ.get('API_KEY'))
+
+    response = dbt_cloud.create_job(pydantic_job_definition)
+
+    print(response)

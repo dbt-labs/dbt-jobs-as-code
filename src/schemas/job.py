@@ -2,38 +2,9 @@ import pydantic
 
 from typing import Any, Dict, List, Optional
 
-from . import custom_environment_variable
+from .common_types import Execution, Settings, Schedule, Triggers
+from .custom_environment_variable import CustomEnvironmentVariable
 
-
-# Helper Models
-
-class Execution(pydantic.BaseModel):
-    timeout_seconds: int
-
-class Triggers(pydantic.BaseModel):
-    github_webhook: bool
-    git_provider_webhook: Optional[bool]
-    custom_branch_only: bool
-    schedule: Optional[bool]
-
-class Settings(pydantic.BaseModel):
-    threads: int
-    target_name: str
-
-class Date(pydantic.BaseModel):
-    type: str
-    cron: Optional[str] = None
-    days: Optional[List[int]] = None
-
-class Time(pydantic.BaseModel):
-    type: str
-    interval: Optional[int] = None
-    hours: Optional[List[int]] = None
-
-class Schedule(pydantic.BaseModel):
-    cron: str
-    date: Date
-    time: Time
 
 # Main model for loader
 class JobDefinition(pydantic.BaseModel):
@@ -46,12 +17,19 @@ class JobDefinition(pydantic.BaseModel):
     execution: Optional[Execution]
     generate_docs: bool
     generate_sources: bool
+    id: Optional[int] = None
     name: str = "New Job"
     project_id: int
     run_generate_sources: bool
     schedule: Optional[Schedule]
     settings: Optional[Settings]
     triggers: Triggers
-    custom_environment_variables: Optional[List[
-        custom_environment_variable.CustomEnvironmentVariable
-    ]] = []
+    custom_environment_variables: Optional[
+        List[CustomEnvironmentVariable]
+    ] = []
+
+
+    def to_payload(self):
+        """Create a dbt Cloud API payload for a JobDefintion."""
+        # TODO: Tweak name to use the format `{name} [{identifier}]`
+        return self.json(exclude={'identifier', 'custom_environment_variables'})
