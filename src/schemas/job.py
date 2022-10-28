@@ -1,4 +1,5 @@
-from typing import List, Optional
+import re
+from typing import List, Optional, Any
 
 import pydantic
 
@@ -32,6 +33,17 @@ class JobDefinition(pydantic.BaseModel):
     custom_environment_variables: Optional[
         List[CustomEnvironmentVariable]
     ] = []
+
+    def __init__(self, **data: Any):
+
+        # Check if `name` includes an identifier. If yes, set the identifier in the object. Remove the identifier from
+        # the name.
+        matches = re.search(r'\[\[([a-zA-Z0-9_]+)\]\]', data['name'])
+        if matches is not None:
+            data['identifier'] = matches.groups()[0]
+            data['name'] = data['name'].replace(f" [[{data['identifier']}]]", '')
+
+        super().__init__(**data)
 
     def to_payload(self):
         """Create a dbt Cloud API payload for a JobDefinition."""
