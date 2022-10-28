@@ -9,10 +9,21 @@ from schemas.job import JobDefinition
 class DBTCloud:
     """A minimalistic API client for fetching dbt Cloud data."""
 
-    def __init__(self, account_id: int, api_key: str) -> None:
+    def __init__(
+            self,
+            account_id: int,
+            api_key: str,
+            base_url: str = 'https://cloud.getdbt.com'
+    ) -> None:
         self.account_id = account_id
         self._api_key = api_key
         self._manifests: Dict = {}
+
+        self.base_url = base_url
+        self._headers = {
+                "Authorization": f"Bearer {self._api_key}",
+                "Content-Type": "application/json",
+            }
 
     def _check_for_creds(self):
         """Confirm the presence of credentials"""
@@ -22,35 +33,41 @@ class DBTCloud:
         if not self.account_id:
             raise Exception("An account_id is required to get dbt Cloud jobs.")
 
-    def update_job(self, job_id: int, new_job: JobDefinition) -> JobDefinition:
+    def update_job(self, job: JobDefinition) -> JobDefinition:
         """Update an existing dbt Cloud job using a new JobDefinition"""
 
-        response = requests.put(
-            url=f"https://cloud.getdbt.com/api/v2/accounts/{self.account_id}/jobs/{job_id}",
-            headers={
-                "Authorization": f"Bearer {self._api_key}",
-                "Content-Type": "application/json",
-            },
-            data=new_job.to_payload()
+        logger.debug("Updating {job_name}. {job}", job_name=job.name, job=job)
+
+        response = requests.post(  # Yes, it's actually a POST. Ew.
+            url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job.id}",
+            headers=self._headers,
+            data=job.to_payload()
         )
 
-        return JobDefinition(**response.json()['data'])
+        if response.status_code >= 400:
+            logger.error(response.json())
+
+        logger.success("Updated successfully.")
+
+        return JobDefinition(**(response.json()['data']), identifier=job.identifier)
 
     def create_job(self, job: JobDefinition) -> JobDefinition:
         """Create a dbt Cloud Job using a JobDefinition"""
 
+        logger.debug("Creating {job_name}. {job}", job_name=job.name, job=job)
+
         response = requests.post(
-            url=f"https://cloud.getdbt.com/api/v2/accounts/{self.account_id}/jobs/",
-            headers={
-                "Authorization": f"Bearer {self._api_key}",
-                "Content-Type": "application/json",
-            },
+            url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
+            headers=self._headers,
             data=job.to_payload()
         )
 
-        logger.debug(response.json())
+        if response.status_code >= 400:
+            logger.error(response.json())
 
-        return JobDefinition(**(response.json()['data']))
+        logger.success("Created successfully.")
+
+        return JobDefinition(**(response.json()['data']), identifier=job.identifier)
 
     def get_jobs(self) -> List[JobDefinition]:
         """Return a list of Jobs for all the dbt Cloud jobs in an environment."""
@@ -64,12 +81,9 @@ class DBTCloud:
             parameters = {"offset": offset}
 
             response = requests.get(
-                url=f"https://cloud.getdbt.com/api/v2/accounts/{self.account_id}/jobs/",
+                url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
                 params=parameters,
-                headers={
-                    "Authorization": f"Bearer {self._api_key}",
-                    "Content-Type": "application/json",
-                },
+                headers=self._headers
             )
 
             job_data = response.json()
@@ -93,7 +107,7 @@ class DBTCloud:
 
         response = requests.get(
             url=(
-                f"https://cloud.getdbt.com/api/v2/accounts/"
+                f"{self.base_url}/api/v2/accounts/"
                 f"{self.account_id}/jobs/{job_id}"
             ),
             headers={

@@ -24,9 +24,11 @@ class JobDefinition(pydantic.BaseModel):
     settings: Optional[Settings]
     triggers: Triggers
     state: int = 1
+
+    # TODO: There's currently a defect where we can end up with multiple formatted names. Fix it!
     name: str = "New Job"
     dbt_version: Optional[str] = "1.3.1"
-    execute_steps: List[str] = ["dbt run", ]
+    execute_steps: List[str] = ["dbt run"]
     custom_environment_variables: Optional[
         List[CustomEnvironmentVariable]
     ] = []
