@@ -6,21 +6,25 @@ import pydantic
 class Execution(pydantic.BaseModel):
     timeout_seconds: int
 
+
 class Triggers(pydantic.BaseModel):
     github_webhook: bool
     git_provider_webhook: Optional[bool]
     custom_branch_only: bool
     schedule: Optional[bool]
 
+
 class Settings(pydantic.BaseModel):
     threads: int
     target_name: str
+
 
 class Date(pydantic.BaseModel):
     type: str
     cron: Optional[str]
     # TODO: Redo this one!
     # days: Optional[List[int]]
+
 
 class Time(pydantic.BaseModel):
     type: str
@@ -30,11 +34,9 @@ class Time(pydantic.BaseModel):
 
     # TODO: Figure out why this didn't work and fix it.
     def serialize(self):
-        payload: Dict[str, Any] = {
-            'type': self.type
-        }
-        if self.type == 'every_hour':
-            payload['interval'] = self.interval
+        payload: Dict[str, Any] = {"type": self.type}
+        if self.type == "every_hour":
+            payload["interval"] = self.interval
         # else:
         #     payload['hours'] = self.hours
 
@@ -50,6 +52,4 @@ class Schedule(pydantic.BaseModel):
     time: Time
 
     class Config:
-        json_encoders = {
-            Time: lambda t : t.serialize()
-        }
+        json_encoders = {Time: lambda t: t.serialize()}

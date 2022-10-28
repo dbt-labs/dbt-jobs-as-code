@@ -10,6 +10,7 @@ from .custom_environment_variable import CustomEnvironmentVariable
 # Main model for loader
 class JobDefinition(pydantic.BaseModel):
     """A definition for a dbt Cloud job."""
+
     id: Optional[int]
     identifier: Optional[str]
     account_id: int
@@ -28,31 +29,31 @@ class JobDefinition(pydantic.BaseModel):
     name: str = "New Job"
     dbt_version: Optional[str] = "1.3.1"
     execute_steps: List[str] = ["dbt run"]
-    custom_environment_variables: Optional[
-        List[CustomEnvironmentVariable]
-    ] = []
+    custom_environment_variables: Optional[List[CustomEnvironmentVariable]] = []
 
     def __init__(self, **data: Any):
 
         # Check if `name` includes an identifier. If yes, set the identifier in the object. Remove the identifier from
         # the name.
-        matches = re.search(r'\[\[([a-zA-Z0-9_]+)\]\]', data['name'])
+        matches = re.search(r"\[\[([a-zA-Z0-9_]+)\]\]", data["name"])
         if matches is not None:
-            data['identifier'] = matches.groups()[0]
-            data['name'] = data['name'].replace(f" [[{data['identifier']}]]", '')
+            data["identifier"] = matches.groups()[0]
+            data["name"] = data["name"].replace(f" [[{data['identifier']}]]", "")
 
         # Rewrite custom environment variables to include account and project id
-        environment_variables = data.get('custom_environment_variables', None)
+        environment_variables = data.get("custom_environment_variables", None)
         if environment_variables:
-            data['custom_environment_variables'] = [
+            data["custom_environment_variables"] = [
                 {
-                    'name': list(variable.keys())[0],
-                    'value': list(variable.values())[0],
-                    'project_id': data['project_id'],
-                    'account_id': data['account_id']
+                    "name": list(variable.keys())[0],
+                    "value": list(variable.values())[0],
+                    "project_id": data["project_id"],
+                    "account_id": data["account_id"],
                 }
                 for variable in environment_variables
             ]
+        else:
+            data["custom_environment_variables"] = []
 
         super().__init__(**data)
 
@@ -62,4 +63,4 @@ class JobDefinition(pydantic.BaseModel):
         # Rewrite the job name to embed the job ID from job.yml
         payload = self.copy()
         payload.name = f"{self.name} [[{self.identifier}]]"
-        return payload.json(exclude={'identifier', 'custom_environment_variables'})
+        return payload.json(exclude={"identifier", "custom_environment_variables"})
