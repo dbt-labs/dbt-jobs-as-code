@@ -12,7 +12,6 @@ if __name__ == "__main__":
     path = os.path.join(absolute_path, example_path)
 
     configuration = load_job_configuration(path)
-
     defined_jobs = configuration.jobs
 
     dbt_cloud = DBTCloud(account_id=configuration.account_id, api_key=os.environ.get("API_KEY"))
