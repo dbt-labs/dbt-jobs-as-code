@@ -3,7 +3,7 @@ import os
 from loguru import logger
 
 from client import DBTCloud
-from loader.load import load_job_definitions
+from loader.load import load_job_configuration
 from schemas import check_job_mapping_same
 
 if __name__ == "__main__":
@@ -11,9 +11,11 @@ if __name__ == "__main__":
     example_path = "../supporting-code/jobs.yml"
     path = os.path.join(absolute_path, example_path)
 
-    defined_jobs = load_job_definitions(path)
+    configuration = load_job_configuration(path)
 
-    dbt_cloud = DBTCloud(account_id=43791, api_key=os.environ.get("API_KEY"))
+    defined_jobs = configuration.jobs
+
+    dbt_cloud = DBTCloud(account_id=configuration.account_id, api_key=os.environ.get("API_KEY"))
     cloud_jobs = dbt_cloud.get_jobs()
     tracked_jobs = {
         job.identifier: job for job in cloud_jobs if job.identifier is not None
