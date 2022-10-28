@@ -41,6 +41,19 @@ class JobDefinition(pydantic.BaseModel):
             data['identifier'] = matches.groups()[0]
             data['name'] = data['name'].replace(f" [[{data['identifier']}]]", '')
 
+        # Rewrite custom environment variables to include account and project id
+        environment_variables = data.get('custom_environment_variables', None)
+        if environment_variables:
+            data['custom_environment_variables'] = [
+                {
+                    'name': list(variable.keys())[0],
+                    'value': list(variable.values())[0],
+                    'project_id': data['project_id'],
+                    'account_id': data['account_id']
+                }
+                for variable in environment_variables
+            ]
+
         super().__init__(**data)
 
     def to_payload(self):
