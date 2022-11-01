@@ -32,17 +32,12 @@ class Time(pydantic.BaseModel):
     # TODO: Add this field back in
     # hours: Optional[List[int]]
 
-    # TODO: Figure out why this didn't work and fix it.
     def serialize(self):
         payload: Dict[str, Any] = {"type": self.type}
         if self.type == "every_hour":
             payload["interval"] = self.interval
-        # else:
-        #     payload['hours'] = self.hours
-
-        print("Doing the thing")
-        print(payload)
-
+        elif self.type == "at_exact_hours":
+            payload['hours'] = self.hours
         return payload
 
 

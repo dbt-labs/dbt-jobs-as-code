@@ -3,7 +3,7 @@ from typing import List, Optional, Any
 
 import pydantic
 
-from .common_types import Execution, Settings, Schedule, Triggers
+from .common_types import Execution, Settings, Schedule, Time, Triggers
 from .custom_environment_variable import CustomEnvironmentVariable
 
 
@@ -56,6 +56,9 @@ class JobDefinition(pydantic.BaseModel):
             data["custom_environment_variables"] = []
 
         super().__init__(**data)
+
+    class Config:
+        json_encoders = {Time: lambda t: t.serialize()}
 
     def to_payload(self):
         """Create a dbt Cloud API payload for a JobDefinition."""

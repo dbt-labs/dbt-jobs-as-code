@@ -1,20 +1,26 @@
 import os
 
 from loguru import logger
+import click
 
 from client import DBTCloud
 from loader.load import load_job_configuration
 from schemas import check_job_mapping_same
 
-if __name__ == "__main__":
-    absolute_path = os.path.dirname(__file__)
-    example_path = "../supporting-code/jobs.yml"
-    path = os.path.join(absolute_path, example_path)
 
-    configuration = load_job_configuration(path)
+@click.command()
+@click.argument("config", type=click.File("r"))
+def cli(config):
+    """Synchronize a dbt Cloud job config file against dbt Cloud.
+
+    CONFIG is the path to your jobs.yml config file.
+    """
+    configuration = load_job_configuration(config)
     defined_jobs = configuration.jobs
 
-    dbt_cloud = DBTCloud(account_id=configuration.account_id, api_key=os.environ.get("API_KEY"))
+    dbt_cloud = DBTCloud(
+        account_id=configuration.account_id, api_key=os.environ.get("API_KEY")
+    )
     cloud_jobs = dbt_cloud.get_jobs()
     tracked_jobs = {
         job.identifier: job for job in cloud_jobs if job.identifier is not None
@@ -44,3 +50,7 @@ if __name__ == "__main__":
     logger.warning("Detected {count} deleted jobs.", count=len(deleted_jobs))
     for identifier in deleted_jobs:
         dbt_cloud.delete_job(job=tracked_jobs[identifier])
+
+
+if __name__ == "__main__":
+    cli()
