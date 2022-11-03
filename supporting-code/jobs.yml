@@ -1,7 +1,6 @@
-account_id: 43791
-
 jobs:
   job1:
+    account_id: 43791
     dbt_version: null
     deactivated: false
     deferring_job_definition_id: null
@@ -36,6 +35,7 @@ jobs:
     custom_environment_variables: null
 
   job2:
+    account_id: 43791
     dbt_version: null
     deactivated: false
     deferring_job_definition_id: 43791
