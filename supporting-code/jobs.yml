@@ -11,7 +11,6 @@ jobs:
     execution:
       timeout_seconds: 0
     generate_docs: false
-    generate_sources: true
     name: "My Job 1"
     project_id: 176941
     run_generate_sources: true
@@ -45,7 +44,6 @@ jobs:
     execution:
       timeout_seconds: 0
     generate_docs: false
-    generate_sources: false
     name: CI/CD run
     project_id: 176941
     run_generate_sources: false
