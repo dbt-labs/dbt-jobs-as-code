@@ -4,20 +4,23 @@ from loguru import logger
 import click
 
 from client import DBTCloud
-from loader.load import load_job_definitions
+from loader.load import load_job_configuration
 from schemas import check_job_mapping_same
 
 
 @click.command()
-@click.argument('config', type=click.File('r'))
+@click.argument("config", type=click.File("r"))
 def cli(config):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
     """
-    defined_jobs = load_job_definitions(config)
+    configuration = load_job_configuration(config)
+    defined_jobs = configuration.jobs
 
-    dbt_cloud = DBTCloud(account_id=43791, api_key=os.environ.get("API_KEY"))
+    dbt_cloud = DBTCloud(
+        account_id=configuration.account_id, api_key=os.environ.get("API_KEY")
+    )
     cloud_jobs = dbt_cloud.get_jobs()
     tracked_jobs = {
         job.identifier: job for job in cloud_jobs if job.identifier is not None
@@ -33,7 +36,7 @@ def cli(config):
     for identifier in shared_jobs:
         logger.info("Checking for differences in {identifier}", identifier=identifier)
         if not check_job_mapping_same(
-                source_job=defined_jobs[identifier], dest_job=tracked_jobs[identifier]
+            source_job=defined_jobs[identifier], dest_job=tracked_jobs[identifier]
         ):
             defined_jobs[identifier].id = tracked_jobs[identifier].id
             dbt_cloud.update_job(job=defined_jobs[identifier])

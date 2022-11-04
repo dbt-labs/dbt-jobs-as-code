@@ -1,15 +1,10 @@
-from typing import Dict
-
 import yaml
 
-from schemas.job import JobDefinition
+from schemas.config import Config
 
 
-def load_job_definitions(config_file) -> Dict[str, JobDefinition]:
-    """Load a job YAML file into a dictionary of JobDefinitions"""
+def load_job_configuration(config_file) -> Config:
+    """Load a job YAML file into a Config object"""
     config = yaml.safe_load(config_file)
 
-    return {
-        identifier: JobDefinition(**job, identifier=identifier)
-        for identifier, job in config["jobs"].items()
-    }
+    return Config(**config)

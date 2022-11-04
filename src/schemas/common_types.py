@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import pydantic
 
@@ -37,7 +37,7 @@ class Time(pydantic.BaseModel):
         if self.type == "every_hour":
             payload["interval"] = self.interval
         elif self.type == "at_exact_hours":
-            payload['hours'] = self.hours
+            payload["hours"] = self.hours
         return payload
 
 

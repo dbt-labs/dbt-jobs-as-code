@@ -11,11 +11,11 @@ anchors:
 
 jobs:
   job1: &main_job # using parameters of a job as the anchor
-    account_id: 50
+    account_id: 43791
     dbt_version: null
     deactivated: false
     deferring_job_definition_id: null
-    environment_id: 248
+    environment_id: 134459
     execute_steps:
     - "dbt run --select model1+"
     - "dbt run --select model2+"
@@ -25,7 +25,7 @@ jobs:
     generate_docs: false
     generate_sources: true
     name: "My Job 1 with a new name"
-    project_id: 100
+    project_id: 176941
     run_generate_sources: true
     schedule:
       cron: "0 */2 * * *"
@@ -47,9 +47,7 @@ jobs:
     custom_environment_variables: null
   job2:
     <<: *main_job # << means that we take all the values from the first job but we then overwrite them
-    account_id: 50
-    project_id: 100
-    deferring_job_definition_id: 54
+    deferring_job_definition_id: null
     execute_steps:
     - dbt run-operation clone_all_production_schemas
     - dbt compile
