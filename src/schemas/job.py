@@ -18,7 +18,6 @@ class JobDefinition(pydantic.BaseModel):
     environment_id: int
     execution: Optional[Execution]
     generate_docs: bool
-    generate_sources: bool
     id: Optional[int]
     project_id: int
     run_generate_sources: bool
