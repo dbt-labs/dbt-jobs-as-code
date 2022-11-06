@@ -4,8 +4,6 @@ from typing import Literal, Optional
 
 
 class CustomEnvironmentVariable(pydantic.BaseModel):
-    account_id: int
-    project_id: int
     name: str = "DBT_VARIABLE"
     type: Literal["project", "environment", "job", "user"] = "job"
 
