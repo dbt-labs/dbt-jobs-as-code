@@ -4,7 +4,7 @@ import pydantic
 
 
 class Execution(pydantic.BaseModel):
-    timeout_seconds: int
+    timeout_seconds: int = 0
 
 
 class Triggers(pydantic.BaseModel):
@@ -15,7 +15,7 @@ class Triggers(pydantic.BaseModel):
 
 
 class Settings(pydantic.BaseModel):
-    threads: int
+    threads: int = 4
     target_name: str
 
 
