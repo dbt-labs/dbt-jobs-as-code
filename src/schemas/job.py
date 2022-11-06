@@ -13,20 +13,20 @@ class JobDefinition(pydantic.BaseModel):
 
     id: Optional[int]
     identifier: Optional[str]
-    name: str
     account_id: int
-    deferring_job_definition_id: Optional[int]
-    environment_id: int
-    execution: Execution = Execution()
-    generate_docs: bool
     project_id: int
-    run_generate_sources: bool
-    schedule: Schedule
+    environment_id: int
+    dbt_version: Optional[str]
+    name: str
     settings: Settings
+    execution: Execution = Execution()
+    deferring_job_definition_id: Optional[int]
+    run_generate_sources: bool
+    execute_steps: List[str]
+    generate_docs: bool
+    schedule: Schedule
     triggers: Triggers
     state: int = 1
-    dbt_version: Optional[str]
-    execute_steps: List[str]
     custom_environment_variables: Optional[List[CustomEnvironmentVariable]] = []
 
     def __init__(self, **data: Any):
