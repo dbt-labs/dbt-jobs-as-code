@@ -19,7 +19,7 @@ def cli(config):
     defined_jobs = configuration.jobs
 
     dbt_cloud = DBTCloud(
-        account_id=configuration.account_id, api_key=os.environ.get("API_KEY")
+        account_id=list(configuration.jobs.values())[0].account_id, api_key=os.environ.get("API_KEY")
     )
     cloud_jobs = dbt_cloud.get_jobs()
     tracked_jobs = {
