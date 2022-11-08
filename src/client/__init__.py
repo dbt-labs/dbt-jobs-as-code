@@ -3,7 +3,10 @@ from typing import Dict, List
 import requests
 from loguru import logger
 
-from schemas.custom_environment_variable import CustomEnvironmentVariable
+from schemas.custom_environment_variable import (
+    CustomEnvironmentVariable,
+    CustomEnvironmentVariablePayload,
+)
 from schemas.job import JobDefinition
 
 
@@ -157,7 +160,26 @@ class DBTCloud:
 
         return response.json()["data"]
 
-    def update_env_var(self, custom_env_var: CustomEnvironmentVariable, project_id: int, job_id: int) -> Dict:
+    def create_env_var(
+        self, env_var: CustomEnvironmentVariablePayload
+    ) -> CustomEnvironmentVariablePayload:
+        """Create a new Custom Environment Variable in dbt Cloud."""
+
+        response = requests.post(
+            f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{env_var.project_id}/environment-variables/",
+            headers=self._headers,
+            json=env_var.json(),
+        )
+        logger.debug(response.json())
+
+        if response.status_code >= 400:
+            logger.error(response.json())
+
+        return response.json()["data"]
+
+    def update_env_var(
+        self, custom_env_var: CustomEnvironmentVariable, project_id: int, job_id: int
+    ) -> Dict:
         """Update env vars job overwrite in dbt Cloud."""
 
         self._check_for_creds()
@@ -173,19 +195,20 @@ class DBTCloud:
 
         if "job" in all_env_vars[custom_env_var.name]:
 
-            if all_env_vars[custom_env_var.name]["job"]["value"] == custom_env_var.value:
-                logger.debug(f"The env var {custom_env_var.name} is already up to date for the job {job_id}.")
+            if (
+                all_env_vars[custom_env_var.name]["job"]["value"]
+                == custom_env_var.value
+            ):
+                logger.debug(
+                    f"The env var {custom_env_var.name} is already up to date for the job {job_id}."
+                )
                 return None
 
             payload["id"] = all_env_vars[custom_env_var.name]["job"]["id"]
-            url=(
-                    f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{payload['id']}/"
-                )
+            url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{payload['id']}/"
         else:
             payload["id"] = None
-            url=(
-                f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/"
-            )
+            url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/"
 
         payload["account_id"] = self.account_id
         payload["project_id"] = project_id
@@ -202,8 +225,6 @@ class DBTCloud:
 
         logger.info(f"Updated the env_var {custom_env_var.name} for job {job_id}")
         return response.json()["data"]
-
-
 
     def delete_env_var(self, project_id: int, env_var_id: int) -> None:
         """Delete env_var job overwrite in dbt Cloud."""

@@ -1,13 +1,13 @@
 import pydantic
 
-from typing import Literal, Optional
+from typing import Literal, Optional, Any
 
 
 class CustomEnvironmentVariable(pydantic.BaseModel):
-    name: str = "DBT_VARIABLE"
+    name: str
     type: Literal["project", "environment", "job", "user"] = "job"
-
     value: Optional[str]
+    job_definition_id: Optional[int] = None
 
     def do_validate(self):
         if not self.value:
@@ -17,3 +17,17 @@ class CustomEnvironmentVariable(pydantic.BaseModel):
         if not self.name.isupper():
             return "Key name must be SCREAMING_SNAKE_CASE"
         return None
+
+
+class CustomEnvironmentVariablePayload(CustomEnvironmentVariable):
+    """A dbt Cloud-serializable representation of a CustomEnvironmentVariables."""
+    project_id: int
+    account_id: int
+    raw_value: str
+
+    def __init__(self, **data: Any):
+        data['raw_value'] = data['value']
+        super().__init__(**data)
+
+    class Config:
+        fields = {'value': {'exclude': True}}

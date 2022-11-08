@@ -20,7 +20,9 @@ def cli(config):
 
     # HACK for getting the account_id of one entry
     dbt_cloud = DBTCloud(
-        account_id=list(defined_jobs.values())[0].account_id, api_key=os.environ.get("API_KEY"), base_url=os.environ.get("DBT_BASE_URL")
+        account_id=list(defined_jobs.values())[0].account_id,
+        api_key=os.environ.get("API_KEY"),
+        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com")
     )
     cloud_jobs = dbt_cloud.get_jobs()
     tracked_jobs = {
