@@ -171,6 +171,7 @@ class DBTCloud:
 
         variables = {
             name: CustomEnvironmentVariablePayload(
+                id=variable_data['job']['id'],
                 name=name,
                 value=variable_data['job']['value'],
                 job_definition_id=job_id,
@@ -226,24 +227,25 @@ class DBTCloud:
         # TODO: Move this logic out of the client layer, and move it into
         #  at least one layer higher up. We want the dbt Cloud client to be
         #  as naive as possible.
-        if custom_env_var.name in all_env_vars:
+        if custom_env_var.name not in all_env_vars:
+            return self.create_env_var(CustomEnvironmentVariablePayload(
+                account_id=self.account_id,
+                project_id=project_id,
+                **custom_env_var.dict()
+            ))
 
-            if all_env_vars[custom_env_var.name].value == custom_env_var.value:
-                logger.debug(
-                    f"The env var {custom_env_var.name} is already up to date for the job {job_id}."
-                )
-                return None
+        if all_env_vars[custom_env_var.name].value == custom_env_var.value:
+            logger.debug(
+                f"The env var {custom_env_var.name} is already up to date for the job {job_id}."
+            )
+            return None
 
-            env_var_id: int = all_env_vars[custom_env_var.name].id
-            url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{env_var_id}/"
-        else:
-            env_var_id = None
-            url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/"
-
+        env_var_id: int = all_env_vars[custom_env_var.name].id
+        url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{env_var_id}/"
         payload = CustomEnvironmentVariablePayload(
-            id=env_var_id,
             account_id=self.account_id,
             project_id=project_id,
+            id=env_var_id,
             **custom_env_var.dict()
         )
 
@@ -253,10 +255,13 @@ class DBTCloud:
             data=payload.json(),
         )
 
+        if response.status_code >= 400:
+            logger.error(response.json())
+
         self._clear_env_var_cache(job_definition_id=payload.job_definition_id)
 
         logger.info(f"Updated the env_var {custom_env_var.name} for job {job_id}")
-        return response.json()["data"]
+        return CustomEnvironmentVariablePayload(**(response.json()["data"]))
 
     def delete_env_var(self, project_id: int, env_var_id: int) -> None:
         """Delete env_var job overwrite in dbt Cloud."""
