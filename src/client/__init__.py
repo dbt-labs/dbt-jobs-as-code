@@ -14,7 +14,7 @@ class DBTCloud:
     """A minimalistic API client for fetching dbt Cloud data."""
 
     def __init__(
-        self, account_id: int, api_key: str, base_url: str = "https://cloud.getdbt.com"
+            self, account_id: int, api_key: str, base_url: str = "https://cloud.getdbt.com"
     ) -> None:
         self.account_id = account_id
         self._api_key = api_key
@@ -120,9 +120,9 @@ class DBTCloud:
             jobs.extend(job_data["data"])
 
             if (
-                job_data["extra"]["filters"]["limit"]
-                + job_data["extra"]["filters"]["offset"]
-                >= job_data["extra"]["pagination"]["total_count"]
+                    job_data["extra"]["filters"]["limit"]
+                    + job_data["extra"]["filters"]["offset"]
+                    >= job_data["extra"]["pagination"]["total_count"]
             ):
                 break
 
@@ -146,7 +146,7 @@ class DBTCloud:
         )
         return response.json()["data"]
 
-    def get_env_vars(self, project_id: int, job_id: int) -> Dict:
+    def get_env_vars(self, project_id: int, job_id: int) -> Dict[str, CustomEnvironmentVariablePayload]:
         """Get the existing env vars job overwrite in dbt Cloud."""
 
         self._check_for_creds()
@@ -157,18 +157,28 @@ class DBTCloud:
             ),
             headers=self._headers,
         )
+        logger.debug(response.json())
 
-        return response.json()["data"]
+        return {
+            name: CustomEnvironmentVariablePayload(
+                name=name,
+                value=variable_data['job']['value'],
+                job_definition_id=job_id,
+                project_id=project_id,
+                account_id=self.account_id
+            )
+            for name, variable_data in response.json()["data"].items()
+        }
 
     def create_env_var(
-        self, env_var: CustomEnvironmentVariablePayload
+            self, env_var: CustomEnvironmentVariablePayload
     ) -> CustomEnvironmentVariablePayload:
         """Create a new Custom Environment Variable in dbt Cloud."""
 
         response = requests.post(
             f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{env_var.project_id}/environment-variables/",
             headers=self._headers,
-            json=env_var.json(),
+            data=env_var.json(),
         )
         logger.debug(response.json())
 
@@ -178,8 +188,8 @@ class DBTCloud:
         return response.json()["data"]
 
     def update_env_var(
-        self, custom_env_var: CustomEnvironmentVariable, project_id: int, job_id: int
-    ) -> Dict:
+            self, custom_env_var: CustomEnvironmentVariable, project_id: int, job_id: int
+    ) -> CustomEnvironmentVariablePayload:
         """Update env vars job overwrite in dbt Cloud."""
 
         self._check_for_creds()
@@ -187,8 +197,12 @@ class DBTCloud:
         all_env_vars = self.get_env_vars(project_id, job_id)
 
         if custom_env_var.name not in all_env_vars:
-            raise Exception(
-                f"Custom environment variable {custom_env_var.name} not found in dbt Cloud, you need to create it first."
+            return self.create_env_var(
+                CustomEnvironmentVariablePayload(
+                    **custom_env_var.dict(),
+                    project_id=project_id,
+                    account_id=self.account_id
+                )
             )
 
         payload = {}
@@ -196,8 +210,8 @@ class DBTCloud:
         if "job" in all_env_vars[custom_env_var.name]:
 
             if (
-                all_env_vars[custom_env_var.name]["job"]["value"]
-                == custom_env_var.value
+                    all_env_vars[custom_env_var.name]["job"]["value"]
+                    == custom_env_var.value
             ):
                 logger.debug(
                     f"The env var {custom_env_var.name} is already up to date for the job {job_id}."

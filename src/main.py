@@ -63,6 +63,7 @@ def cli(config):
     for job in defined_jobs.values():
         job_id = mapping_job_identifier_job_id[job.identifier]
         for env_var_yml in job.custom_environment_variables:
+            env_var_yml.job_definition_id = job_id
             updated_env_vars = dbt_cloud.update_env_var(project_id=job.project_id, job_id=job_id, custom_env_var=env_var_yml)
 
     # Delete the env vars from dbt Cloud that are not in the yml
