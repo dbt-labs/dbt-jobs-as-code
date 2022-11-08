@@ -14,11 +14,13 @@ class DBTCloud:
     """A minimalistic API client for fetching dbt Cloud data."""
 
     def __init__(
-            self, account_id: int, api_key: str, base_url: str = "https://cloud.getdbt.com"
+        self, account_id: int, api_key: str, base_url: str = "https://cloud.getdbt.com"
     ) -> None:
         self.account_id = account_id
         self._api_key = api_key
-        self._environment_variable_cache: Dict[int, Dict[str, CustomEnvironmentVariablePayload]] = {}
+        self._environment_variable_cache: Dict[
+            int, Dict[str, CustomEnvironmentVariablePayload]
+        ] = {}
 
         self.base_url = base_url
         self._headers = {
@@ -127,9 +129,9 @@ class DBTCloud:
             jobs.extend(job_data["data"])
 
             if (
-                    job_data["extra"]["filters"]["limit"]
-                    + job_data["extra"]["filters"]["offset"]
-                    >= job_data["extra"]["pagination"]["total_count"]
+                job_data["extra"]["filters"]["limit"]
+                + job_data["extra"]["filters"]["offset"]
+                >= job_data["extra"]["pagination"]["total_count"]
             ):
                 break
 
@@ -153,7 +155,9 @@ class DBTCloud:
         )
         return response.json()["data"]
 
-    def get_env_vars(self, project_id: int, job_id: int) -> Dict[str, CustomEnvironmentVariablePayload]:
+    def get_env_vars(
+        self, project_id: int, job_id: int
+    ) -> Dict[str, CustomEnvironmentVariablePayload]:
         """Get the existing env vars job overwrite in dbt Cloud."""
 
         if job_id in self._environment_variable_cache:
@@ -171,12 +175,12 @@ class DBTCloud:
 
         variables = {
             name: CustomEnvironmentVariablePayload(
-                id=variable_data['job']['id'],
+                id=variable_data["job"]["id"],
                 name=name,
-                value=variable_data['job']['value'],
+                value=variable_data["job"]["value"],
                 job_definition_id=job_id,
                 project_id=project_id,
-                account_id=self.account_id
+                account_id=self.account_id,
             )
             for name, variable_data in response.json()["data"].items()
         }
@@ -185,7 +189,7 @@ class DBTCloud:
         return variables
 
     def create_env_var(
-            self, env_var: CustomEnvironmentVariablePayload
+        self, env_var: CustomEnvironmentVariablePayload
     ) -> CustomEnvironmentVariablePayload:
         """Create a new Custom Environment Variable in dbt Cloud."""
 
@@ -205,7 +209,7 @@ class DBTCloud:
         return response.json()["data"]
 
     def update_env_var(
-            self, custom_env_var: CustomEnvironmentVariable, project_id: int, job_id: int
+        self, custom_env_var: CustomEnvironmentVariable, project_id: int, job_id: int
     ) -> Optional[CustomEnvironmentVariablePayload]:
         """Update env vars job overwrite in dbt Cloud."""
 
@@ -218,7 +222,7 @@ class DBTCloud:
                 CustomEnvironmentVariablePayload(
                     **custom_env_var.dict(),
                     project_id=project_id,
-                    account_id=self.account_id
+                    account_id=self.account_id,
                 )
             )
 
@@ -228,11 +232,13 @@ class DBTCloud:
         #  at least one layer higher up. We want the dbt Cloud client to be
         #  as naive as possible.
         if custom_env_var.name not in all_env_vars:
-            return self.create_env_var(CustomEnvironmentVariablePayload(
-                account_id=self.account_id,
-                project_id=project_id,
-                **custom_env_var.dict()
-            ))
+            return self.create_env_var(
+                CustomEnvironmentVariablePayload(
+                    account_id=self.account_id,
+                    project_id=project_id,
+                    **custom_env_var.dict(),
+                )
+            )
 
         if all_env_vars[custom_env_var.name].value == custom_env_var.value:
             logger.debug(
@@ -246,7 +252,7 @@ class DBTCloud:
             account_id=self.account_id,
             project_id=project_id,
             id=env_var_id,
-            **custom_env_var.dict()
+            **custom_env_var.dict(),
         )
 
         response = requests.post(
