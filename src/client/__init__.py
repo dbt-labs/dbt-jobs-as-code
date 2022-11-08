@@ -223,6 +223,9 @@ class DBTCloud:
 
         env_var_id: Optional[int]
 
+        # TODO: Move this logic out of the client layer, and move it into
+        #  at least one layer higher up. We want the dbt Cloud client to be
+        #  as naive as possible.
         if custom_env_var.name in all_env_vars:
 
             if all_env_vars[custom_env_var.name].value == custom_env_var.value:
@@ -231,8 +234,8 @@ class DBTCloud:
                 )
                 return None
 
-            env_var_id = all_env_vars[custom_env_var.name]["job"]["id"]
-            url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{payload['id']}/"
+            env_var_id: int = all_env_vars[custom_env_var.name].id
+            url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{env_var_id}/"
         else:
             env_var_id = None
             url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/"
