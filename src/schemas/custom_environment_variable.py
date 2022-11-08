@@ -21,6 +21,7 @@ class CustomEnvironmentVariable(pydantic.BaseModel):
 
 class CustomEnvironmentVariablePayload(CustomEnvironmentVariable):
     """A dbt Cloud-serializable representation of a CustomEnvironmentVariables."""
+    id: Optional[int]
     project_id: int
     account_id: int
     raw_value: str

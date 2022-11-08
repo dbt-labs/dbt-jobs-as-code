@@ -18,13 +18,20 @@ class DBTCloud:
     ) -> None:
         self.account_id = account_id
         self._api_key = api_key
-        self._manifests: Dict = {}
+        self._environment_variable_cache: Dict[int, Dict[str, CustomEnvironmentVariablePayload]] = {}
 
         self.base_url = base_url
         self._headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
         }
+
+    def _clear_env_var_cache(self, job_definition_id: int) -> None:
+        """Clear out any cached environment variables for a given job."""
+        if job_definition_id not in self._environment_variable_cache:
+            return
+
+        del self._environment_variable_cache[job_definition_id]
 
     def _check_for_creds(self):
         """Confirm the presence of credentials"""
@@ -149,6 +156,9 @@ class DBTCloud:
     def get_env_vars(self, project_id: int, job_id: int) -> Dict[str, CustomEnvironmentVariablePayload]:
         """Get the existing env vars job overwrite in dbt Cloud."""
 
+        if job_id in self._environment_variable_cache:
+            return self._environment_variable_cache[job_id]
+
         self._check_for_creds()
 
         response = requests.get(
@@ -159,7 +169,7 @@ class DBTCloud:
         )
         logger.debug(response.json())
 
-        return {
+        variables = {
             name: CustomEnvironmentVariablePayload(
                 name=name,
                 value=variable_data['job']['value'],
@@ -169,6 +179,9 @@ class DBTCloud:
             )
             for name, variable_data in response.json()["data"].items()
         }
+        self._environment_variable_cache[job_id] = variables
+
+        return variables
 
     def create_env_var(
             self, env_var: CustomEnvironmentVariablePayload
@@ -184,6 +197,9 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
+
+        # If the new environment variables has a job_definition_id, then clear the EnvVar cache.
+        self._clear_env_var_cache(job_definition_id=env_var.job_definition_id)
 
         return response.json()["data"]
 
@@ -205,7 +221,7 @@ class DBTCloud:
                 )
             )
 
-        payload = {}
+        env_var_id: Optional[int]
 
         if custom_env_var.name in all_env_vars:
 
@@ -215,24 +231,26 @@ class DBTCloud:
                 )
                 return None
 
-            payload["id"] = all_env_vars[custom_env_var.name]["job"]["id"]
+            env_var_id = all_env_vars[custom_env_var.name]["job"]["id"]
             url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{payload['id']}/"
         else:
-            payload["id"] = None
+            env_var_id = None
             url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/"
 
-        payload["account_id"] = self.account_id
-        payload["project_id"] = project_id
-        payload["type"] = "job"
-        payload["name"] = custom_env_var.name
-        payload["raw_value"] = custom_env_var.value
-        payload["job_definition_id"] = job_id
+        payload = CustomEnvironmentVariablePayload(
+            id=env_var_id,
+            account_id=self.account_id,
+            project_id=project_id,
+            **custom_env_var.dict()
+        )
 
         response = requests.post(
             url=url,
             headers=self._headers,
-            json=payload,
+            data=payload.json(),
         )
+
+        self._clear_env_var_cache(job_definition_id=payload.job_definition_id)
 
         logger.info(f"Updated the env_var {custom_env_var.name} for job {job_id}")
         return response.json()["data"]
