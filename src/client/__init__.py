@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import requests
 from loguru import logger
@@ -189,7 +189,7 @@ class DBTCloud:
 
     def update_env_var(
             self, custom_env_var: CustomEnvironmentVariable, project_id: int, job_id: int
-    ) -> CustomEnvironmentVariablePayload:
+    ) -> Optional[CustomEnvironmentVariablePayload]:
         """Update env vars job overwrite in dbt Cloud."""
 
         self._check_for_creds()
@@ -207,12 +207,9 @@ class DBTCloud:
 
         payload = {}
 
-        if "job" in all_env_vars[custom_env_var.name]:
+        if custom_env_var.name in all_env_vars:
 
-            if (
-                    all_env_vars[custom_env_var.name]["job"]["value"]
-                    == custom_env_var.value
-            ):
+            if all_env_vars[custom_env_var.name].value == custom_env_var.value:
                 logger.debug(
                     f"The env var {custom_env_var.name} is already up to date for the job {job_id}."
                 )
