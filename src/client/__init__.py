@@ -218,12 +218,9 @@ class DBTCloud:
         all_env_vars = self.get_env_vars(project_id, job_id)
 
         if custom_env_var.name not in all_env_vars:
-            return self.create_env_var(
-                CustomEnvironmentVariablePayload(
-                    **custom_env_var.dict(),
-                    project_id=project_id,
-                    account_id=self.account_id,
-                )
+            raise Exception(
+                f"Custom environment variable {custom_env_var.name} not found in dbt Cloud, "
+                f"you need to create it first."
             )
 
         env_var_id: Optional[int]
