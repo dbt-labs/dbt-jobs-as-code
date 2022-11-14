@@ -22,7 +22,7 @@ def cli(config):
     dbt_cloud = DBTCloud(
         account_id=list(defined_jobs.values())[0].account_id,
         api_key=os.environ.get("API_KEY"),
-        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com")
+        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
     )
     cloud_jobs = dbt_cloud.get_jobs()
     tracked_jobs = {
@@ -64,24 +64,35 @@ def cli(config):
         job_id = mapping_job_identifier_job_id[job.identifier]
         for env_var_yml in job.custom_environment_variables:
             env_var_yml.job_definition_id = job_id
-            updated_env_vars = dbt_cloud.update_env_var(project_id=job.project_id, job_id=job_id, custom_env_var=env_var_yml)
+            updated_env_vars = dbt_cloud.update_env_var(
+                project_id=job.project_id, job_id=job_id, custom_env_var=env_var_yml
+            )
 
     # Delete the env vars from dbt Cloud that are not in the yml
     for job in defined_jobs.values():
         job_id = mapping_job_identifier_job_id[job.identifier]
 
         # We get the env vars from dbt Cloud, now that the YML ones have been replicated
-        env_var_dbt_cloud = dbt_cloud.get_env_vars(project_id=job.project_id, job_id=job_id)
+        env_var_dbt_cloud = dbt_cloud.get_env_vars(
+            project_id=job.project_id, job_id=job_id
+        )
 
         # And we get the list of env vars defined for a given job in the YML
-        env_vars_for_job = [env_var.name for env_var in job.custom_environment_variables]
+        env_vars_for_job = [
+            env_var.name for env_var in job.custom_environment_variables
+        ]
 
         for env_var, env_var_val in env_var_dbt_cloud.items():
             # If the env var is not in the YML but is defined at the "job" level in dbt Cloud, we delete it
-            if env_var not in env_vars_for_job and "job" in env_var_val :
+            if env_var not in env_vars_for_job and "job" in env_var_val:
                 logger.info(f"{env_var} not in the YML file but in the dbt Cloud job")
-                dbt_cloud.delete_env_var(project_id=job.project_id, env_var_id=env_var_val["job"]["id"])
-                logger.info(f"Deleted the env_var {env_var} for the job {job.identifier}")
+                dbt_cloud.delete_env_var(
+                    project_id=job.project_id, env_var_id=env_var_val["job"]["id"]
+                )
+                logger.info(
+                    f"Deleted the env_var {env_var} for the job {job.identifier}"
+                )
+
 
 if __name__ == "__main__":
     cli()

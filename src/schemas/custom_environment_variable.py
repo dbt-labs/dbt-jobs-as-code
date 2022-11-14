@@ -21,14 +21,15 @@ class CustomEnvironmentVariable(pydantic.BaseModel):
 
 class CustomEnvironmentVariablePayload(CustomEnvironmentVariable):
     """A dbt Cloud-serializable representation of a CustomEnvironmentVariables."""
+
     id: Optional[int]
     project_id: int
     account_id: int
     raw_value: str
 
     def __init__(self, **data: Any):
-        data['raw_value'] = data['value']
+        data["raw_value"] = data["value"]
         super().__init__(**data)
 
     class Config:
-        fields = {'value': {'exclude': True}}
+        fields = {"value": {"exclude": True}}

@@ -30,10 +30,8 @@ class DBTCloud:
 
     def _clear_env_var_cache(self, job_definition_id: int) -> None:
         """Clear out any cached environment variables for a given job."""
-        if job_definition_id not in self._environment_variable_cache:
-            return
-
-        del self._environment_variable_cache[job_definition_id]
+        if job_definition_id in self._environment_variable_cache:
+            del self._environment_variable_cache[job_definition_id]
 
     def _check_for_creds(self):
         """Confirm the presence of credentials"""
