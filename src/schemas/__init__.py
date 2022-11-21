@@ -34,7 +34,7 @@ def check_job_mapping_same(source_job: JobDefinition, dest_job: JobDefinition) -
     # breakpoint()
 
     if len(diffs) == 0:
-        logger.success(f"✅ Jobs identical")
+        logger.success("✅ Jobs identical")
         return True
     else:
         logger.warning(f"❌ Jobs are different - Diff: {diffs}")

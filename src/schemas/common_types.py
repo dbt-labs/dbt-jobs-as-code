@@ -1,11 +1,11 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import pydantic
 from croniter import croniter
 
 
 class Execution(pydantic.BaseModel):
-    timeout_seconds: int
+    timeout_seconds: int = 0
 
 
 class Triggers(pydantic.BaseModel):
@@ -16,7 +16,7 @@ class Triggers(pydantic.BaseModel):
 
 
 class Settings(pydantic.BaseModel):
-    threads: int
+    threads: int = 4
     target_name: str
 
 
@@ -38,7 +38,7 @@ class Time(pydantic.BaseModel):
         if self.type == "every_hour":
             payload["interval"] = self.interval
         elif self.type == "at_exact_hours":
-            payload['hours'] = self.hours
+            payload["hours"] = self.hours
         return payload
 
 

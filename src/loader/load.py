@@ -1,13 +1,11 @@
-from typing import Dict
-
 import yaml
 from loguru import logger
 
-from schemas.job import JobDefinition
+from schemas.config import Config
 
 
-def load_job_definitions(config_file) -> Dict[str, JobDefinition]:
-    """Load a job YAML file into a dictionary of JobDefinitions"""
+def load_job_configuration(config_file) -> Config:
+    """Load a job YAML file into a Config object"""
     config = yaml.safe_load(config_file)
 
     date_config = [
@@ -26,7 +24,7 @@ def load_job_definitions(config_file) -> Dict[str, JobDefinition]:
             f"❌ There is some time config under 'schedule > time' in your YML. This data is auto generated and should be deleted"
         )
 
-    return {
-        identifier: JobDefinition(**job, identifier=identifier)
-        for identifier, job in config["jobs"].items()
-    }
+    for identifier, job in config.get("jobs").items():
+        job["identifier"] = identifier
+
+    return Config(**config)
