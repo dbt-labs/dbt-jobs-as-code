@@ -129,3 +129,19 @@ class DBTCloud:
             },
         )
         return response.json()["data"]
+
+    def get_environments(self) -> Dict:
+        """Return a list of Environments for all the dbt Cloud jobs in an account"""
+
+        self._check_for_creds()
+
+        response = requests.get(
+            url=(
+                f"{self.base_url}/api/v3/accounts/" f"{self.account_id}/environments/"
+            ),
+            headers={
+                "Authorization": f"Bearer {self._api_key}",
+                "Content-Type": "application/json",
+            },
+        )
+        return response.json()["data"]
