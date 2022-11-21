@@ -16,12 +16,6 @@ jobs:
     run_generate_sources: true
     schedule:
       cron: "0 */2 * * *"
-      date:
-        cron: "0 */2 * * *"
-        type: "custom_cron"
-      time:
-        type: "every_hour"
-        interval: 1
     settings:
       target_name: production
       threads: 4
@@ -50,13 +44,6 @@ jobs:
     run_generate_sources: false
     schedule:
       cron: "0 * * * *"
-      date:
-        cron: "0 * * * *"
-        type: "custom_cron"
-      time:
-        hours: null
-        interval: 1
-        type: every_hour
     settings:
       target_name: TEST
       threads: 4
