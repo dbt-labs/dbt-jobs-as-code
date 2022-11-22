@@ -173,9 +173,9 @@ class DBTCloud:
 
         variables = {
             name: CustomEnvironmentVariablePayload(
-                id=variable_data["job"]["id"],
+                id=variable_data.get("job",{}).get("id"),
                 name=name,
-                value=variable_data["job"]["value"],
+                value=variable_data.get("job",{}).get("value"),
                 job_definition_id=job_id,
                 project_id=project_id,
                 account_id=self.account_id,
@@ -242,7 +242,13 @@ class DBTCloud:
             return None
 
         env_var_id: int = all_env_vars[custom_env_var.name].id
-        url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{env_var_id}/"
+
+        # the endpoint is different for updating an overwrite vs creating one
+        if env_var_id:
+            url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{env_var_id}/"
+        else:
+            url = f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/"
+
         payload = CustomEnvironmentVariablePayload(
             account_id=self.account_id,
             project_id=project_id,
@@ -278,3 +284,19 @@ class DBTCloud:
             logger.error(response.json())
 
         logger.warning("Deleted successfully.")
+
+    def get_environments(self) -> Dict:
+        """Return a list of Environments for all the dbt Cloud jobs in an account"""
+
+        self._check_for_creds()
+
+        response = requests.get(
+            url=(
+                f"{self.base_url}/api/v3/accounts/" f"{self.account_id}/environments/"
+            ),
+            headers={
+                "Authorization": f"Bearer {self._api_key}",
+                "Content-Type": "application/json",
+            },
+        )
+        return response.json()["data"]
