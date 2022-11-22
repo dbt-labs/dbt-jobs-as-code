@@ -17,11 +17,11 @@ def load_job_configuration(config_file) -> Config:
 
     if any(date_config):
         logger.warning(
-            f"❌ There is some date config under 'schedule > date' in your YML. This data is auto generated and should be deleted"
+            f"⚡️ There is some date config under 'schedule > date' in your YML. This data is auto generated and should be deleted"
         )
     if any(time_config):
         logger.warning(
-            f"❌ There is some time config under 'schedule > time' in your YML. This data is auto generated and should be deleted"
+            f"⚡️ There is some time config under 'schedule > time' in your YML. This data is auto generated and should be deleted"
         )
 
     for identifier, job in config.get("jobs").items():
