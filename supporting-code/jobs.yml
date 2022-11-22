@@ -11,18 +11,11 @@ jobs:
     execution:
       timeout_seconds: 0
     generate_docs: false
-    generate_sources: true
     name: "My Job 1"
     project_id: 176941
     run_generate_sources: true
     schedule:
       cron: "0 */2 * * *"
-      date:
-        cron: "0 */2 * * *"
-        type: "custom_cron"
-      time:
-        type: "every_hour"
-        interval: 1
     settings:
       target_name: production
       threads: 4
@@ -33,6 +26,7 @@ jobs:
       github_webhook: false
       schedule: true
     custom_environment_variables: null
+
   job2:
     account_id: 43791
     dbt_version: null
@@ -45,19 +39,11 @@ jobs:
     execution:
       timeout_seconds: 0
     generate_docs: false
-    generate_sources: false
     name: CI/CD run
     project_id: 176941
     run_generate_sources: false
     schedule:
       cron: "0 * * * *"
-      date:
-        cron: "0 * * * *"
-        type: "custom_cron"
-      time:
-        hours: null
-        interval: 1
-        type: every_hour
     settings:
       target_name: TEST
       threads: 4
