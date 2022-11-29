@@ -89,14 +89,6 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "id": {
-          "title": "Id",
-          "type": "integer"
-        },
-        "identifier": {
-          "title": "Identifier",
-          "type": "string"
-        },
         "account_id": {
           "title": "Account Id",
           "type": "integer"
