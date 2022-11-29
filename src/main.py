@@ -90,10 +90,11 @@ def sync(config):
 
         for env_var, env_var_val in env_var_dbt_cloud.items():
             # If the env var is not in the YML but is defined at the "job" level in dbt Cloud, we delete it
-            if env_var not in env_vars_for_job and "job" in env_var_val:
+            if env_var not in env_vars_for_job and env_var_val.id:
                 logger.info(f"{env_var} not in the YML file but in the dbt Cloud job")
+                # breakpoint()
                 dbt_cloud.delete_env_var(
-                    project_id=job.project_id, env_var_id=env_var_val["job"]["id"]
+                    project_id=job.project_id, env_var_id=env_var_val.id
                 )
                 logger.info(
                     f"Deleted the env_var {env_var} for the job {job.identifier}"
