@@ -9,15 +9,9 @@ from loader.load import load_job_configuration
 from schemas import check_job_mapping_same
 
 
-@click.group()
-def cli():
-    pass
-
-
-@cli.command()
-@click.argument("config", type=click.File("r"))
-def sync(config):
-    """Synchronize a dbt Cloud job config file against dbt Cloud.
+def compare_config_and_potentially_update(config, no_update):
+    """Compares the config of YML files versus dbt Cloud.
+    Depending on the value of no_update, it will either update the dbt Cloud config or not.
 
     CONFIG is the path to your jobs.yml config file.
     """
@@ -48,17 +42,26 @@ def sync(config):
             source_job=defined_jobs[identifier], dest_job=tracked_jobs[identifier]
         ):
             defined_jobs[identifier].id = tracked_jobs[identifier].id
-            dbt_cloud.update_job(job=defined_jobs[identifier])
+            if no_update:
+                logger.warning("-- Plan -- The job {identifier} is different and would be updated.", identifier=identifier)
+            else:
+                dbt_cloud.update_job(job=defined_jobs[identifier])
 
     # Create new jobs
     logger.info("Detected {count} new jobs.", count=len(created_jobs))
     for identifier in created_jobs:
-        dbt_cloud.create_job(job=defined_jobs[identifier])
+        if no_update:
+            logger.warning("-- Plan -- The job {identifier} is new and would be created.", identifier=identifier)
+        else:
+            dbt_cloud.create_job(job=defined_jobs[identifier])
 
     # Remove Deleted Jobs
     logger.warning("Detected {count} deleted jobs.", count=len(deleted_jobs))
     for identifier in deleted_jobs:
-        dbt_cloud.delete_job(job=tracked_jobs[identifier])
+        if no_update:
+            logger.warning("-- Plan -- The job {identifier} is deleted and would be removed.", identifier=identifier)
+        else:
+            dbt_cloud.delete_job(job=tracked_jobs[identifier])
 
     # -- ENV VARS --
     # Now that we have replicated all jobs we can get their IDs for further API calls
@@ -70,9 +73,12 @@ def sync(config):
         job_id = mapping_job_identifier_job_id[job.identifier]
         for env_var_yml in job.custom_environment_variables:
             env_var_yml.job_definition_id = job_id
-            updated_env_vars = dbt_cloud.update_env_var(
-                project_id=job.project_id, job_id=job_id, custom_env_var=env_var_yml
-            )
+            if no_update:
+                logger.warning("-- Plan -- The env var {env_var} is new and would be created.", env_var=env_var_yml.name)
+            else:
+                updated_env_vars = dbt_cloud.update_env_var(
+                    project_id=job.project_id, job_id=job_id, custom_env_var=env_var_yml
+                )
 
     # Delete the env vars from dbt Cloud that are not in the yml
     for job in defined_jobs.values():
@@ -92,12 +98,39 @@ def sync(config):
             # If the env var is not in the YML but is defined at the "job" level in dbt Cloud, we delete it
             if env_var not in env_vars_for_job and "job" in env_var_val:
                 logger.info(f"{env_var} not in the YML file but in the dbt Cloud job")
-                dbt_cloud.delete_env_var(
-                    project_id=job.project_id, env_var_id=env_var_val["job"]["id"]
-                )
-                logger.info(
-                    f"Deleted the env_var {env_var} for the job {job.identifier}"
-                )
+                if no_update:
+                    logger.warning("-- Plan -- The env var {env_var} is deleted and would be removed.", env_var=env_var)
+                else:
+                    dbt_cloud.delete_env_var(
+                        project_id=job.project_id, env_var_id=env_var_val["job"]["id"]
+                    )
+                    logger.info(
+                        f"Deleted the env_var {env_var} for the job {job.identifier}"
+                    )
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+@click.argument("config", type=click.File("r"))
+def sync(config):
+    """Synchronize a dbt Cloud job config file against dbt Cloud.
+
+    CONFIG is the path to your jobs.yml config file.
+    """
+    compare_config_and_potentially_update(config, no_update=False)
+
+
+@cli.command()
+@click.argument("config", type=click.File("r"))
+def plan(config):
+    """Check the difference betweeen a local file and dbt Cloud without updating dbt Cloud.
+
+    CONFIG is the path to your jobs.yml config file.
+    """
+    compare_config_and_potentially_update(config, no_update=True)
 
 
 @cli.command()
