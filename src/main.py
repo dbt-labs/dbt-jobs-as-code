@@ -1,4 +1,5 @@
 import os
+from ruamel.yaml import YAML
 import sys
 
 from loguru import logger
@@ -115,6 +116,9 @@ def validate(config, online):
     logger.info(f"Parsing the YML file {config.name}")
     defined_jobs = load_job_configuration(config).jobs.values()
 
+    for job in defined_jobs:
+        print(job.to_load_format())
+
     if defined_jobs:
         logger.success("✅ The config file has a valid YML format.")
 
@@ -177,6 +181,43 @@ def validate(config, online):
 
     logger.success("✅ The config file is valid")
 
+
+@cli.command()
+@click.option("--config", type=click.File("r"))
+@click.option("--account-id", type=int)
+def import_jobs(config, account_id):
+    """Generate YML file for import
+
+    One of the following is required:
+
+    --config: the path to your jobs.yml config file.
+
+    --acount-id: the ID of your dbt Cloud accoutn.
+    """
+
+    # we get the account id either from a parameter (e.g if the config file doesn't exist) or from the config file 
+    if account_id:
+        cloud_account_id = account_id
+    elif config:
+        defined_jobs = load_job_configuration(config).jobs.values()
+        cloud_account_id = list(defined_jobs)[0].account_id
+    else:
+        raise Exception("Either --config or --account-id must be provided")
+
+    dbt_cloud = DBTCloud(
+        account_id=cloud_account_id,
+        api_key=os.environ.get("API_KEY"),
+        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+    )
+    cloud_jobs = dbt_cloud.get_jobs()
+
+    export_yml = {"jobs": {}}
+    for id, cloud_job in enumerate(cloud_jobs):
+        export_yml["jobs"][f"import_{id}"] = cloud_job.to_load_format()
+    
+    yaml=YAML()
+    yaml.width = 300
+    print(yaml.dump(export_yml, sys.stdout))
 
 if __name__ == "__main__":
     cli()
