@@ -1,0 +1,179 @@
+{
+  "title": "Config",
+  "description": "Internal representation of a Jobs as Code configuration file.",
+  "type": "object",
+  "properties": {
+    "jobs": {
+      "title": "Jobs",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/JobDefinition"
+      }
+    }
+  },
+  "required": [
+    "jobs"
+  ],
+  "definitions": {
+    "Settings": {
+      "title": "Settings",
+      "type": "object",
+      "properties": {
+        "threads": {
+          "title": "Threads",
+          "default": 4,
+          "type": "integer"
+        },
+        "target_name": {
+          "title": "Target Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target_name"
+      ]
+    },
+    "Execution": {
+      "title": "Execution",
+      "type": "object",
+      "properties": {
+        "timeout_seconds": {
+          "title": "Timeout Seconds",
+          "default": 0,
+          "type": "integer"
+        }
+      }
+    },
+    "Schedule": {
+      "title": "Schedule",
+      "type": "object",
+      "properties": {
+        "cron": {
+          "title": "Cron",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cron"
+      ]
+    },
+    "Triggers": {
+      "title": "Triggers",
+      "type": "object",
+      "properties": {
+        "github_webhook": {
+          "title": "Github Webhook",
+          "type": "boolean"
+        },
+        "git_provider_webhook": {
+          "title": "Git Provider Webhook",
+          "type": "boolean"
+        },
+        "custom_branch_only": {
+          "title": "Custom Branch Only",
+          "type": "boolean"
+        },
+        "schedule": {
+          "title": "Schedule",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "github_webhook",
+        "custom_branch_only"
+      ]
+    },
+    "JobDefinition": {
+      "title": "JobDefinition",
+      "description": "A definition for a dbt Cloud job.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "account_id": {
+          "title": "Account Id",
+          "type": "integer"
+        },
+        "project_id": {
+          "title": "Project Id",
+          "type": "integer"
+        },
+        "environment_id": {
+          "title": "Environment Id",
+          "type": "integer"
+        },
+        "dbt_version": {
+          "title": "dbt Version",
+          "type": ["string", "null"]
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "settings": {
+          "$ref": "#/definitions/Settings"
+        },
+        "execution": {
+          "title": "Execution",
+          "default": {
+            "timeout_seconds": 0
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/Execution"
+            }
+          ]
+        },
+        "deferring_job_definition_id": {
+          "title": "Deferring Job Definition Id",
+          "type": ["integer", "null"]
+        },
+        "run_generate_sources": {
+          "title": "Run Generate Sources",
+          "type": "boolean"
+        },
+        "execute_steps": {
+          "title": "Execute Steps",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "generate_docs": {
+          "title": "Generate Docs",
+          "type": "boolean"
+        },
+        "schedule": {
+          "$ref": "#/definitions/Schedule"
+        },
+        "triggers": {
+          "$ref": "#/definitions/Triggers"
+        },
+        "state": {
+          "title": "State",
+          "default": 1,
+          "type": "integer"
+        },
+        "custom_environment_variables": {
+          "title": "Custom Environment Variables",
+          "default": [],
+          "type": ["array","null"],
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "account_id",
+        "project_id",
+        "environment_id",
+        "name",
+        "settings",
+        "run_generate_sources",
+        "execute_steps",
+        "generate_docs",
+        "schedule",
+        "triggers"
+      ]
+    }
+  }
+}
