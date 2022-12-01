@@ -1,8 +1,10 @@
+# yaml-language-server: $schema=../src/schemas/load_job_schema.json
+
 jobs:
   job1:
+
     account_id: 43791
     dbt_version: null
-    deactivated: false
     deferring_job_definition_id: null
     environment_id: 134459
     execute_steps:
@@ -30,7 +32,6 @@ jobs:
   job2:
     account_id: 43791
     dbt_version: null
-    deactivated: false
     deferring_job_definition_id: 43791
     environment_id: 134459
     execute_steps:

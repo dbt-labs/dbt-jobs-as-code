@@ -169,7 +169,6 @@ class DBTCloud:
             ),
             headers=self._headers,
         )
-        # logger.debug(response.json())
 
         variables = {
             name: CustomEnvironmentVariablePayload(
