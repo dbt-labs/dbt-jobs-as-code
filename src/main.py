@@ -125,11 +125,11 @@ def validate(config, online):
     if not online:
         return
 
-    # Retrive the list of Project IDs and Environment IDs from the config file
+    # Retrieve the list of Project IDs and Environment IDs from the config file
     config_project_ids = set([job.project_id for job in defined_jobs])
     config_environment_ids = set([job.environment_id for job in defined_jobs])
 
-    # Retrieve the list of Project IDs and Environment IDs from dbt Cloudby calling the environment API endpoint
+    # Retrieve the list of Project IDs and Environment IDs from dbt Cloud by calling the environment API endpoint
     dbt_cloud = DBTCloud(
         account_id=list(defined_jobs)[0].account_id,
         api_key=os.environ.get("API_KEY"),
@@ -192,7 +192,7 @@ def import_jobs(config, account_id):
 
     --config: the path to your jobs.yml config file.
 
-    --acount-id: the ID of your dbt Cloud accoutn.
+    --account-id: the ID of your dbt Cloud account.
     """
 
     # we get the account id either from a parameter (e.g if the config file doesn't exist) or from the config file 
