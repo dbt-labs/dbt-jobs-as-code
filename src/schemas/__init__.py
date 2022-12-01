@@ -31,7 +31,6 @@ def check_job_mapping_same(source_job: JobDefinition, dest_job: JobDefinition) -
     dest_job_dict = _job_to_dict(dest_job)
 
     diffs = _get_mismatched_dict_entries(source_job_dict, dest_job_dict)
-    # breakpoint()
 
     if len(diffs) == 0:
         logger.success("✅ Jobs identical")
