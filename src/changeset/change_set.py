@@ -1,5 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel
+import string
+
 
 class Change(BaseModel):
     """Describes what a given change is and hot to apply it."""
@@ -10,7 +12,7 @@ class Change(BaseModel):
     parameters: dict
 
     def __str__(self):
-        return f"{self.action.upper()} {self.type.capitalize()} {self.identifier}"
+        return f"{self.action.upper()} {string.capwords(self.type)} {self.identifier}"
 
     def apply(self):
         self.sync_function(**self.parameters)
