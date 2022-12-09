@@ -37,7 +37,7 @@ def check_job_mapping_same(source_job: JobDefinition, dest_job: JobDefinition) -
         logger.success("✅ Jobs identical")
         return True
     else:
-        logger.warning(f"❌ Jobs are different - Diff: {diffs}")
+        logger.info(f"❌ Jobs are different - Diff: {diffs}")
         return False
 
 
@@ -58,5 +58,5 @@ def check_env_var_same(source_env_var: CustomEnvironmentVariable, dest_env_vars:
         )
         return (True, env_var_id)
     else:
-        logger.warning(f"❌ The env var overwrite for {source_env_var.name} is different")
+        logger.info(f"❌ The env var overwrite for {source_env_var.name} is different")
         return (False, env_var_id)
