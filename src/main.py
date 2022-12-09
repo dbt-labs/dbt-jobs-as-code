@@ -11,6 +11,7 @@ from exporter.export import export_jobs_yml
 from schemas import check_job_mapping_same
 from changeset.change_set import Change, ChangeSet
 from schemas import check_env_var_same
+from rich.console import Console
 
 
 def build_change_set(config):
@@ -68,7 +69,7 @@ def build_change_set(config):
         dbt_cloud_change_set.append(dbt_cloud_change)
 
     # Remove Deleted Jobs
-    logger.warning("Detected {count} deleted jobs.", count=len(deleted_jobs))
+    logger.info("Detected {count} deleted jobs.", count=len(deleted_jobs))
     for identifier in deleted_jobs:
         dbt_cloud_change = Change(
             identifier=identifier,
@@ -175,8 +176,9 @@ def sync(config):
     if len(change_set) == 0:
         logger.success("-- PLAN -- No changes detected.")
     else:
-        logger.warning("-- PLAN -- {count} changes detected.", count=len(change_set))
-        print(change_set)
+        logger.info("-- PLAN -- {count} changes detected.", count=len(change_set))
+        console = Console()
+        console.log(change_set.to_table())
     logger.info("-- SYNC --")
     change_set.apply()
 
@@ -192,8 +194,9 @@ def plan(config):
     if len(change_set) == 0:
         logger.success("-- PLAN -- No changes detected.")
     else:
-        logger.warning("-- PLAN -- {count} changes detected.", count=len(change_set))
-        print(change_set)
+        logger.info("-- PLAN -- {count} changes detected.", count=len(change_set))
+        console = Console()
+        console.log(change_set.to_table())
 
 
 @cli.command()
