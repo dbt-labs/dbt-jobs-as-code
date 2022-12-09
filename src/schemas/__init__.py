@@ -1,9 +1,10 @@
-from typing import Any
+from typing import Any, Tuple
 
 from deepdiff import DeepDiff
 from loguru import logger
 
 from schemas.job import JobDefinition
+from schemas.custom_environment_variable import CustomEnvironmentVariable, CustomEnvironmentVariablePayload
 
 
 def _get_mismatched_dict_entries(
@@ -25,13 +26,12 @@ def _job_to_dict(job: JobDefinition):
 
 
 def check_job_mapping_same(source_job: JobDefinition, dest_job: JobDefinition) -> bool:
-    """ " Checks if the source and destination jobs are the same"""
+    """Checks if the source and destination jobs are the same"""
 
     source_job_dict = _job_to_dict(source_job)
     dest_job_dict = _job_to_dict(dest_job)
 
     diffs = _get_mismatched_dict_entries(source_job_dict, dest_job_dict)
-    # breakpoint()
 
     if len(diffs) == 0:
         logger.success("✅ Jobs identical")
@@ -39,3 +39,24 @@ def check_job_mapping_same(source_job: JobDefinition, dest_job: JobDefinition) -
     else:
         logger.warning(f"❌ Jobs are different - Diff: {diffs}")
         return False
+
+
+def check_env_var_same(source_env_var: CustomEnvironmentVariable, dest_env_vars: dict[str, CustomEnvironmentVariablePayload]) -> Tuple[bool, int]:
+    """Checks if the source env vars is the same in the destination env vars"""
+
+    if source_env_var.name not in dest_env_vars:
+        raise Exception(
+            f"Custom environment variable {source_env_var.name} not found in dbt Cloud, "
+            f"you need to create it first."
+        )
+
+    env_var_id = dest_env_vars[source_env_var.name].id
+
+    if dest_env_vars[source_env_var.name].value == source_env_var.value:
+        logger.debug(
+            f"The env var {source_env_var.name} is already up to date for the job {source_env_var.job_definition_id}."
+        )
+        return (True, env_var_id)
+    else:
+        logger.warning(f"❌ The env var overwrite for {source_env_var.name} is different")
+        return (False, env_var_id)
