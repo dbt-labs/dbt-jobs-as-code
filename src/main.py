@@ -1,4 +1,5 @@
 import os
+from ruamel.yaml import YAML
 import sys
 
 from loguru import logger
@@ -6,6 +7,7 @@ import click
 
 from client import DBTCloud
 from loader.load import load_job_configuration
+from exporter.export import export_jobs_yml
 from schemas import check_job_mapping_same
 from changeset.change_set import Change, ChangeSet
 from schemas import check_env_var_same
@@ -28,9 +30,7 @@ def build_change_set(config):
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
     )
     cloud_jobs = dbt_cloud.get_jobs()
-    tracked_jobs = {
-        job.identifier: job for job in cloud_jobs if job.identifier is not None
-    }
+    tracked_jobs = {job.identifier: job for job in cloud_jobs if job.identifier is not None}
 
     dbt_cloud_change_set = ChangeSet()
 
@@ -90,9 +90,7 @@ def build_change_set(config):
 
         if job.identifier in mapping_job_identifier_job_id:  # the job already exists
             job_id = mapping_job_identifier_job_id[job.identifier]
-            all_env_vars_for_job = dbt_cloud.get_env_vars(
-                project_id=job.project_id, job_id=job_id
-            )
+            all_env_vars_for_job = dbt_cloud.get_env_vars(project_id=job.project_id, job_id=job_id)
             for env_var_yml in job.custom_environment_variables:
                 env_var_yml.job_definition_id = job_id
                 same_env_var, env_var_id = check_env_var_same(
@@ -138,21 +136,15 @@ def build_change_set(config):
             job_id = mapping_job_identifier_job_id[job.identifier]
 
             # We get the env vars from dbt Cloud, now that the YML ones have been replicated
-            env_var_dbt_cloud = dbt_cloud.get_env_vars(
-                project_id=job.project_id, job_id=job_id
-            )
+            env_var_dbt_cloud = dbt_cloud.get_env_vars(project_id=job.project_id, job_id=job_id)
 
             # And we get the list of env vars defined for a given job in the YML
-            env_vars_for_job = [
-                env_var.name for env_var in job.custom_environment_variables
-            ]
+            env_vars_for_job = [env_var.name for env_var in job.custom_environment_variables]
 
             for env_var, env_var_val in env_var_dbt_cloud.items():
                 # If the env var is not in the YML but is defined at the "job" level in dbt Cloud, we delete it
                 if env_var not in env_vars_for_job and env_var_val.id:
-                    logger.info(
-                        f"{env_var} not in the YML file but in the dbt Cloud job"
-                    )
+                    logger.info(f"{env_var} not in the YML file but in the dbt Cloud job")
                     dbt_cloud_change = Change(
                         identifier=f"{job.identifier}:{env_var_yml.name}",
                         type="env var overwrite",
@@ -209,9 +201,7 @@ def plan(config):
 
 @cli.command()
 @click.argument("config", type=click.File("r"))
-@click.option(
-    "--online", is_flag=True, help="Connect to dbt Cloud to check that IDs are correct."
-)
+@click.option("--online", is_flag=True, help="Connect to dbt Cloud to check that IDs are correct.")
 def validate(config, online):
     """Check that the config file is valid
 
@@ -221,6 +211,9 @@ def validate(config, online):
     # Parse the config file and check if it follows the Pydantic model
     logger.info(f"Parsing the YML file {config.name}")
     defined_jobs = load_job_configuration(config).jobs.values()
+
+    for job in defined_jobs:
+        print(job.to_load_format())
 
     if defined_jobs:
         logger.success("✅ The config file has a valid YML format.")
@@ -283,6 +276,55 @@ def validate(config, online):
         sys.exit(1)
 
     logger.success("✅ The config file is valid")
+
+
+@cli.command()
+@click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
+@click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
+@click.option(
+    "--job-id",
+    "-j",
+    type=int,
+    multiple=True,
+    help="[Optional] The ID of the job to import.",
+)
+def import_jobs(config, account_id, job_id):
+    """
+    Generate YML file for import.
+    Either --config or --account-id must be provided.
+
+    It is possible to repeat the optional --job-id option to import specific jobs.
+    """
+
+    # we get the account id either from a parameter (e.g if the config file doesn't exist) or from the config file
+    if account_id:
+        cloud_account_id = account_id
+    elif config:
+        defined_jobs = load_job_configuration(config).jobs.values()
+        cloud_account_id = list(defined_jobs)[0].account_id
+    else:
+        raise Exception("Either --config or --account-id must be provided")
+
+    dbt_cloud = DBTCloud(
+        account_id=cloud_account_id,
+        api_key=os.environ.get("API_KEY"),
+        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+    )
+    cloud_jobs = dbt_cloud.get_jobs()
+    logger.info(f"Getting the jobs definition from dbt Cloud")
+
+    if job_id:
+        cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
+
+    for cloud_job in cloud_jobs:
+        logger.info(f"Getting en vars overwrites for the job {cloud_job.id}:{cloud_job.name}")
+        env_vars = dbt_cloud.get_env_vars(project_id=cloud_job.project_id, job_id=cloud_job.id)
+        for env_var in env_vars.values():
+            if env_var.value:
+                cloud_job.custom_environment_variables.append(env_var)
+
+    logger.success(f"YML file for the current dbt Cloud jobs")
+    export_jobs_yml(cloud_jobs)
 
 
 if __name__ == "__main__":
