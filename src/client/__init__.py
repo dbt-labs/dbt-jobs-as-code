@@ -8,6 +8,7 @@ from schemas.custom_environment_variable import (
     CustomEnvironmentVariablePayload,
 )
 from schemas.job import JobDefinition
+from schemas import check_env_var_same
 
 
 class DBTCloud:
@@ -65,7 +66,7 @@ class DBTCloud:
         if response.status_code >= 400:
             logger.error(response.json())
 
-        logger.success("Updated successfully.")
+        logger.success("Job updated successfully.")
 
         return JobDefinition(**(response.json()["data"]), identifier=job.identifier)
 
@@ -83,7 +84,7 @@ class DBTCloud:
         if response.status_code >= 400:
             logger.error(response.json())
 
-        logger.success("Created successfully.")
+        logger.success("Job created successfully.")
 
         return JobDefinition(**(response.json()["data"]), identifier=job.identifier)
 
@@ -100,7 +101,7 @@ class DBTCloud:
         if response.status_code >= 400:
             logger.error(response.json())
 
-        logger.warning("Deleted successfully.")
+        logger.success("Job deleted successfully.")
 
     def get_jobs(self) -> List[JobDefinition]:
         """Return a list of Jobs for all the dbt Cloud jobs in an environment."""
@@ -206,41 +207,16 @@ class DBTCloud:
         return response.json()["data"]
 
     def update_env_var(
-        self, custom_env_var: CustomEnvironmentVariable, project_id: int, job_id: int
-    ) -> Optional[CustomEnvironmentVariablePayload]:
+        self, custom_env_var: CustomEnvironmentVariable, project_id: int, job_id: int, env_var_id: int, yml_job_identifier: str = None) -> Optional[CustomEnvironmentVariablePayload]:
         """Update env vars job overwrite in dbt Cloud."""
 
         self._check_for_creds()
 
-        all_env_vars = self.get_env_vars(project_id, job_id)
-
-        if custom_env_var.name not in all_env_vars:
-            raise Exception(
-                f"Custom environment variable {custom_env_var.name} not found in dbt Cloud, "
-                f"you need to create it first."
-            )
-
-        env_var_id: Optional[int]
-
-        # TODO: Move this logic out of the client layer, and move it into
-        #  at least one layer higher up. We want the dbt Cloud client to be
-        #  as naive as possible.
-        if custom_env_var.name not in all_env_vars:
-            return self.create_env_var(
-                CustomEnvironmentVariablePayload(
-                    account_id=self.account_id,
-                    project_id=project_id,
-                    **custom_env_var.dict(),
-                )
-            )
-
-        if all_env_vars[custom_env_var.name].value == custom_env_var.value:
-            logger.debug(
-                f"The env var {custom_env_var.name} is already up to date for the job {job_id}."
-            )
-            return None
-
-        env_var_id: int = all_env_vars[custom_env_var.name].id
+        # handle the case where the job was not created when we queued the function call
+        if yml_job_identifier and not job_id:
+            mapping_job_identifier_job_id = self.build_mapping_job_identifier_job_id()
+            job_id = mapping_job_identifier_job_id[yml_job_identifier]
+            custom_env_var.job_definition_id = job_id
 
         # the endpoint is different for updating an overwrite vs creating one
         if env_var_id:
@@ -266,7 +242,7 @@ class DBTCloud:
 
         self._clear_env_var_cache(job_definition_id=payload.job_definition_id)
 
-        logger.info(f"Updated the env_var {custom_env_var.name} for job {job_id}")
+        logger.success(f"Updated the env_var {custom_env_var.name} for job {job_id}")
         return CustomEnvironmentVariablePayload(**(response.json()["data"]))
 
     def delete_env_var(self, project_id: int, env_var_id: int) -> None:
@@ -282,7 +258,7 @@ class DBTCloud:
         if response.status_code >= 400:
             logger.error(response.json())
 
-        logger.warning("Deleted successfully.")
+        logger.success("Env Var Job Overwrite deleted successfully.")
 
     def get_environments(self) -> Dict:
         """Return a list of Environments for all the dbt Cloud jobs in an account"""
