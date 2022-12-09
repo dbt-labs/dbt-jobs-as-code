@@ -287,16 +287,21 @@ def validate(config, online):
 
 
 @cli.command()
-@click.option("--config", type=click.File("r"))
-@click.option("--account-id", type=int)
-def import_jobs(config, account_id):
-    """Generate YML file for import
+@click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
+@click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
+@click.option(
+    "--job-id",
+    "-j",
+    type=int,
+    multiple=True,
+    help="[Optional] The ID of the job to import.",
+)
+def import_jobs(config, account_id, job_id):
+    """
+    Generate YML file for import.
+    Either --config or --account-id must be provided.
 
-    One of the following is required:
-
-    --config: the path to your jobs.yml config file.
-
-    --account-id: the ID of your dbt Cloud account.
+    It is possible to repeat the optional --job-id option to import specific jobs.
     """
 
     # we get the account id either from a parameter (e.g if the config file doesn't exist) or from the config file 
@@ -314,14 +319,21 @@ def import_jobs(config, account_id):
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
     )
     cloud_jobs = dbt_cloud.get_jobs()
+    logger.info(f"Getting the jobs definition from dbt Cloud")
 
-    export_yml = {"jobs": {}}
-    for id, cloud_job in enumerate(cloud_jobs):
-        export_yml["jobs"][f"import_{id}"] = cloud_job.to_load_format()
+    if job_id:
+        cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
+
+    for cloud_job in cloud_jobs:
+        logger.info(f"Getting en vars overwrites for the job {cloud_job.id}:{cloud_job.name}")
+        env_vars = dbt_cloud.get_env_vars(project_id=cloud_job.project_id, job_id=cloud_job.id)
+        for env_var in env_vars.values():
+            if env_var.value:
+                cloud_job.custom_environment_variables.append(env_var)
+
+    logger.success(f"YML file for the current dbt Cloud jobs")
+    export_jobs_yml(cloud_jobs)
     
-    yaml=YAML()
-    yaml.width = 300
-    print(yaml.dump(export_yml, sys.stdout))
 
 if __name__ == "__main__":
     cli()
