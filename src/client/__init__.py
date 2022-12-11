@@ -1,6 +1,8 @@
 from typing import Dict, List, Optional
 
 import requests
+import httpx
+import asyncio
 from loguru import logger
 
 from schemas.custom_environment_variable import (
@@ -154,8 +156,8 @@ class DBTCloud:
         )
         return response.json()["data"]
 
-    def get_env_vars(
-        self, project_id: int, job_id: int
+    async def get_env_vars(
+        self, project_id: int, job_id: int, client: httpx.AsyncClient
     ) -> Dict[str, CustomEnvironmentVariablePayload]:
         """Get the existing env vars job overwrite in dbt Cloud."""
 
@@ -164,7 +166,8 @@ class DBTCloud:
 
         self._check_for_creds()
 
-        response = requests.get(
+        logger.info(f"Send query for job id {job_id}")
+        response = await client.get(
             url=(
                 f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/job/?job_definition_id={job_id}"
             ),
@@ -185,6 +188,19 @@ class DBTCloud:
         self._environment_variable_cache[job_id] = variables
 
         return variables
+
+    async def get_env_vars_for_jobs(self, cloud_jobs):
+
+        async with httpx.AsyncClient() as client:
+
+            tasks = []
+            for cloud_job in cloud_jobs:
+                tasks.append(asyncio.ensure_future(self.get_env_vars(project_id=cloud_job.project_id, job_id=cloud_job.id, client=client)))
+                
+
+            env_vars = await asyncio.gather(*tasks)
+            return env_vars
+
 
     def create_env_var(
         self, env_var: CustomEnvironmentVariablePayload

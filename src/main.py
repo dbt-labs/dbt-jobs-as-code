@@ -4,6 +4,7 @@ import sys
 
 from loguru import logger
 import click
+import asyncio
 
 from client import DBTCloud
 from loader.load import load_job_configuration
@@ -313,12 +314,14 @@ def import_jobs(config, account_id, job_id):
     if job_id:
         cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
 
-    for cloud_job in cloud_jobs:
-        logger.info(f"Getting en vars overwrites for the job {cloud_job.id}:{cloud_job.name}")
-        env_vars = dbt_cloud.get_env_vars(project_id=cloud_job.project_id, job_id=cloud_job.id)
-        for env_var in env_vars.values():
-            if env_var.value:
-                cloud_job.custom_environment_variables.append(env_var)
+    vals = asyncio.run(dbt_cloud.get_env_vars_for_jobs(cloud_jobs))
+
+    for env_var_dict in vals:
+        env_var = list(env_var_dict.values())[0]
+        print(env_var)
+        if env_var.value:
+            cloud_job = [job for job in cloud_jobs if job.id == env_var.job_definition_id][0]
+            cloud_job.custom_environment_variables.append(env_var)
 
     logger.success(f"YML file for the current dbt Cloud jobs")
     export_jobs_yml(cloud_jobs)
