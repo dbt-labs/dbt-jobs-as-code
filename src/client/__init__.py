@@ -155,7 +155,7 @@ class DBTCloud:
         return response.json()["data"]
 
     def get_env_vars(
-        self, project_id: int, job_id: int
+        self, project_id: int, job_id: int, session: requests.Session = None
     ) -> Dict[str, CustomEnvironmentVariablePayload]:
         """Get the existing env vars job overwrite in dbt Cloud."""
 
@@ -164,7 +164,9 @@ class DBTCloud:
 
         self._check_for_creds()
 
-        response = requests.get(
+        http_mech = session or requests
+            
+        response = http_mech.get(
             url=(
                 f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/job/?job_definition_id={job_id}"
             ),

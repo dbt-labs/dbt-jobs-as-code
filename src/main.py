@@ -1,4 +1,5 @@
 import os
+import requests
 from ruamel.yaml import YAML
 import sys
 
@@ -313,9 +314,10 @@ def import_jobs(config, account_id, job_id):
     if job_id:
         cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
 
+    session = requests.Session()
     for cloud_job in cloud_jobs:
         logger.info(f"Getting en vars overwrites for the job {cloud_job.id}:{cloud_job.name}")
-        env_vars = dbt_cloud.get_env_vars(project_id=cloud_job.project_id, job_id=cloud_job.id)
+        env_vars = dbt_cloud.get_env_vars(project_id=cloud_job.project_id, job_id=cloud_job.id, session=session)
         for env_var in env_vars.values():
             if env_var.value:
                 cloud_job.custom_environment_variables.append(env_var)
