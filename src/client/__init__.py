@@ -3,12 +3,12 @@ from typing import Dict, List, Optional
 import requests
 from loguru import logger
 
-from schemas.custom_environment_variable import (
+from src.schemas.custom_environment_variable import (
     CustomEnvironmentVariable,
     CustomEnvironmentVariablePayload,
 )
-from schemas.job import JobDefinition
-from schemas import check_env_var_same
+from src.schemas.job import JobDefinition
+from src.schemas import check_env_var_same
 
 
 class DBTCloud:

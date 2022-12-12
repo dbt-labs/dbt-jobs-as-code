@@ -1,7 +1,7 @@
 from ruamel.yaml import YAML
 import sys
 
-from schemas.job import JobDefinition
+from src.schemas.job import JobDefinition
 
 
 def export_jobs_yml(jobs: list[JobDefinition]):

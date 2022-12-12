@@ -3,8 +3,8 @@ from typing import Any, Tuple
 from deepdiff import DeepDiff
 from loguru import logger
 
-from schemas.job import JobDefinition
-from schemas.custom_environment_variable import CustomEnvironmentVariable, CustomEnvironmentVariablePayload
+from src.schemas.job import JobDefinition
+from src.schemas.custom_environment_variable import CustomEnvironmentVariable, CustomEnvironmentVariablePayload
 
 
 def _get_mismatched_dict_entries(
