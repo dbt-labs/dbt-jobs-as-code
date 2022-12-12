@@ -56,3 +56,6 @@ To use, it in VSCode, install the extension `YAML` and add the following line at
 ```yaml
 # yaml-language-server: $schema=../src/schemas/load_job_schema.json
 ```
+### TODO
+
+Add info about running the code with a github action
