@@ -5,12 +5,12 @@ import sys
 from loguru import logger
 import click
 
-from client import DBTCloud
-from loader.load import load_job_configuration
-from exporter.export import export_jobs_yml
-from schemas import check_job_mapping_same
-from changeset.change_set import Change, ChangeSet
-from schemas import check_env_var_same
+from src.client import DBTCloud
+from src.loader.load import load_job_configuration
+from src.exporter.export import export_jobs_yml
+from src.schemas import check_job_mapping_same
+from src.changeset.change_set import Change, ChangeSet
+from src.schemas import check_env_var_same
 from rich.console import Console
 
 

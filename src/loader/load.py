@@ -1,7 +1,7 @@
 import yaml
 from loguru import logger
 
-from schemas.config import Config
+from src.schemas.config import Config
 
 
 def load_job_configuration(config_file) -> Config:
