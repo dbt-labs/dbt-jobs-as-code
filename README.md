@@ -49,9 +49,12 @@ The CLI comes with a few different commands
     - rename the job in the UI to end with `[[new_job_identifier]]`
     - run a `plan` command to verify that no changes are required for the given job
 
-In addition, the file `src/schemas/load_job_schema.json` is a JSON Schema file that can be used to verify that the YAML config files syntax is correct.
+### Job Configuration YAML Schema
 
-To use, it in VSCode, install the extension `YAML` and add the following line at the top of your YAML config file (change the path if need be):
+The file `src/schemas/load_job_schema.json` is a JSON Schema file that can be used to verify that the YAML config files syntax is correct.
+
+To use it in VSCode, install the extension `YAML` and add the following line at the top of your YAML config file (change the path if need be):
+
 
 ```yaml
 # yaml-language-server: $schema=../src/schemas/load_job_schema.json
