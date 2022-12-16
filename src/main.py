@@ -12,7 +12,12 @@ from src.schemas import check_job_mapping_same
 from src.changeset.change_set import Change, ChangeSet
 from src.schemas import check_env_var_same
 from rich.console import Console
+from rich.progress import Progress, BarColumn, TaskProgressColumn, TimeRemainingColumn
 
+
+console = Console(color_system=None, stderr=None)
+logger.remove()
+logger.add(lambda m: console.print(m, end=""), colorize=True)
 
 def build_change_set(config):
     """Compares the config of YML files versus dbt Cloud.
@@ -316,12 +321,13 @@ def import_jobs(config, account_id, job_id):
     if job_id:
         cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
 
-    for cloud_job in cloud_jobs:
-        logger.info(f"Getting en vars overwrites for the job {cloud_job.id}:{cloud_job.name}")
-        env_vars = dbt_cloud.get_env_vars(project_id=cloud_job.project_id, job_id=cloud_job.id)
-        for env_var in env_vars.values():
-            if env_var.value:
-                cloud_job.custom_environment_variables.append(env_var)
+    with Progress("Looping through jobs", BarColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console) as progress:
+        for cloud_job in progress.track(cloud_jobs):
+            logger.info(f"Getting en vars overwrites for the job {cloud_job.id}:{cloud_job.name}")
+            env_vars = dbt_cloud.get_env_vars(project_id=cloud_job.project_id, job_id=cloud_job.id)
+            for env_var in env_vars.values():
+                if env_var.value:
+                    cloud_job.custom_environment_variables.append(env_var)
 
     logger.success(f"YML file for the current dbt Cloud jobs")
     export_jobs_yml(cloud_jobs)
