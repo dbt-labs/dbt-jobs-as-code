@@ -59,6 +59,13 @@ To use it in VSCode, install the extension `YAML` and add the following line at 
 ```yaml
 # yaml-language-server: $schema=../src/schemas/load_job_schema.json
 ```
+
+## Reporting bugs and contributing code
+
+- Want to report a bug or request a feature? Let us know by opening [an issue](https://github.com/dbt-labs/dbt-jobs-as-code/issues/new)
+- Want to help us build dbt? Check out the [Contributing Guide](https://github.com/dbt-labs/dbt-jobs-as-code/blob/HEAD/CONTRIBUTING.md)
+
+
 ### TODO
 
 Add info about running the code with a github action
