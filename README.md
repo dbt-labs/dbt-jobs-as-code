@@ -68,4 +68,4 @@ To use it in VSCode, install the extension `YAML` and add the following line at 
 
 ### TODO
 
-Add info about running the code with a github action
+In order to load these jobs from YAML into dbt we will leverage a GitHub action designed to call main.py from the jobs-as-code package as part of the git workflow. It is recommended to load jobs defined via YAML on pull request. This action will require a dbt Cloud API Key. It is recomended to add this API key as a GitHub secret.
