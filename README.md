@@ -6,7 +6,7 @@ A given dbt Cloud project can use both jobs-as-code and jobs-as-ui at the same t
 
 The way we differentiate jobs defined from code from the ones defined from the UI is that the code ones have a name ending with `[[<identifier>]]`.
 
-⚠️ Important: If you plan to use this tool but have existing jobs ending with `[[<identifier>]]` you should rename them before running any command.
+⚠️ Important: If you plan to use this tool but have existing jobs ending with `[[...]]` you should rename them before running any command.
 
 ## Why not Terraform
 
@@ -21,11 +21,20 @@ With this package's approach, people don't need to learn another tool and can co
 
 ## Usage
 
+### Installation
+
+This package uses `poetry` for dependency management.
+In the near future the package might be added to PyPi but for now the installation is manual, as follows:
+
+1. clone this repository
+2. run `poetry install`
+3. run `poetry run dbt-jobs-as-code` to see the different list of commands available
+
 ### Pre-requisites
 
 The following environment variables are used to run the code:
 
-- `DBT_API_KEY`: [Mandatory] The dbt Cloud API key to interact with dbt Cloud. Can be a Service Token (preferred) or the API token for a given user
+- `DBT_API_KEY`: [Mandatory] The dbt Cloud API key to interact with dbt Cloud. Can be a Service Token (preferred, would require the "job admin" scope) or the API token of a given user
 - `DBT_BASE_URL`: [Optional] By default, the tool queries `https://cloud.getdbt.com`, if your dbt Cloud instance is hosted on another domain, define it in this env variable (e.g. `https://emea.dbt.com`)
 
 ### Commands
@@ -59,11 +68,15 @@ To use it in VSCode, install the extension `YAML` and add the following line at 
 # yaml-language-server: $schema=../src/schemas/load_job_schema.json
 ```
 
+## Running the tool as part of CI/CD
+
+An example of GitHub Action is provided in the [example_cicd folder](https://github.com/dbt-labs/dbt-jobs-as-code/blob/HEAD/example_cicd). This example requires having set the GitHub secret `DBT_API_KEY`.
+
+You can copy/paste thie file in your own repo under `.github/workflows`. The current script except your jobs `yml` file to be saved under `jobs/jobs.yml`
+
+After a PR on `main` is approved, the action will run a `sync` to compare the local `yml` file with the dbt Cloud configuration and will create/update/delete dbt Cloud jobs to align the two.
+
 ## Reporting bugs and contributing code
 
 - Want to report a bug or request a feature? Let us know by opening [an issue](https://github.com/dbt-labs/dbt-jobs-as-code/issues/new)
 - Want to help us build dbt? Check out the [Contributing Guide](https://github.com/dbt-labs/dbt-jobs-as-code/blob/HEAD/CONTRIBUTING.md)
-
-### TODO
-
-Add info about running the code with a github actio
