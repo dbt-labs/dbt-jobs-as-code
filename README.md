@@ -25,7 +25,7 @@ With this package's approach, people don't need to learn another tool and can co
 
 The following environment variables are used to run the code:
 
-- `API_KEY`: [Mandatory] The dbt Cloud API key to interact with dbt Cloud. Can be a Service Token (preferred) or the API token for a given user
+- `DBT_API_KEY`: [Mandatory] The dbt Cloud API key to interact with dbt Cloud. Can be a Service Token (preferred) or the API token for a given user
 - `DBT_BASE_URL`: [Optional] By default, the tool queries `https://cloud.getdbt.com`, if your dbt Cloud instance is hosted on another domain, define it in this env variable (e.g. `https://emea.dbt.com`)
 
 ### Commands
@@ -55,10 +55,10 @@ The file `src/schemas/load_job_schema.json` is a JSON Schema file that can be us
 
 To use it in VSCode, install the extension `YAML` and add the following line at the top of your YAML config file (change the path if need be):
 
-
 ```yaml
 # yaml-language-server: $schema=../src/schemas/load_job_schema.json
 ```
+
 ### TODO
 
-Add info about running the code with a github action
+Add info about running the code with a github actio
