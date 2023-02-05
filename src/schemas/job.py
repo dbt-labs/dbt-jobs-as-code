@@ -66,20 +66,21 @@ class JobDefinition(pydantic.BaseModel):
         payload.name = f"{self.name} [[{self.identifier}]]"
         return payload.json(exclude={"identifier", "custom_environment_variables"})
 
-
     def to_load_format(self):
         """Generate a dict following our YML format to dump as YML later."""
 
-        data = self.dict(exclude={
-            "identifier" : True,
-            "schedule" : {
-                "date" : True,
-                "time" : True,
-            },
-            "custom_environment_variables" : True, 
-            "id" : True,
-            "state" : True,
-        })
+        data = self.dict(
+            exclude={
+                "identifier": True,
+                "schedule": {
+                    "date": True,
+                    "time": True,
+                },
+                "custom_environment_variables": True,
+                "id": True,
+                "state": True,
+            }
+        )
         data["custom_environment_variables"] = []
         for env_var in self.custom_environment_variables:
             data["custom_environment_variables"].append({env_var.name: env_var.value})
