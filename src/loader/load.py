@@ -1,19 +1,15 @@
 import yaml
 from loguru import logger
 
-from schemas.config import Config
+from src.schemas.config import Config
 
 
 def load_job_configuration(config_file) -> Config:
     """Load a job YAML file into a Config object"""
     config = yaml.safe_load(config_file)
 
-    date_config = [
-        job.get("schedule", {}).get("date", None) for job in config["jobs"].values()
-    ]
-    time_config = [
-        job.get("schedule", {}).get("time", None) for job in config["jobs"].values()
-    ]
+    date_config = [job.get("schedule", {}).get("date", None) for job in config["jobs"].values()]
+    time_config = [job.get("schedule", {}).get("time", None) for job in config["jobs"].values()]
 
     if any(date_config):
         logger.warning(

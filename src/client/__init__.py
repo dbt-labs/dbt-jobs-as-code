@@ -3,12 +3,12 @@ from typing import Dict, List, Optional
 import requests
 from loguru import logger
 
-from schemas.custom_environment_variable import (
+from src.schemas.custom_environment_variable import (
     CustomEnvironmentVariable,
     CustomEnvironmentVariablePayload,
 )
-from schemas.job import JobDefinition
-from schemas import check_env_var_same
+from src.schemas.job import JobDefinition
+from src.schemas import check_env_var_same
 
 
 class DBTCloud:
@@ -128,8 +128,7 @@ class DBTCloud:
             jobs.extend(job_data["data"])
 
             if (
-                job_data["extra"]["filters"]["limit"]
-                + job_data["extra"]["filters"]["offset"]
+                job_data["extra"]["filters"]["limit"] + job_data["extra"]["filters"]["offset"]
                 >= job_data["extra"]["pagination"]["total_count"]
             ):
                 break
@@ -144,9 +143,7 @@ class DBTCloud:
         self._check_for_creds()
 
         response = requests.get(
-            url=(
-                f"{self.base_url}/api/v2/accounts/" f"{self.account_id}/jobs/{job_id}"
-            ),
+            url=(f"{self.base_url}/api/v2/accounts/" f"{self.account_id}/jobs/{job_id}"),
             headers={
                 "Authorization": f"Bearer {self._api_key}",
                 "Content-Type": "application/json",
@@ -173,9 +170,9 @@ class DBTCloud:
 
         variables = {
             name: CustomEnvironmentVariablePayload(
-                id=variable_data.get("job",{}).get("id"),
+                id=variable_data.get("job", {}).get("id"),
                 name=name,
-                value=variable_data.get("job",{}).get("value"),
+                value=variable_data.get("job", {}).get("value"),
                 job_definition_id=job_id,
                 project_id=project_id,
                 account_id=self.account_id,
@@ -207,7 +204,13 @@ class DBTCloud:
         return response.json()["data"]
 
     def update_env_var(
-        self, custom_env_var: CustomEnvironmentVariable, project_id: int, job_id: int, env_var_id: int, yml_job_identifier: str = None) -> Optional[CustomEnvironmentVariablePayload]:
+        self,
+        custom_env_var: CustomEnvironmentVariable,
+        project_id: int,
+        job_id: int,
+        env_var_id: int,
+        yml_job_identifier: str = None,
+    ) -> Optional[CustomEnvironmentVariablePayload]:
         """Update env vars job overwrite in dbt Cloud."""
 
         self._check_for_creds()
@@ -266,9 +269,7 @@ class DBTCloud:
         self._check_for_creds()
 
         response = requests.get(
-            url=(
-                f"{self.base_url}/api/v3/accounts/" f"{self.account_id}/environments/"
-            ),
+            url=(f"{self.base_url}/api/v3/accounts/" f"{self.account_id}/environments/"),
             headers={
                 "Authorization": f"Bearer {self._api_key}",
                 "Content-Type": "application/json",

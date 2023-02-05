@@ -2,7 +2,7 @@ from typing import Dict, Any
 
 import pydantic
 
-from schemas import JobDefinition
+from src.schemas import JobDefinition
 
 
 class Config(pydantic.BaseModel):

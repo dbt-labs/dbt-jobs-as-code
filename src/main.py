@@ -5,12 +5,12 @@ import sys
 from loguru import logger
 import click
 
-from client import DBTCloud
-from loader.load import load_job_configuration
-from exporter.export import export_jobs_yml
-from schemas import check_job_mapping_same
-from changeset.change_set import Change, ChangeSet
-from schemas import check_env_var_same
+from src.client import DBTCloud
+from src.loader.load import load_job_configuration
+from src.exporter.export import export_jobs_yml
+from src.schemas import check_job_mapping_same
+from src.changeset.change_set import Change, ChangeSet
+from src.schemas import check_env_var_same
 from rich.console import Console
 
 
@@ -26,7 +26,7 @@ def build_change_set(config):
     # HACK for getting the account_id of one entry
     dbt_cloud = DBTCloud(
         account_id=list(defined_jobs.values())[0].account_id,
-        api_key=os.environ.get("API_KEY"),
+        api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
     )
     cloud_jobs = dbt_cloud.get_jobs()
@@ -228,7 +228,7 @@ def validate(config, online):
     # Retrieve the list of Project IDs and Environment IDs from dbt Cloud by calling the environment API endpoint
     dbt_cloud = DBTCloud(
         account_id=list(defined_jobs)[0].account_id,
-        api_key=os.environ.get("API_KEY"),
+        api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
     )
     all_environments = dbt_cloud.get_environments()
@@ -303,11 +303,11 @@ def import_jobs(config, account_id, job_id):
         defined_jobs = load_job_configuration(config).jobs.values()
         cloud_account_id = list(defined_jobs)[0].account_id
     else:
-        raise Exception("Either --config or --account-id must be provided")
+        raise click.BadParameter("Either --config or --account-id must be provided")
 
     dbt_cloud = DBTCloud(
         account_id=cloud_account_id,
-        api_key=os.environ.get("API_KEY"),
+        api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
     )
     cloud_jobs = dbt_cloud.get_jobs()
