@@ -1,0 +1,57 @@
+jobs:
+  job1:
+
+    account_id: 43791
+    dbt_version: null
+    deferring_job_definition_id: null
+    environment_id: 134459
+    execute_steps:
+    - "dbt run --select model1+"
+    - "dbt run --select model2+"
+    execution:
+      timeout_seconds: 0
+    generate_docs: false
+    name: "My Job 1"
+    project_id: 176941
+    run_generate_sources: true
+    schedule:
+      cron: "0 */2 * * *"
+    settings:
+      target_name: production
+      threads: 4
+    state: 1
+    triggers:
+      custom_branch_only: true
+      git_provider_webhook: false
+      github_webhook: false
+      schedule: true
+    custom_environment_variables: null
+
+  job2:
+    account_id: 43791
+    dbt_version: null
+    deferring_job_definition_id: 43791
+    environment_id: 134459
+    execute_steps:
+    - dbt run-operation clone_all_production_schemas
+    - dbt compile
+    execution:
+      timeout_seconds: 0
+    generate_docs: false
+    name: CI/CD run
+    project_id: 176941
+    run_generate_sources: false
+    schedule:
+      cron: "0 * * * *"
+    settings:
+      target_name: TEST
+      threads: 4
+    state: 1
+    triggers:
+      custom_branch_only: true
+      git_provider_webhook: false
+      github_webhook: true # this job runs from webhooks
+      schedule: false # this doesn't run on a schedule
+    custom_environment_variables:
+      - DBT_ENV1: My val
+      - DBT_ENV2: My val2
