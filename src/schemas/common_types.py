@@ -53,10 +53,10 @@ class Schedule(pydantic.BaseModel):
         data["time"] = Time(type="every_hour", interval=1)
         super().__init__(**data)
 
-    @pydantic.validator('cron')
+    @pydantic.validator("cron")
     def valid_cron(cls, v):
         if not croniter.is_valid(v):
-            raise ValueError('The cron expression is not valid')
+            raise ValueError("The cron expression is not valid")
         return v
 
     class Config:

@@ -45,9 +45,7 @@ class ChangeSet(BaseModel):
         table.add_column("ID", style="green")
 
         for change in self.__root__:
-            table.add_row(
-                change.action.upper(), string.capwords(change.type), change.identifier
-            )
+            table.add_row(change.action.upper(), string.capwords(change.type), change.identifier)
 
         return table
 

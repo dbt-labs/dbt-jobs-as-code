@@ -4,7 +4,10 @@ from deepdiff import DeepDiff
 from loguru import logger
 
 from src.schemas.job import JobDefinition
-from src.schemas.custom_environment_variable import CustomEnvironmentVariable, CustomEnvironmentVariablePayload
+from src.schemas.custom_environment_variable import (
+    CustomEnvironmentVariable,
+    CustomEnvironmentVariablePayload,
+)
 
 
 def _get_mismatched_dict_entries(
@@ -41,7 +44,10 @@ def check_job_mapping_same(source_job: JobDefinition, dest_job: JobDefinition) -
         return False
 
 
-def check_env_var_same(source_env_var: CustomEnvironmentVariable, dest_env_vars: dict[str, CustomEnvironmentVariablePayload]) -> Tuple[bool, int]:
+def check_env_var_same(
+    source_env_var: CustomEnvironmentVariable,
+    dest_env_vars: dict[str, CustomEnvironmentVariablePayload],
+) -> Tuple[bool, int]:
     """Checks if the source env vars is the same in the destination env vars"""
 
     if source_env_var.name not in dest_env_vars:
