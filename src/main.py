@@ -212,9 +212,6 @@ def validate(config, online):
     logger.info(f"Parsing the YML file {config.name}")
     defined_jobs = load_job_configuration(config).jobs.values()
 
-    for job in defined_jobs:
-        print(job.to_load_format())
-
     if defined_jobs:
         logger.success("✅ The config file has a valid YML format.")
 

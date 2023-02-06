@@ -29,7 +29,7 @@ jobs:
       # You can do a git clone every time or you can just download the repo in your project and commit it
       # If you saved the files in your repo, you can comment the 2 lines below
       - name: Clone the repo with dbt-jobs-as-code
-        run: git clone --depth 1 https://github.com/dbt-labs/dbt-jobs-as-code.git
+        run: git clone -b v0.1.0 --depth 1 https://github.com/dbt-labs/dbt-jobs-as-code.git
 
       - name: Install dbt-jobs-as-code package
         run: poetry install -C dbt-jobs-as-code --no-interaction -vvv
@@ -38,5 +38,5 @@ jobs:
         run: poetry run -C dbt-jobs-as-code dbt-jobs-as-code sync jobs/jobs.yml
         env: 
           DBT_API_KEY: "${{secrets.DBT_API_KEY}}"
-          # DBT_BASE_URL is oprtional
-          DBT_BASE_URL: "${{secrets.DBT_BASE_URL}}"
+          # DBT_BASE_URL is optional
+          # DBT_BASE_URL: "${{secrets.DBT_BASE_URL}}"
