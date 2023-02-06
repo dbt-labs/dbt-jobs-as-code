@@ -275,4 +275,9 @@ class DBTCloud:
                 "Content-Type": "application/json",
             },
         )
+
+        if response.status_code >= 400:
+            logger.error(response.json())
+            logger.error(f"Does the Account ID {self.account_id} exist?")
+
         return response.json()["data"]
