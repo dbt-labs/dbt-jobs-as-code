@@ -8,6 +8,8 @@ The way we differentiate jobs defined from code from the ones defined from the U
 
 ⚠️ Important: If you plan to use this tool but have existing jobs ending with `[[...]]` you should rename them before running any command.
 
+[Here is a short demonstration](https://www.loom.com/share/f134030151d649bfb5ff77dd615aab8d) on how to set CI/CD with jobs as code
+
 ## Why not Terraform
 
 Terrraform is widely used to manage infrastructure as code. And a community member has created a [Terraform provider](https://registry.terraform.io/providers/GtheSheep/dbt-cloud/latest) that can manage dbt Cloud jobs (as well as projects, environments etc...).
