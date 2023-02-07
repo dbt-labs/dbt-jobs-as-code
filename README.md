@@ -43,14 +43,14 @@ The following environment variables are used to run the code:
 
 The CLI comes with a few different commands
 
-- `python src/main.py validate <config_file.yml>`: validates that the YAML file has the correct structure
+- `poetry run python src/main.py validate <config_file.yml>`: validates that the YAML file has the correct structure
   - it is possible to run the validation offline, without doing any API call
   - or online using `--online`, in order to check that the different IDs provided are correct
-- `python src/main.py plan <config_file.yml>`: returns the list of actions create/update/delete that are required to have dbt Cloud reflecting the configuration file
+- `poetry run python src/main.py plan <config_file.yml>`: returns the list of actions create/update/delete that are required to have dbt Cloud reflecting the configuration file
   - this command doesn't modify the dbt Cloud jobs
-- `python src/main.py sync <config_file.yml>`: create/update/delete jobs and env vars overwrites in jobs to align dbt Cloud with the configuration file
+- `poetry run python src/main.py sync <config_file.yml>`: create/update/delete jobs and env vars overwrites in jobs to align dbt Cloud with the configuration file
   - ⚠️ this command will modify your dbt Cloud jobs if the current configuration is different from the YAML file
-- `python src/main.py import-jobs --config <config_file.yml>` or `python src/main.py import-jobs --account-id <account-id>`: Queries dbt Cloud and provide the YAML definition for those jobs. It includes the env var overwrite at the job level if some have been defined
+- `poetry run python src/main.py import-jobs --config <config_file.yml>` or `poetry run python src/main.py import-jobs --account-id <account-id>`: Queries dbt Cloud and provide the YAML definition for those jobs. It includes the env var overwrite at the job level if some have been defined
   - it is possible to restrict the list of dbt Cloud Job IDs by adding `... -j 101 -j 123 -j 234`
   - once the YAML has been retrieved, it is possible to copy/paste it in a local YAML file to create/update the local jobs definition.
   - to move some ui-jobs to jobs-as-code, perform the following steps:
