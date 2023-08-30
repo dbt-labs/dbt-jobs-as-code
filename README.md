@@ -12,7 +12,7 @@ The way we differentiate jobs defined from code from the ones defined from the U
 
 ## Why not Terraform
 
-Terrraform is widely used to manage infrastructure as code. And a community member has created a [Terraform provider](https://registry.terraform.io/providers/GtheSheep/dbt-cloud/latest) that can manage dbt Cloud jobs (as well as projects, environments etc...).
+Terrraform is widely used to manage infrastructure as code. And a [Terraform provider](https://registry.terraform.io/providers/dbt-labs/dbtcloud/latest) exists for dbt Cloud, able to manage dbt Cloud jobs (as well as projects, environments etc...).
 
 Using Terraform requires some knowledge about the tool and requires managing/storing/sharing a state file, containing information about the state of the application.
 
