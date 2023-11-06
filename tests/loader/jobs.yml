@@ -30,7 +30,8 @@ jobs:
   job2:
     account_id: 43791
     dbt_version: null
-    deferring_job_definition_id: 43791
+    deferring_job_definition_id: null
+    deferring_environment_id: 43791
     environment_id: 134459
     execute_steps:
     - dbt run-operation clone_all_production_schemas

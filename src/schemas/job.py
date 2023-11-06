@@ -21,6 +21,7 @@ class JobDefinition(pydantic.BaseModel):
     settings: Settings
     execution: Execution = Execution()
     deferring_job_definition_id: Optional[int]
+    deferring_environment_id: Optional[int]
     run_generate_sources: bool
     execute_steps: List[str]
     generate_docs: bool

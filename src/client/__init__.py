@@ -83,6 +83,7 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
+            return None
 
         logger.success("Job created successfully.")
 

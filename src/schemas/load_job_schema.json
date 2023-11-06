@@ -127,6 +127,10 @@
           "title": "Deferring Job Definition Id",
           "type": ["integer", "null"]
         },
+        "deferring_environment_id": {
+          "title": "Deferring Environment Id",
+          "type": ["integer", "null"]
+        },
         "run_generate_sources": {
           "title": "Run Generate Sources",
           "type": "boolean"
