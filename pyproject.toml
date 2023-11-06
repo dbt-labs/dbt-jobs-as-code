@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dbt-jobs-as-code"
-version = "0.1.0"
+version = "0.2.0"
 description = "A CLI to allow defining dbt Cloud jobs as code"
 authors = []
 license = "Apache License 2.0"
