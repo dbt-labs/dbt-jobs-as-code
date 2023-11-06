@@ -26,6 +26,7 @@ jobs:
     execution:
       timeout_seconds: 0
     deferring_job_definition_id:
+    deferring_environment_id:
     run_generate_sources: true
     execute_steps:
     - dbt source freshness
@@ -52,6 +53,7 @@ jobs:
         settings=Settings(threads=4, target_name="production"),
         execution=Execution(timeout_seconds=0),
         deferring_job_definition_id=None,
+        deferring_environment_id=None,
         run_generate_sources=True,
         execute_steps=[
             "dbt source freshness",

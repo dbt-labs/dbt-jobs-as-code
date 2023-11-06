@@ -28,6 +28,7 @@ def test_import_yml_no_anchor():
                 "settings": {"threads": 4, "target_name": "production"},
                 "execution": {"timeout_seconds": 0},
                 "deferring_job_definition_id": None,
+                "deferring_environment_id": None,
                 "run_generate_sources": True,
                 "execute_steps": [
                     "dbt run --select model1+",
@@ -58,7 +59,8 @@ def test_import_yml_no_anchor():
                 "name": "CI/CD run",
                 "settings": {"threads": 4, "target_name": "TEST"},
                 "execution": {"timeout_seconds": 0},
-                "deferring_job_definition_id": 43791,
+                "deferring_job_definition_id": None,
+                "deferring_environment_id": 43791,
                 "run_generate_sources": False,
                 "execute_steps": [
                     "dbt run-operation clone_all_production_schemas",
@@ -119,6 +121,7 @@ def test_import_yml_anchors():
                 "settings": {"threads": 4, "target_name": "production"},
                 "execution": {"timeout_seconds": 0},
                 "deferring_job_definition_id": None,
+                "deferring_environment_id": None,
                 "run_generate_sources": True,
                 "execute_steps": [
                     "dbt run --select model1+",
@@ -151,6 +154,7 @@ def test_import_yml_anchors():
                 "settings": {"threads": 4, "target_name": "TEST"},
                 "execution": {"timeout_seconds": 0},
                 "deferring_job_definition_id": None,
+                "deferring_environment_id": None,
                 "run_generate_sources": True,
                 "execute_steps": [
                     "dbt run-operation clone_all_production_schemas",

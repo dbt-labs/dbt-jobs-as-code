@@ -268,6 +268,24 @@ def validate(config, online):
             )
             online_check_issues = True
 
+    # In case deferral jobs are mentioned, check that they exist
+    deferral_envs = set(
+        [
+            job.deferring_environment_id
+            for job in defined_jobs
+            if job.deferring_environment_id
+        ]
+    )
+    if deferral_envs:
+        logger.info(f"Checking that Deferring Env IDs are valid")
+        cloud_envs = dbt_cloud.get_environments()
+        cloud_envs_ids = set([env["id"] for env in cloud_envs])
+        if deferral_envs - cloud_envs_ids:
+            logger.error(
+                f"❌ The following deferral environment IDs are not valid: {deferral_envs - cloud_envs_ids}"
+            )
+            online_check_issues = True
+
     if online_check_issues:
         # return an error to handle with bash/CI
         sys.exit(1)
