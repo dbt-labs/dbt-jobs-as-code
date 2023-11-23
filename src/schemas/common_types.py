@@ -11,7 +11,7 @@ class Execution(pydantic.BaseModel):
 class Triggers(pydantic.BaseModel):
     github_webhook: bool
     git_provider_webhook: Optional[bool]
-    custom_branch_only: bool
+    custom_branch_only: Optional[bool] = True
     schedule: Optional[bool]
 
 
