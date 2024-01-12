@@ -64,7 +64,10 @@ class JobDefinition(pydantic.BaseModel):
 
         # Rewrite the job name to embed the job ID from job.yml
         payload = self.copy()
-        payload.name = f"{self.name} [[{self.identifier}]]"
+        # if there is an identifier, add it to the name
+        # otherwise, it means that we are "unlinking" the job from the job.yml
+        if self.identifier:
+            payload.name = f"{self.name} [[{self.identifier}]]"
         return payload.json(exclude={"identifier", "custom_environment_variables"})
 
     def to_load_format(self):
