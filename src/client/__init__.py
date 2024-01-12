@@ -60,6 +60,7 @@ class DBTCloud:
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job.id}",
             headers=self._headers,
             data=job.to_payload(),
+            verify=False,
         )
 
         if response.status_code >= 400:
@@ -78,6 +79,7 @@ class DBTCloud:
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
             headers=self._headers,
             data=job.to_payload(),
+            verify=False,
         )
 
         if response.status_code >= 400:
@@ -96,6 +98,7 @@ class DBTCloud:
         response = requests.delete(
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job.id}",
             headers=self._headers,
+            verify=False,
         )
 
         if response.status_code >= 400:
@@ -118,6 +121,7 @@ class DBTCloud:
                 url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
                 params=parameters,
                 headers=self._headers,
+                verify=False
             )
 
             job_data = response.json()
@@ -148,6 +152,7 @@ class DBTCloud:
                 "Authorization": f"Bearer {self._api_key}",
                 "Content-Type": "application/json",
             },
+            verify=False,
         )
         return JobDefinition(**response.json()["data"])
 
@@ -166,6 +171,7 @@ class DBTCloud:
                 f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/job/?job_definition_id={job_id}"
             ),
             headers=self._headers,
+            verify=False
         )
 
         variables = {
@@ -192,6 +198,7 @@ class DBTCloud:
             f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{env_var.project_id}/environment-variables/",
             headers=self._headers,
             data=env_var.json(),
+            verify=False
         )
         logger.debug(response.json())
 
@@ -238,6 +245,7 @@ class DBTCloud:
             url=url,
             headers=self._headers,
             data=payload.json(),
+            verify=False
         )
 
         if response.status_code >= 400:
@@ -256,6 +264,7 @@ class DBTCloud:
         response = requests.delete(
             url=f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{env_var_id}/",
             headers=self._headers,
+            verify=False
         )
 
         if response.status_code >= 400:
@@ -274,6 +283,7 @@ class DBTCloud:
                 "Authorization": f"Bearer {self._api_key}",
                 "Content-Type": "application/json",
             },
+            verify=False,
         )
 
         if response.status_code >= 400:
