@@ -1,5 +1,4 @@
 import os
-from ruamel.yaml import YAML
 import sys
 
 from loguru import logger
@@ -87,7 +86,6 @@ def build_change_set(config):
 
     # Replicate the env vars from the YML to dbt Cloud
     for job in defined_jobs.values():
-
         if job.identifier in mapping_job_identifier_job_id:  # the job already exists
             job_id = mapping_job_identifier_job_id[job.identifier]
             all_env_vars_for_job = dbt_cloud.get_env_vars(project_id=job.project_id, job_id=job_id)
@@ -130,7 +128,6 @@ def build_change_set(config):
 
     # Delete the env vars from dbt Cloud that are not in the yml
     for job in defined_jobs.values():
-
         # we only delete env var overwrite if the job already exists
         if job.identifier in mapping_job_identifier_job_id:
             job_id = mapping_job_identifier_job_id[job.identifier]
@@ -270,11 +267,7 @@ def validate(config, online):
 
     # In case deferral jobs are mentioned, check that they exist
     deferral_envs = set(
-        [
-            job.deferring_environment_id
-            for job in defined_jobs
-            if job.deferring_environment_id
-        ]
+        [job.deferring_environment_id for job in defined_jobs if job.deferring_environment_id]
     )
     if deferral_envs:
         logger.info(f"Checking that Deferring Env IDs are valid")
@@ -340,6 +333,118 @@ def import_jobs(config, account_id, job_id):
 
     logger.success(f"YML file for the current dbt Cloud jobs")
     export_jobs_yml(cloud_jobs)
+
+
+@cli.command()
+@click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
+@click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
+@click.option("--dry-run", is_flag=True, help="In dry run mode we don't update dbt Cloud.")
+@click.option(
+    "--identifier",
+    "-i",
+    type=str,
+    multiple=True,
+    help="[Optional] The identifiers we want to unlink. If not provided, all jobs are unlinked.",
+)
+def unlink(config, account_id, dry_run, identifier):
+    """
+    Unlink the YML file to dbt Cloud.
+    All relevant jobs get the part [[...]] removed from their name
+    """
+
+    # we get the account id either from a parameter (e.g if the config file doesn't exist) or from the config file
+    if account_id:
+        cloud_account_id = account_id
+    elif config:
+        defined_jobs = load_job_configuration(config).jobs.values()
+        cloud_account_id = list(defined_jobs)[0].account_id
+    else:
+        raise click.BadParameter("Either --config or --account-id must be provided")
+
+    # we get the account id from the config file
+    defined_jobs = load_job_configuration(config).jobs.values()
+    cloud_account_id = list(defined_jobs)[0].account_id
+
+    dbt_cloud = DBTCloud(
+        account_id=cloud_account_id,
+        api_key=os.environ.get("DBT_API_KEY"),
+        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+    )
+    cloud_jobs = dbt_cloud.get_jobs()
+    selected_jobs = [job for job in cloud_jobs if job.identifier is not None]
+    logger.info(f"Getting the jobs definition from dbt Cloud")
+
+    if identifier:
+        selected_jobs = [job for job in selected_jobs if job.identifier in identifier]
+
+    for cloud_job in selected_jobs:
+        current_identifier = cloud_job.identifier
+        # by removing the identifier, we unlink the job from the YML file
+        cloud_job.identifier = None
+        if dry_run:
+            logger.info(
+                f"Would unlink/rename the job {cloud_job.id}:{cloud_job.name} [[{current_identifier}]]"
+            )
+        else:
+            logger.info(
+                f"Unlinking/Renaming the job {cloud_job.id}:{cloud_job.name} [[{current_identifier}]]"
+            )
+            dbt_cloud.update_job(job=cloud_job)
+
+    if len(selected_jobs) == 0:
+        logger.info(f"No jobs to unlink")
+    elif not dry_run:
+        logger.success(f"Updated all jobs!")
+
+
+@cli.command()
+@click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
+@click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
+@click.option(
+    "--job-id",
+    "-j",
+    type=int,
+    multiple=True,
+    help="[Optional] The ID of the job to deactivate.",
+)
+def deactivate_jobs(config, account_id, job_id):
+    """
+    Deactivate jobs triggers in dbt Cloud (schedule and CI/CI triggers)
+    """
+
+    # we get the account id either from a parameter (e.g if the config file doesn't exist) or from the config file
+    if account_id:
+        cloud_account_id = account_id
+    elif config:
+        defined_jobs = load_job_configuration(config).jobs.values()
+        cloud_account_id = list(defined_jobs)[0].account_id
+    else:
+        raise click.BadParameter("Either --config or --account-id must be provided")
+
+    dbt_cloud = DBTCloud(
+        account_id=cloud_account_id,
+        api_key=os.environ.get("DBT_API_KEY"),
+        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+    )
+    cloud_jobs = dbt_cloud.get_jobs()
+
+    selected_cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
+
+    for cloud_job in selected_cloud_jobs:
+        if (
+            cloud_job.triggers.git_provider_webhook
+            or cloud_job.triggers.github_webhook
+            or cloud_job.triggers.schedule
+        ):
+            logger.info(f"Deactivating the job {cloud_job.id}:{cloud_job.name}")
+            cloud_job.triggers.github_webhook = False
+            cloud_job.triggers.git_provider_webhook = False
+            cloud_job.triggers.schedule = False
+            dbt_cloud.update_job(job=cloud_job)
+        else:
+            logger.info(f"The job {cloud_job.id}:{cloud_job.name} is already deactivated")
+
+    logger.success(f"Deactivated all jobs!")
 
 
 if __name__ == "__main__":

@@ -25,12 +25,10 @@ With this package's approach, people don't need to learn another tool and can co
 
 ### Installation
 
-This package uses `poetry` for dependency management.
-In the near future the package might be added to PyPi but for now the installation is manual, as follows:
+- Create a Python virtual environment and activate it
+- Run `pip install git+https://github.com/dbt-labs/dbt-jobs-as-code.git`
 
-1. clone this repository
-2. run `poetry install`
-3. run `poetry run dbt-jobs-as-code` to see the different list of commands available
+The CLI is now available as `dbt-jobs-as-code`
 
 ### Pre-requisites
 
@@ -43,31 +41,72 @@ The following environment variables are used to run the code:
 
 The CLI comes with a few different commands
 
-- `poetry run python src/main.py validate <config_file.yml>`: validates that the YAML file has the correct structure
-  - it is possible to run the validation offline, without doing any API call
-  - or online using `--online`, in order to check that the different IDs provided are correct
-- `poetry run python src/main.py plan <config_file.yml>`: returns the list of actions create/update/delete that are required to have dbt Cloud reflecting the configuration file
-  - this command doesn't modify the dbt Cloud jobs
-- `poetry run python src/main.py sync <config_file.yml>`: create/update/delete jobs and env vars overwrites in jobs to align dbt Cloud with the configuration file
-  - ⚠️ this command will modify your dbt Cloud jobs if the current configuration is different from the YAML file
-- `poetry run python src/main.py import-jobs --config <config_file.yml>` or `poetry run python src/main.py import-jobs --account-id <account-id>`: Queries dbt Cloud and provide the YAML definition for those jobs. It includes the env var overwrite at the job level if some have been defined
-  - it is possible to restrict the list of dbt Cloud Job IDs by adding `... -j 101 -j 123 -j 234`
-  - once the YAML has been retrieved, it is possible to copy/paste it in a local YAML file to create/update the local jobs definition.
-  - to move some ui-jobs to jobs-as-code, perform the following steps:
-    - run the command to import the jobs
-    - copy paste the job/jobs into a YAML file
-    - change the `import_` id of the job in the YML file to another unique identifier
-    - rename the job in the UI to end with `[[new_job_identifier]]`
-    - run a `plan` command to verify that no changes are required for the given job
+#### `validate`
+
+Command: `dbt-jobs-as-code validate <config_file.yml>`
+
+Validates that the YAML file has the correct structure
+
+- it is possible to run the validation offline, without doing any API call
+- or online using `--online`, in order to check that the different IDs provided are correct
+
+#### `plan`
+
+Command: `dbt-jobs-as-code plan <config_file.yml>`
+
+Returns the list of actions create/update/delete that are required to have dbt Cloud reflecting the configuration file
+
+- this command doesn't modify the dbt Cloud jobs
+
+#### `sync`
+
+Command: `dbt-jobs-as-code sync <config_file.yml>`
+
+Create/update/delete jobs and env vars overwrites in jobs to align dbt Cloud with the configuration file
+
+- ⚠️ this command will modify your dbt Cloud jobs if the current configuration is different from the YAML file
+
+#### `import-jobs`
+
+Command: `dbt-jobs-as-code import-jobs --config <config_file.yml>` or `dbt-jobs-as-code import-jobs --account-id <account-id>`
+
+Queries dbt Cloud and provide the YAML definition for those jobs. It includes the env var overwrite at the job level if some have been defined
+
+- it is possible to restrict the list of dbt Cloud Job IDs by adding `... -j 101 -j 123 -j 234`
+- once the YAML has been retrieved, it is possible to copy/paste it in a local YAML file to create/update the local jobs definition.
+
+To move some ui-jobs to jobs-as-code, perform the following steps:
+
+- run the command to import the jobs
+- copy paste the job/jobs into a YAML file
+- change the `import_` id of the job in the YML file to another unique identifier
+- rename the job in the UI to end with `[[new_job_identifier]]`
+- run a `plan` command to verify that no changes are required for the given job
+
+#### `unlink`
+
+Command: `dbt-jobs-as-code unlink --config <config_file.yml>` or `dbt-jobs-as-code unlink --account-id <account-id>`
+
+Unlinking jobs removes the `[[ ... ]]` part of the job name in dbt Cloud.
+
+⚠️ This can't be rolled back by the tool. Doing a `unlink` followed by a `sync` will create new instances of the jobs, with the `[[<identifier>]]` part
+
+- it is possible to restrict the list of jobs to unlink by adding the job identifiers to unlink `... -i import_1 -i my_job_2`
+
+#### `deactivate-jobs`
+
+Command: `dbt-jobs-as-code deactivate-jobs --account-id 1234 --job-id 12 --job-id 34 --job-id 56`
+
+This command can be used to deactivate both the schedule and the CI triggers for dbt Cloud jobs. This can be useful when moving jobs from one project to another. When the new jobs have been created, this command can be used to deactivate the jobs from the old project.
 
 ### Job Configuration YAML Schema
 
 The file `src/schemas/load_job_schema.json` is a JSON Schema file that can be used to verify that the YAML config files syntax is correct.
 
-To use it in VSCode, install the extension `YAML` and add the following line at the top of your YAML config file (change the path if need be):
+To use it in VSCode, install [the extension `YAML`](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) and add the following line at the top of your YAML config file (change the path if need be):
 
 ```yaml
-# yaml-language-server: $schema=../src/schemas/load_job_schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/schemas/load_job_schema.json
 ```
 
 ## Running the tool as part of CI/CD

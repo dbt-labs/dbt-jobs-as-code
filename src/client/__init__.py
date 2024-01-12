@@ -8,7 +8,6 @@ from src.schemas.custom_environment_variable import (
     CustomEnvironmentVariablePayload,
 )
 from src.schemas.job import JobDefinition
-from src.schemas import check_env_var_same
 
 
 class DBTCloud:
@@ -138,7 +137,7 @@ class DBTCloud:
 
         return [JobDefinition(**job) for job in jobs]
 
-    def get_job(self, job_id: int) -> Dict:
+    def get_job(self, job_id: int) -> JobDefinition:
         """Generate a Job based on a dbt Cloud job."""
 
         self._check_for_creds()
@@ -150,7 +149,7 @@ class DBTCloud:
                 "Content-Type": "application/json",
             },
         )
-        return response.json()["data"]
+        return JobDefinition(**response.json()["data"])
 
     def get_env_vars(
         self, project_id: int, job_id: int
