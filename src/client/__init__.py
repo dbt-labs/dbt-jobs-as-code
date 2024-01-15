@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional
+from urllib3.exceptions import InsecureRequestWarning
 
 import requests
 from loguru import logger
@@ -14,7 +15,11 @@ class DBTCloud:
     """A minimalistic API client for fetching dbt Cloud data."""
 
     def __init__(
-        self, account_id: int, api_key: str, base_url: str = "https://cloud.getdbt.com"
+        self,
+        account_id: int,
+        api_key: str,
+        base_url: str = "https://cloud.getdbt.com",
+        disable_ssl_verification: bool = False,
     ) -> None:
         self.account_id = account_id
         self._api_key = api_key
@@ -27,6 +32,12 @@ class DBTCloud:
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
         }
+        self._verify = not disable_ssl_verification
+        if not self._verify:
+            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+            logger.warning(
+                "SSL verification is disabled. This is not recommended unless you absolutely need this config."
+            )
 
     def _clear_env_var_cache(self, job_definition_id: int) -> None:
         """Clear out any cached environment variables for a given job."""
@@ -57,9 +68,10 @@ class DBTCloud:
         logger.debug("Updating {job_name}. {job}", job_name=job.name, job=job)
 
         response = requests.post(  # Yes, it's actually a POST. Ew.
-            url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job.id}",
+            url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job.id}/",
             headers=self._headers,
             data=job.to_payload(),
+            verify=self._verify,
         )
 
         if response.status_code >= 400:
@@ -78,6 +90,7 @@ class DBTCloud:
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
             headers=self._headers,
             data=job.to_payload(),
+            verify=self._verify,
         )
 
         if response.status_code >= 400:
@@ -94,8 +107,9 @@ class DBTCloud:
         logger.debug("Deleting {job_name}. {job}", job_name=job.name, job=job)
 
         response = requests.delete(
-            url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job.id}",
+            url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job.id}/",
             headers=self._headers,
+            verify=self._verify,
         )
 
         if response.status_code >= 400:
@@ -118,6 +132,7 @@ class DBTCloud:
                 url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
                 params=parameters,
                 headers=self._headers,
+                verify=self._verify,
             )
 
             job_data = response.json()
@@ -148,6 +163,7 @@ class DBTCloud:
                 "Authorization": f"Bearer {self._api_key}",
                 "Content-Type": "application/json",
             },
+            verify=self._verify,
         )
         return JobDefinition(**response.json()["data"])
 
@@ -166,6 +182,7 @@ class DBTCloud:
                 f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/job/?job_definition_id={job_id}"
             ),
             headers=self._headers,
+            verify=self._verify,
         )
 
         variables = {
@@ -192,6 +209,7 @@ class DBTCloud:
             f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{env_var.project_id}/environment-variables/",
             headers=self._headers,
             data=env_var.json(),
+            verify=self._verify,
         )
         logger.debug(response.json())
 
@@ -235,9 +253,7 @@ class DBTCloud:
         )
 
         response = requests.post(
-            url=url,
-            headers=self._headers,
-            data=payload.json(),
+            url=url, headers=self._headers, data=payload.json(), verify=self._verify
         )
 
         if response.status_code >= 400:
@@ -256,6 +272,7 @@ class DBTCloud:
         response = requests.delete(
             url=f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{env_var_id}/",
             headers=self._headers,
+            verify=self._verify,
         )
 
         if response.status_code >= 400:
@@ -274,6 +291,7 @@ class DBTCloud:
                 "Authorization": f"Bearer {self._api_key}",
                 "Content-Type": "application/json",
             },
+            verify=self._verify,
         )
 
         if response.status_code >= 400:

@@ -12,8 +12,17 @@ from src.changeset.change_set import Change, ChangeSet
 from src.schemas import check_env_var_same
 from rich.console import Console
 
+# adding the ability to disable ssl verification, useful for self-signed certificates and local testing
+option_disable_ssl_verification = click.option(
+    "--disable-ssl-verification",
+    is_flag=True,
+    envvar="DBT_JOBS_AS_CODE_DISABLE_SSL_VERIFICATION",
+    show_envvar=True,
+    default=False,
+)
 
-def build_change_set(config):
+
+def build_change_set(config, disable_ssl_verification):
     """Compares the config of YML files versus dbt Cloud.
     Depending on the value of no_update, it will either update the dbt Cloud config or not.
 
@@ -27,6 +36,7 @@ def build_change_set(config):
         account_id=list(defined_jobs.values())[0].account_id,
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+        disable_ssl_verification=disable_ssl_verification,
     )
     cloud_jobs = dbt_cloud.get_jobs()
     tracked_jobs = {job.identifier: job for job in cloud_jobs if job.identifier is not None}
@@ -163,13 +173,14 @@ def cli():
 
 
 @cli.command()
+@option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
-def sync(config):
+def sync(config, disable_ssl_verification):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
     """
-    change_set = build_change_set(config)
+    change_set = build_change_set(config, disable_ssl_verification)
     if len(change_set) == 0:
         logger.success("-- PLAN -- No changes detected.")
     else:
@@ -181,13 +192,14 @@ def sync(config):
 
 
 @cli.command()
+@option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
-def plan(config):
+def plan(config, disable_ssl_verification):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
     """
-    change_set = build_change_set(config)
+    change_set = build_change_set(config, disable_ssl_verification)
     if len(change_set) == 0:
         logger.success("-- PLAN -- No changes detected.")
     else:
@@ -197,9 +209,10 @@ def plan(config):
 
 
 @cli.command()
+@option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
 @click.option("--online", is_flag=True, help="Connect to dbt Cloud to check that IDs are correct.")
-def validate(config, online):
+def validate(config, online, disable_ssl_verification):
     """Check that the config file is valid
 
     CONFIG is the path to your jobs.yml config file.
@@ -224,6 +237,7 @@ def validate(config, online):
         account_id=list(defined_jobs)[0].account_id,
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+        disable_ssl_verification=disable_ssl_verification,
     )
     all_environments = dbt_cloud.get_environments()
     cloud_project_ids = set([env["project_id"] for env in all_environments])
@@ -287,6 +301,7 @@ def validate(config, online):
 
 
 @cli.command()
+@option_disable_ssl_verification
 @click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
 @click.option(
@@ -296,7 +311,7 @@ def validate(config, online):
     multiple=True,
     help="[Optional] The ID of the job to import.",
 )
-def import_jobs(config, account_id, job_id):
+def import_jobs(config, account_id, job_id, disable_ssl_verification):
     """
     Generate YML file for import.
     Either --config or --account-id must be provided.
@@ -317,6 +332,7 @@ def import_jobs(config, account_id, job_id):
         account_id=cloud_account_id,
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+        disable_ssl_verification=disable_ssl_verification,
     )
     cloud_jobs = dbt_cloud.get_jobs()
     logger.info(f"Getting the jobs definition from dbt Cloud")
@@ -336,6 +352,7 @@ def import_jobs(config, account_id, job_id):
 
 
 @cli.command()
+@option_disable_ssl_verification
 @click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
 @click.option("--dry-run", is_flag=True, help="In dry run mode we don't update dbt Cloud.")
@@ -346,7 +363,7 @@ def import_jobs(config, account_id, job_id):
     multiple=True,
     help="[Optional] The identifiers we want to unlink. If not provided, all jobs are unlinked.",
 )
-def unlink(config, account_id, dry_run, identifier):
+def unlink(config, account_id, dry_run, identifier, disable_ssl_verification):
     """
     Unlink the YML file to dbt Cloud.
     All relevant jobs get the part [[...]] removed from their name
@@ -369,6 +386,7 @@ def unlink(config, account_id, dry_run, identifier):
         account_id=cloud_account_id,
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+        disable_ssl_verification=disable_ssl_verification,
     )
     cloud_jobs = dbt_cloud.get_jobs()
     selected_jobs = [job for job in cloud_jobs if job.identifier is not None]
@@ -398,6 +416,7 @@ def unlink(config, account_id, dry_run, identifier):
 
 
 @cli.command()
+@option_disable_ssl_verification
 @click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
 @click.option(
@@ -407,7 +426,7 @@ def unlink(config, account_id, dry_run, identifier):
     multiple=True,
     help="[Optional] The ID of the job to deactivate.",
 )
-def deactivate_jobs(config, account_id, job_id):
+def deactivate_jobs(config, account_id, job_id, disable_ssl_verification):
     """
     Deactivate jobs triggers in dbt Cloud (schedule and CI/CI triggers)
     """
@@ -425,6 +444,7 @@ def deactivate_jobs(config, account_id, job_id):
         account_id=cloud_account_id,
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+        disable_ssl_verification=disable_ssl_verification,
     )
     cloud_jobs = dbt_cloud.get_jobs()
 
