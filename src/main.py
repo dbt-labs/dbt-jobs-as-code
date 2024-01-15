@@ -13,7 +13,14 @@ from src.schemas import check_env_var_same
 from rich.console import Console
 
 # adding the ability to disable ssl verification, useful for self-signed certificates and local testing
-option_disable_ssl_verification = click.option('--disable-ssl-verification', is_flag=True, envvar='DBT_JOBS_AS_CODE_DISABLE_SSL_VERIFICATION', show_envvar=True, default=False)
+option_disable_ssl_verification = click.option(
+    "--disable-ssl-verification",
+    is_flag=True,
+    envvar="DBT_JOBS_AS_CODE_DISABLE_SSL_VERIFICATION",
+    show_envvar=True,
+    default=False,
+)
+
 
 def build_change_set(config, disable_ssl_verification):
     """Compares the config of YML files versus dbt Cloud.
@@ -164,6 +171,7 @@ def build_change_set(config, disable_ssl_verification):
 def cli():
     pass
 
+
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
@@ -186,7 +194,7 @@ def sync(config, disable_ssl_verification):
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
-def plan(config,  disable_ssl_verification):
+def plan(config, disable_ssl_verification):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.

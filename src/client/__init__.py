@@ -15,7 +15,11 @@ class DBTCloud:
     """A minimalistic API client for fetching dbt Cloud data."""
 
     def __init__(
-        self, account_id: int, api_key: str, base_url: str = "https://cloud.getdbt.com", disable_ssl_verification: bool = False
+        self,
+        account_id: int,
+        api_key: str,
+        base_url: str = "https://cloud.getdbt.com",
+        disable_ssl_verification: bool = False,
     ) -> None:
         self.account_id = account_id
         self._api_key = api_key
@@ -128,7 +132,7 @@ class DBTCloud:
                 url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
                 params=parameters,
                 headers=self._headers,
-                verify=self._verify
+                verify=self._verify,
             )
 
             job_data = response.json()
@@ -178,7 +182,7 @@ class DBTCloud:
                 f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/job/?job_definition_id={job_id}"
             ),
             headers=self._headers,
-            verify=self._verify
+            verify=self._verify,
         )
 
         variables = {
@@ -205,7 +209,7 @@ class DBTCloud:
             f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{env_var.project_id}/environment-variables/",
             headers=self._headers,
             data=env_var.json(),
-            verify=self._verify
+            verify=self._verify,
         )
         logger.debug(response.json())
 
@@ -249,10 +253,7 @@ class DBTCloud:
         )
 
         response = requests.post(
-            url=url,
-            headers=self._headers,
-            data=payload.json(),
-            verify=self._verify
+            url=url, headers=self._headers, data=payload.json(), verify=self._verify
         )
 
         if response.status_code >= 400:
@@ -271,7 +272,7 @@ class DBTCloud:
         response = requests.delete(
             url=f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{env_var_id}/",
             headers=self._headers,
-            verify=self._verify
+            verify=self._verify,
         )
 
         if response.status_code >= 400:
