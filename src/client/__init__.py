@@ -10,7 +10,7 @@ from src.schemas.custom_environment_variable import (
 )
 from src.schemas.job import JobDefinition
 
-
+VERSION = "0.3.2"
 class DBTCloud:
     """A minimalistic API client for fetching dbt Cloud data."""
 
@@ -31,6 +31,7 @@ class DBTCloud:
         self._headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
+            "User-Agent": f"dbt-jobs-as-code/v{VERSION}",
         }
         self._verify = not disable_ssl_verification
         if not self._verify:
@@ -159,10 +160,7 @@ class DBTCloud:
 
         response = requests.get(
             url=(f"{self.base_url}/api/v2/accounts/" f"{self.account_id}/jobs/{job_id}"),
-            headers={
-                "Authorization": f"Bearer {self._api_key}",
-                "Content-Type": "application/json",
-            },
+            headers=self._headers,
             verify=self._verify,
         )
         return JobDefinition(**response.json()["data"])
@@ -287,10 +285,7 @@ class DBTCloud:
 
         response = requests.get(
             url=(f"{self.base_url}/api/v3/accounts/" f"{self.account_id}/environments/"),
-            headers={
-                "Authorization": f"Bearer {self._api_key}",
-                "Content-Type": "application/json",
-            },
+            headers=self._headers,
             verify=self._verify,
         )
 
