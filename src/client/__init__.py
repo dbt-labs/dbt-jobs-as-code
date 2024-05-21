@@ -11,6 +11,8 @@ from src.schemas.custom_environment_variable import (
 from src.schemas.job import JobDefinition
 
 VERSION = "0.3.2"
+
+
 class DBTCloud:
     """A minimalistic API client for fetching dbt Cloud data."""
 
