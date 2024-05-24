@@ -22,7 +22,7 @@ option_disable_ssl_verification = click.option(
 )
 
 
-def build_change_set(config, disable_ssl_verification):
+def build_change_set(config, disable_ssl_verification, project_id=0, environment_id=0):
     """Compares the config of YML files versus dbt Cloud.
     Depending on the value of no_update, it will either update the dbt Cloud config or not.
 
@@ -38,7 +38,19 @@ def build_change_set(config, disable_ssl_verification):
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
     )
-    cloud_jobs = dbt_cloud.get_jobs()
+
+    # If a project_id or environment_id is passed in as a parameter, check if it is the same in Jobs YAML file, otherwise raise an error
+    if (project_id != 0 or environment_id != 0):
+        for job in defined_jobs.values():
+            if project_id == job.project_id and environment_id == job.environment_id:
+                continue
+            else:
+                logger.error(
+                    f"❌ project_id, environment_id provided as arguments does not match the ID's in Jobs YAML file"
+                )
+                return None
+
+    cloud_jobs = dbt_cloud.get_jobs(project_id=project_id, environment_id=environment_id)
     tracked_jobs = {job.identifier: job for job in cloud_jobs if job.identifier is not None}
 
     dbt_cloud_change_set = ChangeSet()
@@ -175,12 +187,32 @@ def cli():
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
-def sync(config, disable_ssl_verification):
+@click.option("--project-id", type=int, help="The ID of your dbt Cloud project.")
+@click.option("--environment-id", type=int, help="The ID of your dbt Cloud environment.")
+def sync(config, project_id, environment_id, disable_ssl_verification):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
     """
-    change_set = build_change_set(config, disable_ssl_verification)
+    cloud_project_id = 0
+    cloud_environment_id = 0
+
+    # If project-id is provided, environment_id should also be provided as an argument, and vice versa
+    if project_id and environment_id is None:
+        raise click.BadParameter("Both --project-id and --environment-id must be provided")
+    if project_id is None and environment_id:
+        raise click.BadParameter("Both --project-id and --environment-id must be provided")
+
+    if project_id:
+        cloud_project_id = project_id
+
+    if environment_id:
+        cloud_environment_id = environment_id
+
+    change_set = build_change_set(config, disable_ssl_verification, cloud_project_id, cloud_environment_id )
+    if change_set is None:
+        logger.error("-- PLAN -- Please fix the error and re-execute")
+        return
     if len(change_set) == 0:
         logger.success("-- PLAN -- No changes detected.")
     else:
@@ -194,12 +226,32 @@ def sync(config, disable_ssl_verification):
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
-def plan(config, disable_ssl_verification):
+@click.option("--project-id", type=int, help="The ID of your dbt Cloud project.")
+@click.option("--environment-id", type=int, help="The ID of your dbt Cloud environment.")
+def plan(config, project_id, environment_id, disable_ssl_verification):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
     """
-    change_set = build_change_set(config, disable_ssl_verification)
+    cloud_project_id = 0
+    cloud_environment_id = 0
+
+    # If project-id is provided, environment_id should also be provided as an argument, and vice versa
+    if project_id and environment_id is None:
+        raise click.BadParameter("Both --project-id and --environment-id must be provided")
+    if project_id is None and environment_id:
+        raise click.BadParameter("Both --project-id and --environment-id must be provided")
+
+    if project_id:
+        cloud_project_id = project_id
+
+    if environment_id:
+        cloud_environment_id = environment_id
+
+    change_set = build_change_set(config, disable_ssl_verification, cloud_project_id, cloud_environment_id )
+    if change_set is None:
+        logger.error("-- PLAN -- Please fix the error and re-execute")
+        return
     if len(change_set) == 0:
         logger.success("-- PLAN -- No changes detected.")
     else:
@@ -304,6 +356,8 @@ def validate(config, online, disable_ssl_verification):
 @option_disable_ssl_verification
 @click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
+@click.option("--project-id", type=int, help="The ID of your dbt Cloud project.")
+@click.option("--environment-id", type=int, help="The ID of your dbt Cloud environment.")
 @click.option(
     "--job-id",
     "-j",
@@ -311,11 +365,11 @@ def validate(config, online, disable_ssl_verification):
     multiple=True,
     help="[Optional] The ID of the job to import.",
 )
-def import_jobs(config, account_id, job_id, disable_ssl_verification):
+def import_jobs(config, account_id, project_id, environment_id, job_id, disable_ssl_verification):
     """
     Generate YML file for import.
     Either --config or --account-id must be provided.
-
+    Optional parameters: --project-id,  --environment-id, --job-id
     It is possible to repeat the optional --job-id option to import specific jobs.
     """
 
@@ -328,13 +382,28 @@ def import_jobs(config, account_id, job_id, disable_ssl_verification):
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
 
+    # If project-id is provided, environment_id should also be provided as an argument, and vice versa
+    if project_id and environment_id is None:
+        raise click.BadParameter("Both --project-id and --environment-id must be provided")
+    if project_id is None and environment_id:
+        raise click.BadParameter("Both --project-id and --environment-id must be provided")
+
+    cloud_project_id = 0
+    cloud_environment_id = 0
+    
+    if project_id:
+        cloud_project_id = project_id
+
+    if environment_id:
+        cloud_environment_id = environment_id
+
     dbt_cloud = DBTCloud(
         account_id=cloud_account_id,
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
     )
-    cloud_jobs = dbt_cloud.get_jobs()
+    cloud_jobs = dbt_cloud.get_jobs(project_id=cloud_project_id, environment_id=cloud_environment_id)
     logger.info(f"Getting the jobs definition from dbt Cloud")
 
     if job_id:

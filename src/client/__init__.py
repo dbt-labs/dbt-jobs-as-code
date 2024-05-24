@@ -120,7 +120,7 @@ class DBTCloud:
 
         logger.success("Job deleted successfully.")
 
-    def get_jobs(self) -> List[JobDefinition]:
+    def get_jobs(self, project_id: int = 0, environment_id: int = 0) -> List[JobDefinition]:
         """Return a list of Jobs for all the dbt Cloud jobs in an environment."""
 
         self._check_for_creds()
@@ -130,6 +130,11 @@ class DBTCloud:
 
         while True:
             parameters = {"offset": offset}
+
+            if project_id != 0:
+                parameters["project_id"]=project_id
+            if environment_id != 0:
+                parameters["environment_id"]=environment_id
 
             response = requests.get(
                 url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
