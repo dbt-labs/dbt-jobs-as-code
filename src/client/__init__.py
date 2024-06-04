@@ -55,8 +55,14 @@ class DBTCloud:
         if not self.account_id:
             raise Exception("An account_id is required to get dbt Cloud jobs.")
 
-    def build_mapping_job_identifier_job_id(self):
-        cloud_jobs = self.get_jobs()
+    def build_mapping_job_identifier_job_id(self, project_id=None, environment_id=None):
+
+        if project_id is None:
+            project_id = []
+        if environment_id is None:
+            environment_id = []
+
+        cloud_jobs = self.get_jobs(project_id, environment_id)
 
         mapping_job_identifier_job_id = {}
         for job in cloud_jobs:
@@ -120,43 +126,97 @@ class DBTCloud:
 
         logger.success("Job deleted successfully.")
 
-    def get_jobs(self, project_id: int = 0, environment_id: int = 0) -> List[JobDefinition]:
+    def get_jobs(self, project_id=None , environment_id=None) -> List[JobDefinition]:
         """Return a list of Jobs for all the dbt Cloud jobs in an environment."""
 
         self._check_for_creds()
 
         offset = 0
+        list_env_ids = []
+        multiple_envs_passed = False
         jobs = []
 
-        while True:
-            parameters = {"offset": offset}
+        if project_id is None:
+            project_id = []
+        if environment_id is None:
+            environment_id = []
 
-            if project_id != 0:
-                parameters["project_id"]=project_id
-            if environment_id != 0:
-                parameters["environment_id"]=environment_id
+        if len(environment_id) > 1:
+            multiple_envs_passed = True
+            list_env_ids = environment_id
 
-            response = requests.get(
-                url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
-                params=parameters,
-                headers=self._headers,
-                verify=self._verify,
-            )
+        # Handle the scenario, where multiple environment ID's are passed through CLI. Invoke the API once for each environment and append the jobs together
+        if multiple_envs_passed:
 
-            job_data = response.json()
+            for env_id in list_env_ids:
 
-            if response.status_code >= 400:
-                logger.error(job_data)
+                while True:
+                    parameters = {"offset": offset}
+                    parameters["environment_id"]=env_id
 
-            jobs.extend(job_data["data"])
+#        ?? Passing the project_id__in along with API might improve the performance.. Commenting as the API is giving an error
+                    if len(project_id) == 1:
+                        parameters["project_id"]=project_id[0]
+#                    elif len(project_id) > 1:
+#                        parameters["project_id__in"]=list(project_id)
 
-            if (
-                job_data["extra"]["filters"]["limit"] + job_data["extra"]["filters"]["offset"]
-                >= job_data["extra"]["pagination"]["total_count"]
-            ):
-                break
+                    response = requests.get(
+                        url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
+                        params=parameters,
+                        headers=self._headers,
+                        verify=self._verify,
+                    )
 
-            offset += job_data["extra"]["filters"]["limit"]
+                    job_data = response.json()
+
+                    if response.status_code >= 400:
+                        logger.error(job_data)
+
+                    jobs.extend(job_data["data"])
+
+                    if (
+                        job_data["extra"]["filters"]["limit"] + job_data["extra"]["filters"]["offset"]
+                        >= job_data["extra"]["pagination"]["total_count"]
+                    ):
+                        break
+
+                    offset += job_data["extra"]["filters"]["limit"]
+
+        else: 
+            # In this case, there are no multiple environments ID's.. Invoke the API once
+            while True:
+                parameters = {"offset": offset}
+
+#        ?? Passing the project_id__in along with API might improve the performance.. Commenting elif condition as the API is giving an error
+                if len(project_id) == 1:
+                    parameters["project_id"]=project_id[0]
+#                elif len(project_id) > 1:
+#                    parameters["project_id__in"]=list(project_id)
+
+                if len(environment_id) == 1:
+                    parameters["environment_id"]=environment_id[0]
+
+                logger.debug(f"Request parameters {parameters}")
+                response = requests.get(
+                    url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
+                    params=parameters,
+                    headers=self._headers,
+                    verify=self._verify,
+                )
+
+                job_data = response.json()
+                if response.status_code >= 400:
+                    logger.error(job_data)
+
+                jobs.extend(job_data["data"])
+
+                if (
+                    job_data["extra"]["filters"]["limit"] + job_data["extra"]["filters"]["offset"]
+                    >= job_data["extra"]["pagination"]["total_count"]
+                ):
+                    break
+
+                offset += job_data["extra"]["filters"]["limit"]
 
         return [JobDefinition(**job) for job in jobs]
 

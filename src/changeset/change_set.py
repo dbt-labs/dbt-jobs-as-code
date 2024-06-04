@@ -5,11 +5,13 @@ from rich.table import Table
 
 
 class Change(BaseModel):
-    """Describes what a given change is and hot to apply it."""
+    """Describes what a given change is and how to apply it."""
 
     identifier: str
     type: str
     action: str
+    proj_id: int
+    env_id: int
     sync_function: object
     parameters: dict
 
@@ -43,9 +45,11 @@ class ChangeSet(BaseModel):
         table.add_column("Action", style="cyan", no_wrap=True)
         table.add_column("Type", style="magenta")
         table.add_column("ID", style="green")
+        table.add_column("Proj ID", style="yellow")
+        table.add_column("Env ID", style="magenta")
 
         for change in self.__root__:
-            table.add_row(change.action.upper(), string.capwords(change.type), change.identifier)
+            table.add_row(change.action.upper(), string.capwords(change.type), change.identifier, str(change.proj_id), str(change.env_id))
 
         return table
 
