@@ -10,7 +10,7 @@ from src.schemas.custom_environment_variable import (
 )
 from src.schemas.job import JobDefinition
 
-VERSION = "0.3.2"
+VERSION = "0.4.0"
 
 
 class DBTCloud:
