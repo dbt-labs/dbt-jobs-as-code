@@ -57,7 +57,6 @@ class DBTCloud:
 
     def build_mapping_job_identifier_job_id(self, cloud_jobs: List[JobDefinition] = None):
 
-
         if cloud_jobs is None:
             # TODO, we should filter things here at least if we call it often
             cloud_jobs = self.get_jobs()
@@ -124,7 +123,7 @@ class DBTCloud:
 
         logger.success("Job deleted successfully.")
 
-    def get_jobs(self, project_id=None , environment_id=None) -> List[JobDefinition]:
+    def get_jobs(self, project_id=None, environment_id=None) -> List[JobDefinition]:
         """Return a list of Jobs for all the dbt Cloud jobs in an environment."""
 
         self._check_for_creds()
@@ -150,13 +149,13 @@ class DBTCloud:
 
                 while True:
                     parameters = {"offset": offset}
-                    parameters["environment_id"]=env_id
+                    parameters["environment_id"] = env_id
 
                     if len(project_id) == 1:
-                        parameters["project_id"]=project_id[0]
+                        parameters["project_id"] = project_id[0]
                     elif len(project_id) > 1:
                         project_id_str = [str(i) for i in project_id]
-                        parameters["project_id__in"]=f"[{','.join(project_id_str)}]"
+                        parameters["project_id__in"] = f"[{','.join(project_id_str)}]"
 
                     response = requests.get(
                         url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
@@ -173,25 +172,26 @@ class DBTCloud:
                     jobs.extend(job_data["data"])
 
                     if (
-                        job_data["extra"]["filters"]["limit"] + job_data["extra"]["filters"]["offset"]
+                        job_data["extra"]["filters"]["limit"]
+                        + job_data["extra"]["filters"]["offset"]
                         >= job_data["extra"]["pagination"]["total_count"]
                     ):
                         break
 
                     offset += job_data["extra"]["filters"]["limit"]
 
-        else: 
+        else:
             # In this case, there are no multiple environments ID's.. Invoke the API once
             while True:
                 parameters = {"offset": offset}
                 if len(project_id) == 1:
-                    parameters["project_id"]=project_id[0]
+                    parameters["project_id"] = project_id[0]
                 elif len(project_id) > 1:
                     project_id_str = [str(i) for i in project_id]
-                    parameters["project_id__in"]=f"[{','.join(project_id_str)}]"
+                    parameters["project_id__in"] = f"[{','.join(project_id_str)}]"
 
                 if len(environment_id) == 1:
-                    parameters["environment_id"]=environment_id[0]
+                    parameters["environment_id"] = environment_id[0]
 
                 logger.debug(f"Request parameters {parameters}")
                 response = requests.get(
@@ -298,6 +298,7 @@ class DBTCloud:
 
         # handle the case where the job was not created when we queued the function call
         if yml_job_identifier and not job_id:
+            # TODO  - we shouldn't have to call the API so many times
             mapping_job_identifier_job_id = self.build_mapping_job_identifier_job_id()
             job_id = mapping_job_identifier_job_id[yml_job_identifier]
             custom_env_var.job_definition_id = job_id

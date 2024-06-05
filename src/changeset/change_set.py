@@ -49,7 +49,13 @@ class ChangeSet(BaseModel):
         table.add_column("Env ID", style="red")
 
         for change in self.__root__:
-            table.add_row(change.action.upper(), string.capwords(change.type), change.identifier, str(change.proj_id), str(change.env_id))
+            table.add_row(
+                change.action.upper(),
+                string.capwords(change.type),
+                change.identifier,
+                str(change.proj_id),
+                str(change.env_id),
+            )
 
         return table
 

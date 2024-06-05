@@ -195,7 +195,7 @@ def build_change_set(config, disable_ssl_verification, project_id, environment_i
                     )
                     dbt_cloud_change_set.append(dbt_cloud_change)
 
-    # Filtering out the change set, if project_id(s), environment_id(s) are passed as arguments to function - Desired functionality? 
+    # Filtering out the change set, if project_id(s), environment_id(s) are passed as arguments to function - Desired functionality?
     dbt_cloud_change_set_filtered = ChangeSet()
     logger.debug(f"dbt cloud change set: {dbt_cloud_change_set}")
 
@@ -204,7 +204,7 @@ def build_change_set(config, disable_ssl_verification, project_id, environment_i
             if dbt_cloud_change.env_id in environment_id or dbt_cloud_change.proj_id in project_id:
                 dbt_cloud_change_set_filtered.append(dbt_cloud_change)
 
-        dbt_cloud_change_set = dbt_cloud_change_set_filtered   
+        dbt_cloud_change_set = dbt_cloud_change_set_filtered
 
     return dbt_cloud_change_set
 
@@ -246,7 +246,9 @@ def sync(config, project_id, environment_id, disable_ssl_verification):
         cloud_environment_id = environment_id
 
     logger.info("-- SYNC -- Invoking build_change_set")
-    change_set = build_change_set(config, disable_ssl_verification, cloud_project_id, cloud_environment_id )
+    change_set = build_change_set(
+        config, disable_ssl_verification, cloud_project_id, cloud_environment_id
+    )
     if len(change_set) == 0:
         logger.success("-- SYNC -- No changes detected.")
     else:
@@ -288,7 +290,9 @@ def plan(config, project_id, environment_id, disable_ssl_verification):
     if environment_id:
         cloud_environment_id = environment_id
 
-    change_set = build_change_set(config, disable_ssl_verification, cloud_project_id, cloud_environment_id )
+    change_set = build_change_set(
+        config, disable_ssl_verification, cloud_project_id, cloud_environment_id
+    )
     if len(change_set) == 0:
         logger.success("-- PLAN -- No changes detected.")
     else:
@@ -433,7 +437,7 @@ def import_jobs(config, account_id, project_id, environment_id, job_id, disable_
 
     cloud_project_id = []
     cloud_environment_id = []
-    
+
     if project_id:
         cloud_project_id = project_id
 
@@ -446,7 +450,9 @@ def import_jobs(config, account_id, project_id, environment_id, job_id, disable_
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
     )
-    cloud_jobs = dbt_cloud.get_jobs(project_id=cloud_project_id, environment_id=cloud_environment_id)
+    cloud_jobs = dbt_cloud.get_jobs(
+        project_id=cloud_project_id, environment_id=cloud_environment_id
+    )
     logger.info(f"Getting the jobs definition from dbt Cloud")
 
     if job_id:
