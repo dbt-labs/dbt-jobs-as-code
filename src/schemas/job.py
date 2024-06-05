@@ -28,7 +28,7 @@ class JobDefinition(pydantic.BaseModel):
     schedule: Schedule
     triggers: Triggers
     state: int = 1
-    custom_environment_variables: Optional[List[CustomEnvironmentVariable]] = []
+    custom_environment_variables: List[CustomEnvironmentVariable] = []
 
     def __init__(self, **data: Any):
 
