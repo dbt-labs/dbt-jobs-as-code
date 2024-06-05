@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List
 from pydantic import BaseModel
 import string
 from rich.table import Table
@@ -25,7 +25,7 @@ class Change(BaseModel):
 class ChangeSet(BaseModel):
     """Store the set of changes to be displayed or applied."""
 
-    __root__: Optional[list[Change]] = []
+    __root__: List[Change] = []
 
     def __iter__(self):
         return iter(self.__root__)
@@ -65,16 +65,3 @@ class ChangeSet(BaseModel):
     def apply(self):
         for change in self.__root__:
             change.apply()
-    
-    def filter(self, environment_ids, project_ids):
-        dbt_cloud_change_set = self.__root__
-        dbt_cloud_change_set_filtered = ChangeSet()
-
-        if len(environment_ids) != 0 or len(project_ids) != 0:
-            for dbt_cloud_change in dbt_cloud_change_set:
-                if dbt_cloud_change.env_id in environment_ids or dbt_cloud_change.proj_id in project_ids:
-                    dbt_cloud_change_set_filtered.append(dbt_cloud_change)
-
-            dbt_cloud_change_set = dbt_cloud_change_set_filtered
-
-        return dbt_cloud_change_set

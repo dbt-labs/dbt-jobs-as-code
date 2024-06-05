@@ -1,4 +1,4 @@
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 
 from deepdiff import DeepDiff
 from loguru import logger
@@ -47,7 +47,7 @@ def check_job_mapping_same(source_job: JobDefinition, dest_job: JobDefinition) -
 def check_env_var_same(
     source_env_var: CustomEnvironmentVariable,
     dest_env_vars: dict[str, CustomEnvironmentVariablePayload],
-) -> Tuple[bool, int]:
+) -> Tuple[bool, Optional[int]]:
     """Checks if the source env vars is the same in the destination env vars"""
 
     if source_env_var.name not in dest_env_vars:
