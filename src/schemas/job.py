@@ -1,9 +1,9 @@
 import re
-from typing import List, Optional, Any
+from typing import Any, List, Optional
 
 import pydantic
 
-from .common_types import Execution, Settings, Schedule, Time, Triggers
+from .common_types import Execution, Schedule, Settings, Time, Triggers
 from .custom_environment_variable import CustomEnvironmentVariable
 
 

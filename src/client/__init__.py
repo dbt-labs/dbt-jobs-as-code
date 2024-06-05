@@ -1,8 +1,8 @@
-from typing import Dict, List, Optional, Any
-from urllib3.exceptions import InsecureRequestWarning
+from typing import Any, Dict, List, Optional
 
 import requests
 from loguru import logger
+from urllib3.exceptions import InsecureRequestWarning
 
 from src.schemas.custom_environment_variable import (
     CustomEnvironmentVariable,
@@ -201,19 +201,6 @@ class DBTCloud:
             return None
 
         return response.json()
-
-    # TODO: Revisit, is it used?
-    def get_job(self, job_id: int) -> JobDefinition:
-        """Generate a Job based on a dbt Cloud job."""
-
-        self._check_for_creds()
-
-        response = requests.get(
-            url=(f"{self.base_url}/api/v2/accounts/" f"{self.account_id}/jobs/{job_id}"),
-            headers=self._headers,
-            verify=self._verify,
-        )
-        return JobDefinition(**response.json()["data"])
 
     def get_env_vars(
         self, project_id: int, job_id: int

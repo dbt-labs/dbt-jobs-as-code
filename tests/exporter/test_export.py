@@ -1,11 +1,10 @@
 import json
-from ruamel.yaml import YAML
-
 
 from exporter.export import export_jobs_yml
 from jsonschema import validate
-from src.schemas.common_types import Date, Execution, Schedule, Settings, Time, Triggers
+from ruamel.yaml import YAML
 
+from src.schemas.common_types import Date, Execution, Schedule, Settings, Time, Triggers
 from src.schemas.job import JobDefinition
 
 

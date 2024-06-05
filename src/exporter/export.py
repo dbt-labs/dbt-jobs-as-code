@@ -1,5 +1,6 @@
-from ruamel.yaml import YAML
 import sys
+
+from ruamel.yaml import YAML
 
 from src.schemas.job import JobDefinition
 
