@@ -46,7 +46,7 @@ class ChangeSet(BaseModel):
         table.add_column("Type", style="magenta")
         table.add_column("ID", style="green")
         table.add_column("Proj ID", style="yellow")
-        table.add_column("Env ID", style="magenta")
+        table.add_column("Env ID", style="red")
 
         for change in self.__root__:
             table.add_row(change.action.upper(), string.capwords(change.type), change.identifier, str(change.proj_id), str(change.env_id))
