@@ -116,7 +116,7 @@ def build_change_set(config, disable_ssl_verification, project_id, environment_i
 
     # -- ENV VARS --
     # Now that we have replicated all jobs we can get their IDs for further API calls
-    mapping_job_identifier_job_id = dbt_cloud.build_mapping_job_identifier_job_id(project_id=project_id, environment_id=environment_id)
+    mapping_job_identifier_job_id = dbt_cloud.build_mapping_job_identifier_job_id(cloud_jobs)
     logger.debug(f"Mapping of job identifier to id: {mapping_job_identifier_job_id}")
 
     # Replicate the env vars from the YML to dbt Cloud

@@ -55,14 +55,12 @@ class DBTCloud:
         if not self.account_id:
             raise Exception("An account_id is required to get dbt Cloud jobs.")
 
-    def build_mapping_job_identifier_job_id(self, project_id=None, environment_id=None):
+    def build_mapping_job_identifier_job_id(self, cloud_jobs: List[JobDefinition] = None):
 
-        if project_id is None:
-            project_id = []
-        if environment_id is None:
-            environment_id = []
 
-        cloud_jobs = self.get_jobs(project_id, environment_id)
+        if cloud_jobs is None:
+            # TODO, we should filter things here at least if we call it often
+            cloud_jobs = self.get_jobs()
 
         mapping_job_identifier_job_id = {}
         for job in cloud_jobs:
