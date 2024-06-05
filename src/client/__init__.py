@@ -154,11 +154,11 @@ class DBTCloud:
                     parameters = {"offset": offset}
                     parameters["environment_id"]=env_id
 
-#        ?? Passing the project_id__in along with API might improve the performance.. Commenting as the API is giving an error
                     if len(project_id) == 1:
                         parameters["project_id"]=project_id[0]
-#                    elif len(project_id) > 1:
-#                        parameters["project_id__in"]=list(project_id)
+                    elif len(project_id) > 1:
+                        project_id_str = [str(i) for i in project_id]
+                        parameters["project_id__in"]=f"[{','.join(project_id_str)}]"
 
                     response = requests.get(
                         url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
@@ -186,12 +186,11 @@ class DBTCloud:
             # In this case, there are no multiple environments ID's.. Invoke the API once
             while True:
                 parameters = {"offset": offset}
-
-#        ?? Passing the project_id__in along with API might improve the performance.. Commenting elif condition as the API is giving an error
                 if len(project_id) == 1:
                     parameters["project_id"]=project_id[0]
-#                elif len(project_id) > 1:
-#                    parameters["project_id__in"]=list(project_id)
+                elif len(project_id) > 1:
+                    project_id_str = [str(i) for i in project_id]
+                    parameters["project_id__in"]=f"[{','.join(project_id_str)}]"
 
                 if len(environment_id) == 1:
                     parameters["environment_id"]=environment_id[0]
