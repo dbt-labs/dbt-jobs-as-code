@@ -206,6 +206,7 @@ class DBTCloud:
                 job_data = response.json()
                 if response.status_code >= 400:
                     logger.error(job_data)
+                    return []
 
                 jobs.extend(job_data["data"])
 
