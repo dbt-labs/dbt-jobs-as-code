@@ -21,19 +21,25 @@ option_disable_ssl_verification = click.option(
     default=False,
 )
 
-def check_cli_parameters(defined_jobs, project_id, environment_id):
+
+def filter_config(defined_jobs, project_id, environment_id):
+    removed_job_ids = set()
     if len(environment_id) != 0:
-        for job in defined_jobs.values():
+        for job_id, job in defined_jobs.items():
             if not job.environment_id in environment_id:
+                removed_job_ids.add(job_id)
                 logger.warning(
                     f"For Job# {job.identifier}, environment_id(s) provided as arguments does not match the ID's in Jobs YAML file!!!"
                 )
     if len(project_id) != 0:
-        for job in defined_jobs.values():
+        for job_id, job in defined_jobs.items():
             if not job.project_id in project_id:
+                removed_job_ids.add(job_id)
                 logger.warning(
                     f"For Job# {job.identifier}, project_id(s) provided as arguments does not match the ID's in Jobs YAML file!!!"
                 )
+    return {job_id: job for job_id, job in defined_jobs.items() if job_id not in removed_job_ids}
+
 
 def build_change_set(config, disable_ssl_verification, project_id, environment_id):
     """Compares the config of YML files versus dbt Cloud.
@@ -42,7 +48,16 @@ def build_change_set(config, disable_ssl_verification, project_id, environment_i
     CONFIG is the path to your jobs.yml config file.
     """
     configuration = load_job_configuration(config)
-    defined_jobs = configuration.jobs
+    unfiltered_defined_jobs = configuration.jobs
+
+    # If a project_id or environment_id is passed in as a parameter (one or multiple), check if these match the ID's in Jobs YAML file, otherwise add a warning and continue the process
+    defined_jobs = filter_config(unfiltered_defined_jobs, project_id, environment_id)
+
+    if len(defined_jobs) == 0:
+        logger.error(
+            "No jobs found in the Jobs YAML file after filtering based on the project_id and environment_id provided as arguments!!!"
+        )
+        return ChangeSet()
 
     # HACK for getting the account_id of one entry
     dbt_cloud = DBTCloud(
@@ -52,10 +67,7 @@ def build_change_set(config, disable_ssl_verification, project_id, environment_i
         disable_ssl_verification=disable_ssl_verification,
     )
 
-    # If a project_id or environment_id is passed in as a parameter (one or multiple), check if these match the ID's in Jobs YAML file, otherwise add a warning and continue the process
-    check_cli_parameters(defined_jobs, project_id, environment_id)
-
-    cloud_jobs = dbt_cloud.get_jobs(project_id=project_id, environment_id=environment_id)
+    cloud_jobs = dbt_cloud.get_jobs(project_ids=project_id, environment_ids=environment_id)
     tracked_jobs = {job.identifier: job for job in cloud_jobs if job.identifier is not None}
 
     dbt_cloud_change_set = ChangeSet()
@@ -195,15 +207,13 @@ def build_change_set(config, disable_ssl_verification, project_id, environment_i
 
     # Filtering out the change set, if project_id(s), environment_id(s) are passed as arguments to function
     # TODO: Confirm if this is the desired functionality, remove otherwise
-    dbt_cloud_change_set_filtered = ChangeSet()
     logger.debug(f"dbt cloud change set: {dbt_cloud_change_set}")
-    filtered_dbt_cloud_change_set = dbt_cloud_change_set.filter(environment_id, project_id)
 
-    return filtered_dbt_cloud_change_set
+    return dbt_cloud_change_set
 
 
 @click.group()
-def cli():
+def cli() -> None:
     pass
 
 
@@ -443,7 +453,7 @@ def import_jobs(config, account_id, project_id, environment_id, job_id, disable_
         disable_ssl_verification=disable_ssl_verification,
     )
     cloud_jobs = dbt_cloud.get_jobs(
-        project_id=cloud_project_id, environment_id=cloud_environment_id
+        project_ids=cloud_project_id, environment_ids=cloud_environment_id
     )
     logger.info(f"Getting the jobs definition from dbt Cloud")
 
