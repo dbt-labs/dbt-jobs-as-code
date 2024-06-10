@@ -1,11 +1,10 @@
 import re
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Literal
 
 import pydantic
 
-from .common_types import Execution, Schedule, Settings, Time, Triggers
+from .common_types import Execution, Schedule, Settings, Time, Triggers, JobCompletionTriggerCondition
 from .custom_environment_variable import CustomEnvironmentVariable
-
 
 # Main model for loader
 class JobDefinition(pydantic.BaseModel):
@@ -28,6 +27,9 @@ class JobDefinition(pydantic.BaseModel):
     schedule: Schedule
     triggers: Triggers
     state: int = 1
+    job_type: Literal["scheduled", "merge", "ci", "other"] = "scheduled"
+    triggers_on_draft_pr: bool = False
+    job_completion_trigger_condition: Optional[JobCompletionTriggerCondition]
     custom_environment_variables: List[CustomEnvironmentVariable] = []
 
     def __init__(self, **data: Any):
