@@ -107,7 +107,7 @@ def build_change_set(config, disable_ssl_verification, project_id, environment_i
     defined_jobs = filter_config(unfiltered_defined_jobs, project_id, environment_id)
 
     if len(defined_jobs) == 0:
-        logger.error(
+        logger.warning(
             "No jobs found in the Jobs YAML file after filtering based on the project_id and environment_id provided as arguments!!!"
         )
         return ChangeSet()
