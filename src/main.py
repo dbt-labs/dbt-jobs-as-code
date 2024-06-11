@@ -260,13 +260,20 @@ def import_jobs(config, account_id, project_id, environment_id, job_id, disable_
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
     )
-    cloud_jobs = dbt_cloud.get_jobs(
-        project_ids=cloud_project_id, environment_ids=cloud_environment_id
-    )
-    logger.info(f"Getting the jobs definition from dbt Cloud")
 
-    if job_id:
-        cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
+    logger.info(f"Getting the jobs definition from dbt Cloud")
+    # we want to avoid querying all jobs if it's not needed
+    # if we don't provide a filter for project/env but provide a list of job ids, we get the jobs one by one
+    if job_id and not (cloud_project_ids or cloud_environment_ids):
+        cloud_jobs_can_have_none = [dbt_cloud.get_job(job_id=id) for id in job_id]
+        cloud_jobs = [job for job in cloud_jobs_can_have_none if job is not None]
+    # otherwise, we get all the jobs and filter the list
+    else:
+        cloud_jobs = dbt_cloud.get_jobs(
+            project_ids=cloud_project_ids, environment_ids=cloud_environment_ids
+        )
+        if job_id:
+            cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
 
     for cloud_job in cloud_jobs:
         logger.info(f"Getting en vars overwrites for the job {cloud_job.id}:{cloud_job.name}")
