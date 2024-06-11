@@ -26,7 +26,7 @@ With this package's approach, people don't need to learn another tool and can co
 ### Installation
 
 - Create a Python virtual environment and activate it
-- Run `pip install git+https://github.com/dbt-labs/dbt-jobs-as-code.git`
+- Run `pip install git+https://github.com/dbt-labs/dbt-jobs-as-code.git` (or `pip install git+https://github.com/dbt-labs/dbt-jobs-as-code.git@v0.4.0` to install a specific release)
 
 The CLI is now available as `dbt-jobs-as-code`
 
@@ -57,6 +57,9 @@ Command: `dbt-jobs-as-code plan <config_file.yml>`
 Returns the list of actions create/update/delete that are required to have dbt Cloud reflecting the configuration file
 
 - this command doesn't modify the dbt Cloud jobs
+- this command also accepts a list of project IDs or environments IDs to limit the sync for: `dbt-jobs-as-code plan <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
+  - it is possible to limit for specific projects and/or specific environments
+  - when both projects and environments are provided, the command will run for the jobs that are both part of the environment ID(s) and the project ID(s) provided
 
 #### `sync`
 
@@ -65,6 +68,8 @@ Command: `dbt-jobs-as-code sync <config_file.yml>`
 Create/update/delete jobs and env vars overwrites in jobs to align dbt Cloud with the configuration file
 
 - ⚠️ this command will modify your dbt Cloud jobs if the current configuration is different from the YAML file
+- this command also accepts a list of project IDs or environments IDs to limit the sync for: `dbt-jobs-as-code sync <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
+  - it is possible to limit for specific projects and/or specific environments
 
 #### `import-jobs`
 
@@ -73,6 +78,7 @@ Command: `dbt-jobs-as-code import-jobs --config <config_file.yml>` or `dbt-jobs-
 Queries dbt Cloud and provide the YAML definition for those jobs. It includes the env var overwrite at the job level if some have been defined
 
 - it is possible to restrict the list of dbt Cloud Job IDs by adding `... -j 101 -j 123 -j 234`
+- this command also accepts a list of project IDs or environments IDs to limit the sync for: `dbt-jobs-as-code sync <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
 - once the YAML has been retrieved, it is possible to copy/paste it in a local YAML file to create/update the local jobs definition.
 
 To move some ui-jobs to jobs-as-code, perform the following steps:
