@@ -19,6 +19,21 @@ option_disable_ssl_verification = click.option(
     default=False,
 )
 
+option_project_ids = click.option(
+    "--project-id",
+    "-p",
+    type=int,
+    multiple=True,
+    help="[Optional] The ID of dbt Cloud project(s) to use for sync",
+)
+
+option_environment_ids = click.option(
+    "--environment-id",
+    "-e",
+    type=int,
+    multiple=True,
+    help="[Optional] The ID of dbt Cloud environment(s) to use for sync",
+)
 
 @click.group()
 def cli() -> None:
@@ -28,37 +43,25 @@ def cli() -> None:
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
-@click.option(
-    "--project-id",
-    "-p",
-    type=int,
-    multiple=True,
-    help="[Optional] The ID of dbt Cloud project(s) to use for sync",
-)
-@click.option(
-    "--environment-id",
-    "-e",
-    type=int,
-    multiple=True,
-    help="[Optional] The ID of dbt Cloud environment(s) to use for sync",
-)
+@option_project_ids
+@option_environment_ids
 def sync(config, project_id, environment_id, disable_ssl_verification):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
     """
-    cloud_project_id = []
-    cloud_environment_id = []
+    cloud_project_ids = []
+    cloud_environment_ids = []
 
     if project_id:
-        cloud_project_id = project_id
+        cloud_project_ids = project_id
 
     if environment_id:
-        cloud_environment_id = environment_id
+        cloud_environment_ids = environment_id
 
     logger.info("-- SYNC -- Invoking build_change_set")
     change_set = build_change_set(
-        config, disable_ssl_verification, cloud_project_id, cloud_environment_id
+        config, disable_ssl_verification, cloud_project_ids, cloud_environment_ids
     )
     if len(change_set) == 0:
         logger.success("-- SYNC -- No changes detected.")
@@ -72,36 +75,24 @@ def sync(config, project_id, environment_id, disable_ssl_verification):
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
-@click.option(
-    "--project-id",
-    "-p",
-    type=int,
-    multiple=True,
-    help="[Optional] The ID of dbt Cloud project(s) to use for plan",
-)
-@click.option(
-    "--environment-id",
-    "-e",
-    type=int,
-    multiple=True,
-    help="[Optional] The ID of dbt Cloud environment(s) to use for plan",
-)
+@option_project_ids
+@option_environment_ids
 def plan(config, project_id, environment_id, disable_ssl_verification):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
     """
-    cloud_project_id = []
-    cloud_environment_id = []
+    cloud_project_ids = []
+    cloud_environment_ids = []
 
     if project_id:
-        cloud_project_id = project_id
+        cloud_project_ids = project_id
 
     if environment_id:
-        cloud_environment_id = environment_id
+        cloud_environment_ids = environment_id
 
     change_set = build_change_set(
-        config, disable_ssl_verification, cloud_project_id, cloud_environment_id
+        config, disable_ssl_verification, cloud_project_ids, cloud_environment_ids
     )
     if len(change_set) == 0:
         logger.success("-- PLAN -- No changes detected.")
@@ -207,20 +198,8 @@ def validate(config, online, disable_ssl_verification):
 @option_disable_ssl_verification
 @click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
-@click.option(
-    "--project-id",
-    "-p",
-    type=int,
-    multiple=True,
-    help="[Optional] The ID of dbt Cloud project(s) to use for import",
-)
-@click.option(
-    "--environment-id",
-    "-e",
-    type=int,
-    multiple=True,
-    help="[Optional] The ID of dbt Cloud environment(s) to use for import",
-)
+@option_project_ids
+@option_environment_ids
 @click.option(
     "--job-id",
     "-j",
@@ -245,14 +224,14 @@ def import_jobs(config, account_id, project_id, environment_id, job_id, disable_
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
 
-    cloud_project_id = []
-    cloud_environment_id = []
+    cloud_project_ids = []
+    cloud_environment_ids = []
 
     if project_id:
-        cloud_project_id = project_id
+        cloud_project_ids = project_id
 
     if environment_id:
-        cloud_environment_id = environment_id
+        cloud_environment_ids = environment_id
 
     dbt_cloud = DBTCloud(
         account_id=cloud_account_id,

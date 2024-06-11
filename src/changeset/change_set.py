@@ -1,6 +1,6 @@
 import os
 import string
-from typing import List
+from typing import List, Optional
 
 from loguru import logger
 from pydantic import BaseModel
@@ -74,19 +74,19 @@ class ChangeSet(BaseModel):
             change.apply()
 
 
-def filter_config(defined_jobs, project_id, environment_id):
+def filter_config(defined_jobs, project_ids: List[int], environment_ids: List[int]):
     """Filters the config based on the inputs provided for project ids and environment ids."""
     removed_job_ids = set()
-    if len(environment_id) != 0:
+    if len(environment_ids) != 0:
         for job_id, job in defined_jobs.items():
-            if not job.environment_id in environment_id:
+            if not job.environment_id in environment_ids:
                 removed_job_ids.add(job_id)
                 logger.warning(
                     f"For Job# {job.identifier}, environment_id(s) provided as arguments does not match the ID's in Jobs YAML file!!!"
                 )
-    if len(project_id) != 0:
+    if len(project_ids) != 0:
         for job_id, job in defined_jobs.items():
-            if not job.project_id in project_id:
+            if not job.project_id in project_ids:
                 removed_job_ids.add(job_id)
                 logger.warning(
                     f"For Job# {job.identifier}, project_id(s) provided as arguments does not match the ID's in Jobs YAML file!!!"
@@ -94,7 +94,7 @@ def filter_config(defined_jobs, project_id, environment_id):
     return {job_id: job for job_id, job in defined_jobs.items() if job_id not in removed_job_ids}
 
 
-def build_change_set(config, disable_ssl_verification, project_id, environment_id):
+def build_change_set(config, disable_ssl_verification: bool, project_ids: List[int], environment_ids: List[int]):
     """Compares the config of YML files versus dbt Cloud.
     Depending on the value of no_update, it will either update the dbt Cloud config or not.
 
@@ -104,7 +104,7 @@ def build_change_set(config, disable_ssl_verification, project_id, environment_i
     unfiltered_defined_jobs = configuration.jobs
 
     # If a project_id or environment_id is passed in as a parameter (one or multiple), check if these match the ID's in Jobs YAML file, otherwise add a warning and continue the process
-    defined_jobs = filter_config(unfiltered_defined_jobs, project_id, environment_id)
+    defined_jobs = filter_config(unfiltered_defined_jobs, project_ids, environment_ids)
 
     if len(defined_jobs) == 0:
         logger.warning(
@@ -120,7 +120,7 @@ def build_change_set(config, disable_ssl_verification, project_id, environment_i
         disable_ssl_verification=disable_ssl_verification,
     )
 
-    cloud_jobs = dbt_cloud.get_jobs(project_ids=project_id, environment_ids=environment_id)
+    cloud_jobs = dbt_cloud.get_jobs(project_ids=project_ids, environment_ids=environment_ids)
     tracked_jobs = {job.identifier: job for job in cloud_jobs if job.identifier is not None}
 
     dbt_cloud_change_set = ChangeSet()
