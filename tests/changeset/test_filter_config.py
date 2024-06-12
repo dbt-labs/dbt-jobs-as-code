@@ -29,14 +29,14 @@ def log_capture():
     logger.remove()
 
 def test_filter_config_no_filters(defined_jobs, log_capture):
-    result = filter_config(defined_jobs, project_id=[], environment_id=[])
+    result = filter_config(defined_jobs, project_ids=[], environment_ids=[])
     assert len(result) == 4
     assert result == defined_jobs
     log_output = log_capture.getvalue().strip()
     assert log_output == ""
 
 def test_filter_config_with_project_ids(defined_jobs, log_capture):
-    result = filter_config(defined_jobs, project_id=[101, 103], environment_id=[])
+    result = filter_config(defined_jobs, project_ids=[101, 103], environment_ids=[])
     assert len(result) == 2
     assert 1 in result
     assert 3 in result
@@ -45,7 +45,7 @@ def test_filter_config_with_project_ids(defined_jobs, log_capture):
     assert re.search(r"job4.*project_id", log_output)
 
 def test_filter_config_with_environment_ids(defined_jobs, log_capture):
-    result = filter_config(defined_jobs, project_id=[], environment_id=[201])
+    result = filter_config(defined_jobs, project_ids=[], environment_ids=[201])
     assert len(result) == 2
     assert 1 in result
     assert 3 in result
@@ -54,7 +54,7 @@ def test_filter_config_with_environment_ids(defined_jobs, log_capture):
     assert re.search(r"job4.*environment_id", log_output)
 
 def test_filter_config_with_project_and_environment_ids(defined_jobs, log_capture):
-    result = filter_config(defined_jobs, project_id=[101, 103], environment_id=[201])
+    result = filter_config(defined_jobs, project_ids=[101, 103], environment_ids=[201])
     assert len(result) == 2
     assert 1 in result
     assert 3 in result
@@ -65,7 +65,7 @@ def test_filter_config_with_project_and_environment_ids(defined_jobs, log_captur
     assert re.search(r"job4.*project_id", log_output)
 
 def test_filter_config_no_matching_project_ids(defined_jobs, log_capture):
-    result = filter_config(defined_jobs, project_id=[999], environment_id=[])
+    result = filter_config(defined_jobs, project_ids=[999], environment_ids=[])
     assert len(result) == 0
     log_output = log_capture.getvalue().strip()
     assert re.search(r"job1.*project_id", log_output)
@@ -74,7 +74,7 @@ def test_filter_config_no_matching_project_ids(defined_jobs, log_capture):
     assert re.search(r"job4.*project_id", log_output)
 
 def test_filter_config_no_matching_environment_ids(defined_jobs, log_capture):
-    result = filter_config(defined_jobs, project_id=[], environment_id=[999])
+    result = filter_config(defined_jobs, project_ids=[], environment_ids=[999])
     assert len(result) == 0
     log_output = log_capture.getvalue().strip()
     assert re.search(r"job1.*environment_id", log_output)
