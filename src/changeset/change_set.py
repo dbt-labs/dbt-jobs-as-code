@@ -1,15 +1,24 @@
-from typing import Optional
-from pydantic import BaseModel
+import os
 import string
+from typing import List, Optional
+
+from loguru import logger
+from pydantic import BaseModel
 from rich.table import Table
+
+from src.client import DBTCloud
+from src.loader.load import load_job_configuration
+from src.schemas import check_env_var_same, check_job_mapping_same
 
 
 class Change(BaseModel):
-    """Describes what a given change is and hot to apply it."""
+    """Describes what a given change is and how to apply it."""
 
     identifier: str
     type: str
     action: str
+    proj_id: int
+    env_id: int
     sync_function: object
     parameters: dict
 
@@ -23,7 +32,7 @@ class Change(BaseModel):
 class ChangeSet(BaseModel):
     """Store the set of changes to be displayed or applied."""
 
-    __root__: Optional[list[Change]] = []
+    __root__: List[Change] = []
 
     def __iter__(self):
         return iter(self.__root__)
@@ -43,9 +52,17 @@ class ChangeSet(BaseModel):
         table.add_column("Action", style="cyan", no_wrap=True)
         table.add_column("Type", style="magenta")
         table.add_column("ID", style="green")
+        table.add_column("Proj ID", style="yellow")
+        table.add_column("Env ID", style="red")
 
         for change in self.__root__:
-            table.add_row(change.action.upper(), string.capwords(change.type), change.identifier)
+            table.add_row(
+                change.action.upper(),
+                string.capwords(change.type),
+                change.identifier,
+                str(change.proj_id),
+                str(change.env_id),
+            )
 
         return table
 
@@ -55,3 +72,194 @@ class ChangeSet(BaseModel):
     def apply(self):
         for change in self.__root__:
             change.apply()
+
+
+def filter_config(defined_jobs, project_ids: List[int], environment_ids: List[int]):
+    """Filters the config based on the inputs provided for project ids and environment ids."""
+    removed_job_ids = set()
+    if len(environment_ids) != 0:
+        for job_id, job in defined_jobs.items():
+            if not job.environment_id in environment_ids:
+                removed_job_ids.add(job_id)
+                logger.warning(
+                    f"For Job# {job.identifier}, environment_id(s) provided as arguments does not match the ID's in Jobs YAML file!!!"
+                )
+    if len(project_ids) != 0:
+        for job_id, job in defined_jobs.items():
+            if not job.project_id in project_ids:
+                removed_job_ids.add(job_id)
+                logger.warning(
+                    f"For Job# {job.identifier}, project_id(s) provided as arguments does not match the ID's in Jobs YAML file!!!"
+                )
+    return {job_id: job for job_id, job in defined_jobs.items() if job_id not in removed_job_ids}
+
+
+def build_change_set(config, disable_ssl_verification: bool, project_ids: List[int], environment_ids: List[int]):
+    """Compares the config of YML files versus dbt Cloud.
+    Depending on the value of no_update, it will either update the dbt Cloud config or not.
+
+    CONFIG is the path to your jobs.yml config file.
+    """
+    configuration = load_job_configuration(config)
+    unfiltered_defined_jobs = configuration.jobs
+
+    # If a project_id or environment_id is passed in as a parameter (one or multiple), check if these match the ID's in Jobs YAML file, otherwise add a warning and continue the process
+    defined_jobs = filter_config(unfiltered_defined_jobs, project_ids, environment_ids)
+
+    if len(defined_jobs) == 0:
+        logger.warning(
+            "No jobs found in the Jobs YAML file after filtering based on the project_id and environment_id provided as arguments!!!"
+        )
+        return ChangeSet()
+
+    # HACK for getting the account_id of one entry
+    dbt_cloud = DBTCloud(
+        account_id=list(defined_jobs.values())[0].account_id,
+        api_key=os.environ.get("DBT_API_KEY"),
+        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+        disable_ssl_verification=disable_ssl_verification,
+    )
+
+    cloud_jobs = dbt_cloud.get_jobs(project_ids=project_ids, environment_ids=environment_ids)
+    tracked_jobs = {job.identifier: job for job in cloud_jobs if job.identifier is not None}
+
+    dbt_cloud_change_set = ChangeSet()
+
+    # Use sets to find jobs for different operations
+    shared_jobs = set(defined_jobs.keys()).intersection(set(tracked_jobs.keys()))
+    created_jobs = set(defined_jobs.keys()) - set(tracked_jobs.keys())
+    deleted_jobs = set(tracked_jobs.keys()) - set(defined_jobs.keys())
+
+    # Update changed jobs
+    logger.info("Detected {count} existing jobs.", count=len(shared_jobs))
+    for identifier in shared_jobs:
+        logger.info("Checking for differences in {identifier}", identifier=identifier)
+        if not check_job_mapping_same(
+            source_job=defined_jobs[identifier], dest_job=tracked_jobs[identifier]
+        ):
+            dbt_cloud_change = Change(
+                identifier=identifier,
+                type="job",
+                action="update",
+                proj_id=defined_jobs[identifier].project_id,
+                env_id=defined_jobs[identifier].environment_id,
+                sync_function=dbt_cloud.update_job,
+                parameters={"job": defined_jobs[identifier]},
+            )
+            dbt_cloud_change_set.append(dbt_cloud_change)
+            defined_jobs[identifier].id = tracked_jobs[identifier].id
+
+    # Create new jobs
+    logger.info("Detected {count} new jobs.", count=len(created_jobs))
+    for identifier in created_jobs:
+        dbt_cloud_change = Change(
+            identifier=identifier,
+            type="job",
+            action="create",
+            proj_id=defined_jobs[identifier].project_id,
+            env_id=defined_jobs[identifier].environment_id,
+            sync_function=dbt_cloud.create_job,
+            parameters={"job": defined_jobs[identifier]},
+        )
+        dbt_cloud_change_set.append(dbt_cloud_change)
+
+    # Remove Deleted Jobs
+    logger.info("Detected {count} deleted jobs.", count=len(deleted_jobs))
+    for identifier in deleted_jobs:
+        dbt_cloud_change = Change(
+            identifier=identifier,
+            type="job",
+            action="delete",
+            proj_id=tracked_jobs[identifier].project_id,
+            env_id=tracked_jobs[identifier].environment_id,
+            sync_function=dbt_cloud.delete_job,
+            parameters={"job": tracked_jobs[identifier]},
+        )
+        dbt_cloud_change_set.append(dbt_cloud_change)
+
+    # -- ENV VARS --
+    # Now that we have replicated all jobs we can get their IDs for further API calls
+    mapping_job_identifier_job_id = dbt_cloud.build_mapping_job_identifier_job_id(cloud_jobs)
+    logger.debug(f"Mapping of job identifier to id: {mapping_job_identifier_job_id}")
+
+    # Replicate the env vars from the YML to dbt Cloud
+    for job in defined_jobs.values():
+        if job.identifier in mapping_job_identifier_job_id:  # the job already exists
+            job_id = mapping_job_identifier_job_id[job.identifier]
+            all_env_vars_for_job = dbt_cloud.get_env_vars(project_id=job.project_id, job_id=job_id)
+            for env_var_yml in job.custom_environment_variables:
+                env_var_yml.job_definition_id = job_id
+                same_env_var, env_var_id = check_env_var_same(
+                    source_env_var=env_var_yml, dest_env_vars=all_env_vars_for_job
+                )
+                if not same_env_var:
+                    dbt_cloud_change = Change(
+                        identifier=f"{job.identifier}:{env_var_yml.name}",
+                        type="env var overwrite",
+                        action="update",
+                        proj_id=job.project_id,
+                        env_id=job.environment_id,
+                        sync_function=dbt_cloud.update_env_var,
+                        parameters={
+                            "project_id": job.project_id,
+                            "job_id": job_id,
+                            "custom_env_var": env_var_yml,
+                            "env_var_id": env_var_id,
+                        },
+                    )
+                    dbt_cloud_change_set.append(dbt_cloud_change)
+
+        else:  # the job doesn't exist yet so it doesn't have an ID
+            for env_var_yml in job.custom_environment_variables:
+                dbt_cloud_change = Change(
+                    identifier=f"{job.identifier}:{env_var_yml.name}",
+                    type="env var overwrite",
+                    action="create",
+                    proj_id=job.project_id,
+                    env_id=job.environment_id,
+                    sync_function=dbt_cloud.update_env_var,
+                    parameters={
+                        "project_id": job.project_id,
+                        "job_id": None,
+                        "custom_env_var": env_var_yml,
+                        "env_var_id": None,
+                        "yml_job_identifier": job.identifier,
+                    },
+                )
+                dbt_cloud_change_set.append(dbt_cloud_change)
+
+    # Delete the env vars from dbt Cloud that are not in the yml
+    for job in defined_jobs.values():
+        # we only delete env var overwrite if the job already exists
+        if job.identifier in mapping_job_identifier_job_id:
+            job_id = mapping_job_identifier_job_id[job.identifier]
+
+            # We get the env vars from dbt Cloud, now that the YML ones have been replicated
+            env_var_dbt_cloud = dbt_cloud.get_env_vars(project_id=job.project_id, job_id=job_id)
+
+            # And we get the list of env vars defined for a given job in the YML
+            env_vars_for_job = [env_var.name for env_var in job.custom_environment_variables]
+
+            for env_var, env_var_val in env_var_dbt_cloud.items():
+                # If the env var is not in the YML but is defined at the "job" level in dbt Cloud, we delete it
+                if env_var not in env_vars_for_job and env_var_val.id:
+                    logger.info(f"{env_var} not in the YML file but in the dbt Cloud job")
+                    dbt_cloud_change = Change(
+                        identifier=f"{job.identifier}:{env_var_yml.name}",
+                        type="env var overwrite",
+                        action="delete",
+                        proj_id=job.project_id,
+                        env_id=job.environment_id,
+                        sync_function=dbt_cloud.delete_env_var,
+                        parameters={
+                            "project_id": job.project_id,
+                            "env_var_id": env_var_val.id,
+                        },
+                    )
+                    dbt_cloud_change_set.append(dbt_cloud_change)
+
+    # Filtering out the change set, if project_id(s), environment_id(s) are passed as arguments to function
+    # TODO: Confirm if this is the desired functionality, remove otherwise
+    logger.debug(f"dbt cloud change set: {dbt_cloud_change_set}")
+
+    return dbt_cloud_change_set

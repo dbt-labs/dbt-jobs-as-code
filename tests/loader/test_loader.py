@@ -1,14 +1,13 @@
 import json
-from loader.load import load_job_configuration
-from ruamel.yaml import YAML
-
 
 from exporter.export import export_jobs_yml
 from jsonschema import validate
+from loader.load import load_job_configuration
+from ruamel.yaml import YAML
 from schemas.config import Config
 from schemas.custom_environment_variable import CustomEnvironmentVariable
-from src.schemas.common_types import Date, Execution, Schedule, Settings, Time, Triggers
 
+from src.schemas.common_types import Date, Execution, Schedule, Settings, Time, Triggers
 from src.schemas.job import JobDefinition
 
 

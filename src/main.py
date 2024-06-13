@@ -1,16 +1,14 @@
 import os
 import sys
 
-from loguru import logger
 import click
-
-from src.client import DBTCloud
-from src.loader.load import load_job_configuration
-from src.exporter.export import export_jobs_yml
-from src.schemas import check_job_mapping_same
-from src.changeset.change_set import Change, ChangeSet
-from src.schemas import check_env_var_same
+from loguru import logger
 from rich.console import Console
+
+from src.changeset.change_set import build_change_set
+from src.client import DBTCloud
+from src.exporter.export import export_jobs_yml
+from src.loader.load import load_job_configuration
 
 # adding the ability to disable ssl verification, useful for self-signed certificates and local testing
 option_disable_ssl_verification = click.option(
@@ -21,185 +19,81 @@ option_disable_ssl_verification = click.option(
     default=False,
 )
 
+option_project_ids = click.option(
+    "--project-id",
+    "-p",
+    type=int,
+    multiple=True,
+    help="[Optional] The ID of dbt Cloud project(s) to use for sync",
+)
 
-def build_change_set(config, disable_ssl_verification):
-    """Compares the config of YML files versus dbt Cloud.
-    Depending on the value of no_update, it will either update the dbt Cloud config or not.
-
-    CONFIG is the path to your jobs.yml config file.
-    """
-    configuration = load_job_configuration(config)
-    defined_jobs = configuration.jobs
-
-    # HACK for getting the account_id of one entry
-    dbt_cloud = DBTCloud(
-        account_id=list(defined_jobs.values())[0].account_id,
-        api_key=os.environ.get("DBT_API_KEY"),
-        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
-        disable_ssl_verification=disable_ssl_verification,
-    )
-    cloud_jobs = dbt_cloud.get_jobs()
-    tracked_jobs = {job.identifier: job for job in cloud_jobs if job.identifier is not None}
-
-    dbt_cloud_change_set = ChangeSet()
-
-    # Use sets to find jobs for different operations
-    shared_jobs = set(defined_jobs.keys()).intersection(set(tracked_jobs.keys()))
-    created_jobs = set(defined_jobs.keys()) - set(tracked_jobs.keys())
-    deleted_jobs = set(tracked_jobs.keys()) - set(defined_jobs.keys())
-
-    # Update changed jobs
-    logger.info("Detected {count} existing jobs.", count=len(shared_jobs))
-    for identifier in shared_jobs:
-        logger.info("Checking for differences in {identifier}", identifier=identifier)
-        if not check_job_mapping_same(
-            source_job=defined_jobs[identifier], dest_job=tracked_jobs[identifier]
-        ):
-            dbt_cloud_change = Change(
-                identifier=identifier,
-                type="job",
-                action="update",
-                sync_function=dbt_cloud.update_job,
-                parameters={"job": defined_jobs[identifier]},
-            )
-            dbt_cloud_change_set.append(dbt_cloud_change)
-            defined_jobs[identifier].id = tracked_jobs[identifier].id
-
-    # Create new jobs
-    logger.info("Detected {count} new jobs.", count=len(created_jobs))
-    for identifier in created_jobs:
-        dbt_cloud_change = Change(
-            identifier=identifier,
-            type="job",
-            action="create",
-            sync_function=dbt_cloud.create_job,
-            parameters={"job": defined_jobs[identifier]},
-        )
-        dbt_cloud_change_set.append(dbt_cloud_change)
-
-    # Remove Deleted Jobs
-    logger.info("Detected {count} deleted jobs.", count=len(deleted_jobs))
-    for identifier in deleted_jobs:
-        dbt_cloud_change = Change(
-            identifier=identifier,
-            type="job",
-            action="delete",
-            sync_function=dbt_cloud.delete_job,
-            parameters={"job": tracked_jobs[identifier]},
-        )
-        dbt_cloud_change_set.append(dbt_cloud_change)
-
-    # -- ENV VARS --
-    # Now that we have replicated all jobs we can get their IDs for further API calls
-    mapping_job_identifier_job_id = dbt_cloud.build_mapping_job_identifier_job_id()
-    logger.debug(f"Mapping of job identifier to id: {mapping_job_identifier_job_id}")
-
-    # Replicate the env vars from the YML to dbt Cloud
-    for job in defined_jobs.values():
-        if job.identifier in mapping_job_identifier_job_id:  # the job already exists
-            job_id = mapping_job_identifier_job_id[job.identifier]
-            all_env_vars_for_job = dbt_cloud.get_env_vars(project_id=job.project_id, job_id=job_id)
-            for env_var_yml in job.custom_environment_variables:
-                env_var_yml.job_definition_id = job_id
-                same_env_var, env_var_id = check_env_var_same(
-                    source_env_var=env_var_yml, dest_env_vars=all_env_vars_for_job
-                )
-                if not same_env_var:
-                    dbt_cloud_change = Change(
-                        identifier=f"{job.identifier}:{env_var_yml.name}",
-                        type="env var overwrite",
-                        action="update",
-                        sync_function=dbt_cloud.update_env_var,
-                        parameters={
-                            "project_id": job.project_id,
-                            "job_id": job_id,
-                            "custom_env_var": env_var_yml,
-                            "env_var_id": env_var_id,
-                        },
-                    )
-                    dbt_cloud_change_set.append(dbt_cloud_change)
-
-        else:  # the job doesn't exist yet so it doesn't have an ID
-            for env_var_yml in job.custom_environment_variables:
-                dbt_cloud_change = Change(
-                    identifier=f"{job.identifier}:{env_var_yml.name}",
-                    type="env var overwrite",
-                    action="create",
-                    sync_function=dbt_cloud.update_env_var,
-                    parameters={
-                        "project_id": job.project_id,
-                        "job_id": None,
-                        "custom_env_var": env_var_yml,
-                        "env_var_id": None,
-                        "yml_job_identifier": job.identifier,
-                    },
-                )
-                dbt_cloud_change_set.append(dbt_cloud_change)
-
-    # Delete the env vars from dbt Cloud that are not in the yml
-    for job in defined_jobs.values():
-        # we only delete env var overwrite if the job already exists
-        if job.identifier in mapping_job_identifier_job_id:
-            job_id = mapping_job_identifier_job_id[job.identifier]
-
-            # We get the env vars from dbt Cloud, now that the YML ones have been replicated
-            env_var_dbt_cloud = dbt_cloud.get_env_vars(project_id=job.project_id, job_id=job_id)
-
-            # And we get the list of env vars defined for a given job in the YML
-            env_vars_for_job = [env_var.name for env_var in job.custom_environment_variables]
-
-            for env_var, env_var_val in env_var_dbt_cloud.items():
-                # If the env var is not in the YML but is defined at the "job" level in dbt Cloud, we delete it
-                if env_var not in env_vars_for_job and env_var_val.id:
-                    logger.info(f"{env_var} not in the YML file but in the dbt Cloud job")
-                    dbt_cloud_change = Change(
-                        identifier=f"{job.identifier}:{env_var_yml.name}",
-                        type="env var overwrite",
-                        action="delete",
-                        sync_function=dbt_cloud.delete_env_var,
-                        parameters={
-                            "project_id": job.project_id,
-                            "env_var_id": env_var_val.id,
-                        },
-                    )
-                    dbt_cloud_change_set.append(dbt_cloud_change)
-
-    return dbt_cloud_change_set
-
+option_environment_ids = click.option(
+    "--environment-id",
+    "-e",
+    type=int,
+    multiple=True,
+    help="[Optional] The ID of dbt Cloud environment(s) to use for sync",
+)
 
 @click.group()
-def cli():
+def cli() -> None:
     pass
 
 
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
-def sync(config, disable_ssl_verification):
+@option_project_ids
+@option_environment_ids
+def sync(config, project_id, environment_id, disable_ssl_verification):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
     """
-    change_set = build_change_set(config, disable_ssl_verification)
+    cloud_project_ids = []
+    cloud_environment_ids = []
+
+    if project_id:
+        cloud_project_ids = project_id
+
+    if environment_id:
+        cloud_environment_ids = environment_id
+
+    logger.info("-- SYNC -- Invoking build_change_set")
+    change_set = build_change_set(
+        config, disable_ssl_verification, cloud_project_ids, cloud_environment_ids
+    )
     if len(change_set) == 0:
-        logger.success("-- PLAN -- No changes detected.")
+        logger.success("-- SYNC -- No changes detected.")
     else:
-        logger.info("-- PLAN -- {count} changes detected.", count=len(change_set))
+        logger.info("-- SYNC -- {count} changes detected.", count=len(change_set))
         console = Console()
         console.log(change_set.to_table())
-    logger.info("-- SYNC --")
     change_set.apply()
 
 
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
-def plan(config, disable_ssl_verification):
+@option_project_ids
+@option_environment_ids
+def plan(config, project_id, environment_id, disable_ssl_verification):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
     """
-    change_set = build_change_set(config, disable_ssl_verification)
+    cloud_project_ids = []
+    cloud_environment_ids = []
+
+    if project_id:
+        cloud_project_ids = project_id
+
+    if environment_id:
+        cloud_environment_ids = environment_id
+
+    change_set = build_change_set(
+        config, disable_ssl_verification, cloud_project_ids, cloud_environment_ids
+    )
     if len(change_set) == 0:
         logger.success("-- PLAN -- No changes detected.")
     else:
@@ -304,6 +198,8 @@ def validate(config, online, disable_ssl_verification):
 @option_disable_ssl_verification
 @click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
+@option_project_ids
+@option_environment_ids
 @click.option(
     "--job-id",
     "-j",
@@ -311,12 +207,12 @@ def validate(config, online, disable_ssl_verification):
     multiple=True,
     help="[Optional] The ID of the job to import.",
 )
-def import_jobs(config, account_id, job_id, disable_ssl_verification):
+def import_jobs(config, account_id, project_id, environment_id, job_id, disable_ssl_verification):
     """
     Generate YML file for import.
     Either --config or --account-id must be provided.
-
-    It is possible to repeat the optional --job-id option to import specific jobs.
+    Optional parameters: --project-id,  --environment-id, --job-id
+    It is possible to repeat the optional parameters --job-id, --project-id, --environment-id option to import specific jobs.
     """
 
     # we get the account id either from a parameter (e.g if the config file doesn't exist) or from the config file
@@ -328,17 +224,35 @@ def import_jobs(config, account_id, job_id, disable_ssl_verification):
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
 
+    cloud_project_ids = []
+    cloud_environment_ids = []
+
+    if project_id:
+        cloud_project_ids = project_id
+
+    if environment_id:
+        cloud_environment_ids = environment_id
+
     dbt_cloud = DBTCloud(
         account_id=cloud_account_id,
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
     )
-    cloud_jobs = dbt_cloud.get_jobs()
-    logger.info(f"Getting the jobs definition from dbt Cloud")
 
-    if job_id:
-        cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
+    logger.info(f"Getting the jobs definition from dbt Cloud")
+    # we want to avoid querying all jobs if it's not needed
+    # if we don't provide a filter for project/env but provide a list of job ids, we get the jobs one by one
+    if job_id and not (cloud_project_ids or cloud_environment_ids):
+        cloud_jobs_can_have_none = [dbt_cloud.get_job(job_id=id) for id in job_id]
+        cloud_jobs = [job for job in cloud_jobs_can_have_none if job is not None]
+    # otherwise, we get all the jobs and filter the list
+    else:
+        cloud_jobs = dbt_cloud.get_jobs(
+            project_ids=cloud_project_ids, environment_ids=cloud_environment_ids
+        )
+        if job_id:
+            cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
 
     for cloud_job in cloud_jobs:
         logger.info(f"Getting en vars overwrites for the job {cloud_job.id}:{cloud_job.name}")
