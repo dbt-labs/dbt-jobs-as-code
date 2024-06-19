@@ -1,94 +1,176 @@
 {
-  "title": "Config",
-  "description": "Internal representation of a Jobs as Code configuration file.",
-  "type": "object",
-  "properties": {
-    "jobs": {
-      "title": "Jobs",
-      "type": "object",
-      "additionalProperties": {
-        "$ref": "#/definitions/JobDefinition"
-      }
-    }
-  },
-  "required": [
-    "jobs"
-  ],
-  "definitions": {
-    "Settings": {
-      "title": "Settings",
-      "type": "object",
+  "$defs": {
+    "Condition": {
       "properties": {
-        "threads": {
-          "title": "Threads",
-          "default": 4,
+        "job_id": {
+          "title": "Job Id",
           "type": "integer"
         },
-        "target_name": {
-          "title": "Target Name",
-          "type": "string"
+        "project_id": {
+          "title": "Project Id",
+          "type": "integer"
+        },
+        "statuses": {
+          "default": [
+            10,
+            20,
+            30
+          ],
+          "description": "The statuses that will trigger the job. 10=success 20=error 30=cancelled",
+          "items": {
+            "enum": [
+              10,
+              20,
+              30
+            ],
+            "type": "integer"
+          },
+          "title": "Statuses",
+          "type": "array"
         }
       },
       "required": [
-        "target_name"
-      ]
+        "job_id",
+        "project_id"
+      ],
+      "title": "Condition",
+      "type": "object"
+    },
+    "CustomEnvironmentVariable": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "default": "job",
+          "enum": [
+            "project",
+            "environment",
+            "job",
+            "user"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "display_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Value"
+        },
+        "job_definition_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Job Definition Id"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CustomEnvironmentVariable",
+      "type": "object"
+    },
+    "Date": {
+      "properties": {
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "cron": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cron"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "Date",
+      "type": "object"
     },
     "Execution": {
-      "title": "Execution",
-      "type": "object",
       "properties": {
         "timeout_seconds": {
-          "title": "Timeout Seconds",
           "default": 0,
+          "title": "Timeout Seconds",
           "type": "integer"
         }
-      }
+      },
+      "title": "Execution",
+      "type": "object"
     },
-    "Schedule": {
-      "title": "Schedule",
-      "type": "object",
+    "JobCompletionTriggerCondition": {
       "properties": {
-        "cron": {
-          "title": "Cron",
-          "type": "string"
+        "condition": {
+          "$ref": "#/$defs/Condition"
         }
       },
       "required": [
-        "cron"
-      ]
-    },
-    "Triggers": {
-      "title": "Triggers",
-      "type": "object",
-      "properties": {
-        "github_webhook": {
-          "title": "Github Webhook",
-          "type": "boolean"
-        },
-        "git_provider_webhook": {
-          "title": "Git Provider Webhook",
-          "type": "boolean"
-        },
-        "custom_branch_only": {
-          "title": "Custom Branch Only",
-          "type": "boolean"
-        },
-        "schedule": {
-          "title": "Schedule",
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "github_webhook",
-        "custom_branch_only"
-      ]
+        "condition"
+      ],
+      "title": "JobCompletionTriggerCondition",
+      "type": "object"
     },
     "JobDefinition": {
-      "title": "JobDefinition",
       "description": "A definition for a dbt Cloud job.",
-      "type": "object",
-      "additionalProperties": false,
       "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "identifier": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Identifier"
+        },
         "account_id": {
           "title": "Account Id",
           "type": "integer"
@@ -102,68 +184,123 @@
           "type": "integer"
         },
         "dbt_version": {
-          "title": "dbt Version",
-          "type": ["string", "null"]
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbt Version"
         },
         "name": {
           "title": "Name",
           "type": "string"
         },
         "settings": {
-          "$ref": "#/definitions/Settings"
+          "$ref": "#/$defs/Settings"
         },
         "execution": {
-          "title": "Execution",
-          "default": {
-            "timeout_seconds": 0
-          },
           "allOf": [
             {
-              "$ref": "#/definitions/Execution"
+              "$ref": "#/$defs/Execution"
             }
-          ]
+          ],
+          "default": {
+            "timeout_seconds": 0
+          }
         },
         "deferring_job_definition_id": {
-          "title": "Deferring Job Definition Id",
-          "type": ["integer", "null"]
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deferring Job Definition Id"
         },
         "deferring_environment_id": {
-          "title": "Deferring Environment Id",
-          "type": ["integer", "null"]
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deferring Environment Id"
         },
         "run_generate_sources": {
           "title": "Run Generate Sources",
           "type": "boolean"
         },
         "execute_steps": {
-          "title": "Execute Steps",
-          "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "title": "Execute Steps",
+          "type": "array"
         },
         "generate_docs": {
           "title": "Generate Docs",
           "type": "boolean"
         },
         "schedule": {
-          "$ref": "#/definitions/Schedule"
+          "$ref": "#/$defs/Schedule"
         },
         "triggers": {
-          "$ref": "#/definitions/Triggers"
+          "$ref": "#/$defs/Triggers"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
         },
         "state": {
-          "title": "State",
           "default": 1,
+          "title": "State",
           "type": "integer"
         },
+        "job_type": {
+          "default": "scheduled",
+          "enum": [
+            "scheduled",
+            "merge",
+            "ci",
+            "other"
+          ],
+          "title": "Job Type",
+          "type": "string"
+        },
+        "triggers_on_draft_pr": {
+          "default": false,
+          "title": "Triggers On Draft Pr",
+          "type": "boolean"
+        },
+        "job_completion_trigger_condition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JobCompletionTriggerCondition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "custom_environment_variables": {
-          "title": "Custom Environment Variables",
           "default": [],
-          "type": ["array","null"],
           "items": {
-            "type": "object"
-          }
+            "$ref": "#/$defs/CustomEnvironmentVariable"
+          },
+          "title": "Custom Environment Variables",
+          "type": "array"
         }
       },
       "required": [
@@ -177,7 +314,161 @@
         "generate_docs",
         "schedule",
         "triggers"
-      ]
+      ],
+      "title": "JobDefinition",
+      "type": "object"
+    },
+    "Schedule": {
+      "properties": {
+        "cron": {
+          "title": "Cron",
+          "type": "string"
+        },
+        "date": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Date"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "time": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Time"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "cron"
+      ],
+      "title": "Schedule",
+      "type": "object"
+    },
+    "Settings": {
+      "properties": {
+        "threads": {
+          "default": 4,
+          "title": "Threads",
+          "type": "integer"
+        },
+        "target_name": {
+          "title": "Target Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target_name"
+      ],
+      "title": "Settings",
+      "type": "object"
+    },
+    "Time": {
+      "properties": {
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "interval": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interval"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "Time",
+      "type": "object"
+    },
+    "Triggers": {
+      "properties": {
+        "github_webhook": {
+          "default": false,
+          "title": "Github Webhook",
+          "type": "boolean"
+        },
+        "git_provider_webhook": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Git Provider Webhook"
+        },
+        "custom_branch_only": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Custom Branch Only"
+        },
+        "schedule": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Schedule"
+        },
+        "on_merge": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "On Merge"
+        }
+      },
+      "title": "Triggers",
+      "type": "object"
     }
-  }
+  },
+  "description": "Internal representation of a Jobs as Code configuration file.",
+  "properties": {
+    "jobs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JobDefinition"
+      },
+      "title": "Jobs",
+      "type": "object"
+    }
+  },
+  "required": [
+    "jobs"
+  ],
+  "title": "Config",
+  "type": "object"
 }

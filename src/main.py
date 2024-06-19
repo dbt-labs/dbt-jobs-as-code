@@ -409,5 +409,11 @@ def deactivate_jobs(config, account_id, job_id, disable_ssl_verification):
     logger.success(f"Deactivated all jobs!")
 
 
+@cli.command(hidden=True)
+def update_json_schema():
+    json_schema = generate_config_schema()
+    Path("src/schemas/load_job_schema.json").write_text(json_schema)
+
+
 if __name__ == "__main__":
     cli()
