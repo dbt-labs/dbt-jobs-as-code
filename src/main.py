@@ -54,10 +54,10 @@ def sync(config, project_id, environment_id, disable_ssl_verification):
     cloud_environment_ids = []
 
     if project_id:
-        cloud_project_ids = project_id
+        cloud_project_ids = list(project_id)
 
     if environment_id:
-        cloud_environment_ids = environment_id
+        cloud_environment_ids = list(environment_id)
 
     logger.info("-- SYNC -- Invoking build_change_set")
     change_set = build_change_set(
@@ -86,10 +86,10 @@ def plan(config, project_id, environment_id, disable_ssl_verification):
     cloud_environment_ids = []
 
     if project_id:
-        cloud_project_ids = project_id
+        cloud_project_ids = list(project_id)
 
     if environment_id:
-        cloud_environment_ids = environment_id
+        cloud_environment_ids = list(environment_id)
 
     change_set = build_change_set(
         config, disable_ssl_verification, cloud_project_ids, cloud_environment_ids
