@@ -36,6 +36,13 @@ class JobDefinition(BaseModel):
     triggers: Triggers
     description: str = ""
     state: int = 1
+    # we don't want to enforce the list in case we add more, but still want to get those in the JSON schema
+    job_type: str = Field(
+        json_schema_extra={"enum": ["scheduled", "merge", "ci", "other"]},
+        default="scheduled",
+    )
+    triggers_on_draft_pr: bool = False
+    job_completion_trigger_condition: Optional[JobCompletionTriggerCondition] = None
     custom_environment_variables: List[CustomEnvironmentVariable] = []
 
     def __init__(self, **data: Any):
