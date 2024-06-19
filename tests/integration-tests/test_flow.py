@@ -47,6 +47,10 @@ def clean_up_jobs():
         dbt_client.delete_job(job)
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 12) or sys.version_info >= (3, 13),
+    reason="We test this for Python 3.12 only to avoid issues with this test running concurrently between different versions",
+)
 def test_end_to_end_flow(runner, log_capture):
     if PROJECT_ID == 0:
         raise ValueError("Please set the DBT_CLOUD_PROJECT_ID environment variable")
