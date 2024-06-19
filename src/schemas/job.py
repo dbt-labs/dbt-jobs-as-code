@@ -89,3 +89,30 @@ class JobDefinition(pydantic.BaseModel):
         for env_var in self.custom_environment_variables:
             data["custom_environment_variables"].append({env_var.name: env_var.value})
         return data
+
+
+class JobMissingFields(JobDefinition):
+    """This class can be used to identify when there are new fields added to jobs
+    We don't add the not needed fields to the JobDefinition model to prevent the tool from breaking with any API change
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # when adding fields we also need to update the test for pytest
+
+    # TODO: Add to JobDefinition model when the feature is out
+    run_compare_changes: bool = False
+
+    # Unneeded read-only fields
+    raw_dbt_version: Optional[str] = None
+    created_at: str = ""
+    updated_at: str = ""
+    deactivated: bool
+    run_failure_count: int = False
+    lifecycle_webhooks: bool = False
+    lifecycle_webhooks_url: Optional[str] = None
+    is_deferrable: bool = False
+    generate_sources: bool = False
+    cron_humanized: str = ""
+    next_run: Optional[str] = ""
+    next_run_humanized: Optional[str] = ""

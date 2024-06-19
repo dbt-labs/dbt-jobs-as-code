@@ -140,6 +140,21 @@ class DBTCloud:
             return None
         return JobDefinition(**response.json()["data"])
 
+    def get_job_missing_fields(self, job_id: int) -> Optional[JobMissingFields]:
+        """Generate a Job based on a dbt Cloud job."""
+
+        self._check_for_creds()
+
+        response = requests.get(
+            url=(f"{self.base_url}/api/v2/accounts/" f"{self.account_id}/jobs/{job_id}/"),
+            headers=self._headers,
+            verify=self._verify,
+        )
+        if response.status_code > 200:
+            logger.error(f"Issue getting the job {job_id}")
+            return None
+        return JobMissingFields(**response.json()["data"])
+
     def get_jobs(
         self, project_ids: Optional[List[int]] = None, environment_ids: Optional[List[int]] = None
     ) -> List[JobDefinition]:
