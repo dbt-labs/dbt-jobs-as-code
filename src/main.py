@@ -207,7 +207,21 @@ def validate(config, online, disable_ssl_verification):
     multiple=True,
     help="[Optional] The ID of the job to import.",
 )
-def import_jobs(config, account_id, project_id, environment_id, job_id, disable_ssl_verification):
+@click.option(
+    "--check-missing-fields",
+    is_flag=True,
+    help="Check if the job model has missing fields.",
+    hidden=True,
+)
+def import_jobs(
+    config,
+    account_id,
+    project_id,
+    environment_id,
+    job_id,
+    disable_ssl_verification,
+    check_missing_fields=False,
+):
     """
     Generate YML file for import.
     Either --config or --account-id must be provided.
@@ -240,14 +254,25 @@ def import_jobs(config, account_id, project_id, environment_id, job_id, disable_
         disable_ssl_verification=disable_ssl_verification,
     )
 
-    logger.info(f"Getting the jobs definition from dbt Cloud")
+    # this is a special case to check if there are new fields in the job model
+    if check_missing_fields:
+        if not job_id:
+            logger.error("We need to provide some job_id to test the import")
+        else:
+            logger.info(f"Checking if there are new fields for jobs")
+            # retrieve the job and raise errors if there are new fields
+            dbt_cloud.get_job_missing_fields(job_id=job_id[0])
+        return
+
     # we want to avoid querying all jobs if it's not needed
     # if we don't provide a filter for project/env but provide a list of job ids, we get the jobs one by one
-    if job_id and not (cloud_project_ids or cloud_environment_ids):
+    elif job_id and not (cloud_project_ids or cloud_environment_ids):
+        logger.info(f"Getting the jobs definition from dbt Cloud")
         cloud_jobs_can_have_none = [dbt_cloud.get_job(job_id=id) for id in job_id]
         cloud_jobs = [job for job in cloud_jobs_can_have_none if job is not None]
     # otherwise, we get all the jobs and filter the list
     else:
+        logger.info(f"Getting the jobs definition from dbt Cloud")
         cloud_jobs = dbt_cloud.get_jobs(
             project_ids=cloud_project_ids, environment_ids=cloud_environment_ids
         )
@@ -256,7 +281,10 @@ def import_jobs(config, account_id, project_id, environment_id, job_id, disable_
 
     for cloud_job in cloud_jobs:
         logger.info(f"Getting en vars overwrites for the job {cloud_job.id}:{cloud_job.name}")
-        env_vars = dbt_cloud.get_env_vars(project_id=cloud_job.project_id, job_id=cloud_job.id)
+        env_vars = dbt_cloud.get_env_vars(
+            project_id=cloud_job.project_id,
+            job_id=cloud_job.id,  # type: ignore # in that case, we have an ID as we are importing
+        )
         for env_var in env_vars.values():
             if env_var.value:
                 cloud_job.custom_environment_variables.append(env_var)
