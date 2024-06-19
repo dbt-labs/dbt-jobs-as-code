@@ -1,14 +1,19 @@
 import os
 import string
-from typing import List, Optional
 
+from beartype import BeartypeConf, BeartypeStrategy, beartype
+from beartype.typing import Callable, List
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 from rich.table import Table
 
 from src.client import DBTCloud
 from src.loader.load import load_job_configuration
 from src.schemas import check_env_var_same, check_job_mapping_same
+from src.schemas.job import JobDefinition
+
+# Dynamically create a new @nobeartype decorator disabling type-checking.
+nobeartype = beartype(conf=BeartypeConf(strategy=BeartypeStrategy.O0))
 
 
 class Change(BaseModel):
@@ -19,7 +24,7 @@ class Change(BaseModel):
     action: str
     proj_id: int
     env_id: int
-    sync_function: object
+    sync_function: Callable
     parameters: dict
 
     def __str__(self):
@@ -29,19 +34,19 @@ class Change(BaseModel):
         self.sync_function(**self.parameters)
 
 
-class ChangeSet(BaseModel):
+class ChangeSet(RootModel):
     """Store the set of changes to be displayed or applied."""
 
-    __root__: List[Change] = []
+    root: List[Change] = []
 
     def __iter__(self):
-        return iter(self.__root__)
+        return iter(self.root)
 
     def append(self, change: Change):
-        self.__root__.append(change)
+        self.root.append(change)
 
     def __str__(self):
-        list_str = [str(change) for change in self.__root__]
+        list_str = [str(change) for change in self.root]
         return "\n".join(list_str)
 
     def to_table(self) -> Table:
@@ -55,7 +60,7 @@ class ChangeSet(BaseModel):
         table.add_column("Proj ID", style="yellow")
         table.add_column("Env ID", style="red")
 
-        for change in self.__root__:
+        for change in self.root:
             table.add_row(
                 change.action.upper(),
                 string.capwords(change.type),
@@ -67,26 +72,30 @@ class ChangeSet(BaseModel):
         return table
 
     def __len__(self):
-        return len(self.__root__)
+        return len(self.root)
 
     def apply(self):
-        for change in self.__root__:
+        for change in self.root:
             change.apply()
 
 
-def filter_config(defined_jobs, project_ids: List[int], environment_ids: List[int]):
+# Don't bear type this function as we do some odd things in tests
+@nobeartype
+def filter_config(
+    defined_jobs: dict[str, JobDefinition], project_ids: List[int], environment_ids: List[int]
+) -> dict[str, JobDefinition]:
     """Filters the config based on the inputs provided for project ids and environment ids."""
-    removed_job_ids = set()
+    removed_job_ids: set[str] = set()
     if len(environment_ids) != 0:
         for job_id, job in defined_jobs.items():
-            if not job.environment_id in environment_ids:
+            if job.environment_id not in environment_ids:
                 removed_job_ids.add(job_id)
                 logger.warning(
                     f"For Job# {job.identifier}, environment_id(s) provided as arguments does not match the ID's in Jobs YAML file!!!"
                 )
     if len(project_ids) != 0:
         for job_id, job in defined_jobs.items():
-            if not job.project_id in project_ids:
+            if job.project_id not in project_ids:
                 removed_job_ids.add(job_id)
                 logger.warning(
                     f"For Job# {job.identifier}, project_id(s) provided as arguments does not match the ID's in Jobs YAML file!!!"
@@ -94,7 +103,12 @@ def filter_config(defined_jobs, project_ids: List[int], environment_ids: List[in
     return {job_id: job for job_id, job in defined_jobs.items() if job_id not in removed_job_ids}
 
 
-def build_change_set(config, disable_ssl_verification: bool, project_ids: List[int], environment_ids: List[int]):
+def build_change_set(
+    config,
+    disable_ssl_verification: bool,
+    project_ids: List[int],
+    environment_ids: List[int],
+):
     """Compares the config of YML files versus dbt Cloud.
     Depending on the value of no_update, it will either update the dbt Cloud config or not.
 
@@ -245,7 +259,7 @@ def build_change_set(config, disable_ssl_verification: bool, project_ids: List[i
                 if env_var not in env_vars_for_job and env_var_val.id:
                     logger.info(f"{env_var} not in the YML file but in the dbt Cloud job")
                     dbt_cloud_change = Change(
-                        identifier=f"{job.identifier}:{env_var_yml.name}",
+                        identifier=f"{job.identifier}:{env_var}",
                         type="env var overwrite",
                         action="delete",
                         proj_id=job.project_id,

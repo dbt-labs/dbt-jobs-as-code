@@ -1,6 +1,5 @@
-from typing import Any, Dict, List, Optional
-
 import requests
+from beartype.typing import Any, Dict, List, Optional
 from loguru import logger
 from urllib3.exceptions import InsecureRequestWarning
 
@@ -8,9 +7,9 @@ from src.schemas.custom_environment_variable import (
     CustomEnvironmentVariable,
     CustomEnvironmentVariablePayload,
 )
-from src.schemas.job import JobDefinition
+from src.schemas.job import JobDefinition, JobMissingFields
 
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 
 
 class DBTCloud:
@@ -37,7 +36,7 @@ class DBTCloud:
         }
         self._verify = not disable_ssl_verification
         if not self._verify:
-            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)  # type: ignore
             logger.warning(
                 "SSL verification is disabled. This is not recommended unless you absolutely need this config."
             )
@@ -58,7 +57,6 @@ class DBTCloud:
     def build_mapping_job_identifier_job_id(
         self, cloud_jobs: Optional[List[JobDefinition]] = None
     ):
-
         if cloud_jobs is None:
             # TODO, we should filter things here at least if we call it often
             cloud_jobs = self.get_jobs()
@@ -84,8 +82,8 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
-
-        logger.success("Job updated successfully.")
+        else:
+            logger.success("Job updated successfully.")
 
         return JobDefinition(**(response.json()["data"]), identifier=job.identifier)
 
@@ -104,8 +102,8 @@ class DBTCloud:
         if response.status_code >= 400:
             logger.error(response.json())
             return None
-
-        logger.success("Job created successfully.")
+        else:
+            logger.success("Job created successfully.")
 
         return JobDefinition(**(response.json()["data"]), identifier=job.identifier)
 
@@ -122,8 +120,8 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
-
-        logger.success("Job deleted successfully.")
+        else:
+            logger.success("Job deleted successfully.")
 
     def get_job(self, job_id: int) -> Optional[JobDefinition]:
         """Generate a Job based on a dbt Cloud job."""
@@ -156,7 +154,9 @@ class DBTCloud:
         return JobMissingFields(**response.json()["data"])
 
     def get_jobs(
-        self, project_ids: Optional[List[int]] = None, environment_ids: Optional[List[int]] = None
+        self,
+        project_ids: Optional[List[int]] = None,
+        environment_ids: Optional[List[int]] = None,
     ) -> List[JobDefinition]:
         """Return a list of Jobs for all the dbt Cloud jobs in an environment."""
 
@@ -164,7 +164,7 @@ class DBTCloud:
         project_ids = project_ids or []
         environment_ids = environment_ids or []
 
-        jobs: List[JobDefinition] = []
+        jobs: List[dict] = []
         if len(environment_ids) > 1:
             for env_id in environment_ids:
                 jobs.extend(self._fetch_jobs(project_ids, env_id))
@@ -175,11 +175,9 @@ class DBTCloud:
 
         return [JobDefinition(**job) for job in jobs]
 
-    def _fetch_jobs(
-        self, project_ids: List[int], environment_id: Optional[int]
-    ) -> List[JobDefinition]:
+    def _fetch_jobs(self, project_ids: List[int], environment_id: Optional[int]) -> List[dict]:
         offset = 0
-        jobs: List[JobDefinition] = []
+        jobs: List[dict] = []
 
         while True:
             parameters = self._build_parameters(project_ids, environment_id, offset)
@@ -315,7 +313,7 @@ class DBTCloud:
             account_id=self.account_id,
             project_id=project_id,
             id=env_var_id,
-            **custom_env_var.dict(),
+            **custom_env_var.model_dump(),
         )
 
         response = requests.post(
@@ -360,5 +358,6 @@ class DBTCloud:
         if response.status_code >= 400:
             logger.error(response.json())
             logger.error(f"Does the Account ID {self.account_id} exist?")
+            return {}
 
         return response.json()["data"]

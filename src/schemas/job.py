@@ -1,40 +1,47 @@
 import re
-from typing import Any, List, Optional
 
-import pydantic
+from beartype.typing import Any, List, Optional
+from pydantic import BaseModel, ConfigDict, Field
 
-from .common_types import Execution, Schedule, Settings, Time, Triggers
+from .common_types import (
+    Execution,
+    JobCompletionTriggerCondition,
+    Schedule,
+    Settings,
+    Time,
+    Triggers,
+)
 from .custom_environment_variable import CustomEnvironmentVariable
 
 
 # Main model for loader
-class JobDefinition(pydantic.BaseModel):
+class JobDefinition(BaseModel):
     """A definition for a dbt Cloud job."""
 
-    id: Optional[int]
-    identifier: Optional[str]
+    id: Optional[int] = None
+    identifier: Optional[str] = None
     account_id: int
     project_id: int
     environment_id: int
-    dbt_version: Optional[str]
+    dbt_version: Optional[str] = None
     name: str
     settings: Settings
     execution: Execution = Execution()
-    deferring_job_definition_id: Optional[int]
-    deferring_environment_id: Optional[int]
+    deferring_job_definition_id: Optional[int] = None
+    deferring_environment_id: Optional[int] = None
     run_generate_sources: bool
     execute_steps: List[str]
     generate_docs: bool
     schedule: Schedule
     triggers: Triggers
+    description: str = ""
     state: int = 1
     custom_environment_variables: List[CustomEnvironmentVariable] = []
 
     def __init__(self, **data: Any):
-
         # Check if `name` includes an identifier. If yes, set the identifier in the object. Remove the identifier from
         # the name.
-        matches = re.search(r"\[\[([a-zA-Z0-9_]+)\]\]", data["name"])
+        matches = re.search(r"\[\[([a-zA-Z0-9_-]+)\]\]", data["name"])
         if matches is not None:
             data["identifier"] = matches.groups()[0]
             data["name"] = data["name"].replace(f" [[{data['identifier']}]]", "")
@@ -56,24 +63,21 @@ class JobDefinition(pydantic.BaseModel):
 
         super().__init__(**data)
 
-    class Config:
-        json_encoders = {Time: lambda t: t.serialize()}
-
     def to_payload(self):
         """Create a dbt Cloud API payload for a JobDefinition."""
 
         # Rewrite the job name to embed the job ID from job.yml
-        payload = self.copy()
+        payload = self.model_copy()
         # if there is an identifier, add it to the name
         # otherwise, it means that we are "unlinking" the job from the job.yml
         if self.identifier:
             payload.name = f"{self.name} [[{self.identifier}]]"
-        return payload.json(exclude={"identifier", "custom_environment_variables"})
+        return payload.model_dump_json(exclude={"identifier", "custom_environment_variables"})
 
     def to_load_format(self):
         """Generate a dict following our YML format to dump as YML later."""
 
-        data = self.dict(
+        data = self.model_dump(
             exclude={
                 "identifier": True,
                 "schedule": {

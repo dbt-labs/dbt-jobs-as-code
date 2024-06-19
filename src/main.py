@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 
 import click
 from loguru import logger
@@ -9,6 +10,7 @@ from src.changeset.change_set import build_change_set
 from src.client import DBTCloud
 from src.exporter.export import export_jobs_yml
 from src.loader.load import load_job_configuration
+from src.schemas.config import generate_config_schema
 
 # adding the ability to disable ssl verification, useful for self-signed certificates and local testing
 option_disable_ssl_verification = click.option(
@@ -34,6 +36,7 @@ option_environment_ids = click.option(
     multiple=True,
     help="[Optional] The ID of dbt Cloud environment(s) to use for sync",
 )
+
 
 @click.group()
 def cli() -> None:
