@@ -25,7 +25,15 @@ jobs:
       git_provider_webhook: false
       github_webhook: false
       schedule: true
-    custom_environment_variables: null
+      on_merge: true
+    job_type: "other"
+    triggers_on_draft_pr: true
+    job_completion_trigger_condition:
+      condition:
+        job_id: 123
+        project_id: 234
+        statuses: [10, 20]
+
 
   job2:
     account_id: 43791

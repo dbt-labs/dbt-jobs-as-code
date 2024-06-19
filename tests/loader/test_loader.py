@@ -1,14 +1,4 @@
-import json
-
-from exporter.export import export_jobs_yml
-from jsonschema import validate
 from loader.load import load_job_configuration
-from ruamel.yaml import YAML
-from schemas.config import Config
-from schemas.custom_environment_variable import CustomEnvironmentVariable
-
-from src.schemas.common_types import Date, Execution, Schedule, Settings, Time, Triggers
-from src.schemas.job import JobDefinition
 
 
 def test_import_yml_no_anchor():
@@ -24,6 +14,7 @@ def test_import_yml_no_anchor():
                 "environment_id": 134459,
                 "dbt_version": None,
                 "name": "My Job 1",
+                "description": "",
                 "settings": {"threads": 4, "target_name": "production"},
                 "execution": {"timeout_seconds": 0},
                 "deferring_job_definition_id": None,
@@ -44,9 +35,19 @@ def test_import_yml_no_anchor():
                     "git_provider_webhook": False,
                     "custom_branch_only": True,
                     "schedule": True,
+                    "on_merge": True,
                 },
                 "state": 1,
                 "custom_environment_variables": [],
+                "job_type": "other",
+                "triggers_on_draft_pr": True,
+                "job_completion_trigger_condition": {
+                    "condition": {
+                        "job_id": 123,
+                        "project_id": 234,
+                        "statuses": [10, 20],
+                    }
+                },
             },
             "job2": {
                 "id": None,
@@ -56,6 +57,7 @@ def test_import_yml_no_anchor():
                 "environment_id": 134459,
                 "dbt_version": None,
                 "name": "CI/CD run",
+                "description": "",
                 "settings": {"threads": 4, "target_name": "TEST"},
                 "execution": {"timeout_seconds": 0},
                 "deferring_job_definition_id": None,
@@ -76,8 +78,12 @@ def test_import_yml_no_anchor():
                     "git_provider_webhook": False,
                     "custom_branch_only": True,
                     "schedule": False,
+                    "on_merge": False,
                 },
                 "state": 1,
+                "job_type": "scheduled",
+                "job_completion_trigger_condition": None,
+                "triggers_on_draft_pr": False,
                 "custom_environment_variables": [
                     {
                         "name": "DBT_ENV1",
@@ -101,7 +107,7 @@ def test_import_yml_no_anchor():
     with open("tests/loader/jobs.yml") as file:
         loaded_config = load_job_configuration(file)
 
-    assert loaded_config.dict() == expected_config_dict
+    assert loaded_config.model_dump() == expected_config_dict
 
 
 def test_import_yml_anchors():
@@ -117,6 +123,7 @@ def test_import_yml_anchors():
                 "environment_id": 134459,
                 "dbt_version": None,
                 "name": "My Job 1 with a new name",
+                "description": "",
                 "settings": {"threads": 4, "target_name": "production"},
                 "execution": {"timeout_seconds": 0},
                 "deferring_job_definition_id": None,
@@ -137,10 +144,14 @@ def test_import_yml_anchors():
                     "github_webhook": False,
                     "git_provider_webhook": False,
                     "custom_branch_only": True,
+                    "on_merge": False,
                     "schedule": True,
                 },
                 "state": 1,
                 "custom_environment_variables": [],
+                "job_completion_trigger_condition": None,
+                "job_type": "scheduled",
+                "triggers_on_draft_pr": False,
             },
             "job2": {
                 "id": None,
@@ -150,6 +161,7 @@ def test_import_yml_anchors():
                 "environment_id": 134459,
                 "dbt_version": None,
                 "name": "CI/CD run",
+                "description": "",
                 "settings": {"threads": 4, "target_name": "TEST"},
                 "execution": {"timeout_seconds": 0},
                 "deferring_job_definition_id": None,
@@ -169,9 +181,13 @@ def test_import_yml_anchors():
                     "github_webhook": True,
                     "git_provider_webhook": False,
                     "custom_branch_only": True,
+                    "on_merge": False,
                     "schedule": False,
                 },
                 "state": 1,
+                "job_completion_trigger_condition": None,
+                "job_type": "scheduled",
+                "triggers_on_draft_pr": False,
                 "custom_environment_variables": [
                     {
                         "name": "DBT_ENV1",
@@ -195,4 +211,4 @@ def test_import_yml_anchors():
     with open("tests/loader/jobs_with_anchors.yml") as file:
         loaded_config = load_job_configuration(file)
 
-    assert loaded_config.dict() == expected_config_dict
+    assert loaded_config.model_dump() == expected_config_dict

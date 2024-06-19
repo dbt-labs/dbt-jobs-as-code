@@ -14,6 +14,7 @@ jobs:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
+
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -34,3 +35,10 @@ jobs:
     - name: Run tests
       run: |
         poetry run pytest
+      env:
+        DBT_BASE_URL: ${{ secrets.DBT_BASE_URL }}
+        DBT_API_KEY: ${{ secrets.DBT_API_KEY }}
+        DBT_JOB_ID: ${{ secrets.DBT_JOB_ID }}
+        DBT_ACCOUNT_ID: ${{ secrets.DBT_ACCOUNT_ID }}
+        DBT_PROJECT_ID: ${{ secrets.DBT_PROJECT_ID }}
+        DBT_ENV_ID: ${{ secrets.DBT_ENV_ID }}
