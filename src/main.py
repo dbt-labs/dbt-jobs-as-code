@@ -36,6 +36,14 @@ option_environment_ids = click.option(
     multiple=True,
     help="[Optional] The ID of dbt Cloud environment(s) to use for sync",
 )
+
+option_restrict_to_yml = click.option(
+    "--restrict-yml",
+    "-r",
+    is_flag=True,
+    help="[Flag] Restrict sync/plan to the jobs and environments listed in the jobs YML file",
+)
+
 option_vars_yml = click.option(
     "--vars-yml",
     "-v",
@@ -55,13 +63,20 @@ def cli() -> None:
 @option_vars_yml
 @option_project_ids
 @option_environment_ids
-def sync(config, project_id, environment_id, disable_ssl_verification):
+@option_restrict_to_yml
+def sync(config, vars_yml, project_id, environment_id, restrict_yml, disable_ssl_verification):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
     """
     cloud_project_ids = []
     cloud_environment_ids = []
+
+    if restrict_yml and (project_id or environment_id):
+        logger.error(
+            "You cannot use --restrict-yml with --project-id or --environment-id. Please remove the --restrict-yml flag."
+        )
+        sys.exit(1)
 
     if project_id:
         cloud_project_ids = list(project_id)
@@ -71,7 +86,12 @@ def sync(config, project_id, environment_id, disable_ssl_verification):
 
     logger.info("-- SYNC -- Invoking build_change_set")
     change_set = build_change_set(
-        config, disable_ssl_verification, cloud_project_ids, cloud_environment_ids
+        config,
+        vars_yml,
+        disable_ssl_verification,
+        cloud_project_ids,
+        cloud_environment_ids,
+        restrict_yml,
     )
     if len(change_set) == 0:
         logger.success("-- SYNC -- No changes detected.")
@@ -88,13 +108,20 @@ def sync(config, project_id, environment_id, disable_ssl_verification):
 @option_vars_yml
 @option_project_ids
 @option_environment_ids
-def plan(config, project_id, environment_id, disable_ssl_verification):
+@option_restrict_to_yml
+def plan(config, vars_yml, project_id, environment_id, restrict_yml, disable_ssl_verification):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
     """
     cloud_project_ids = []
     cloud_environment_ids = []
+
+    if restrict_yml and (project_id or environment_id):
+        logger.error(
+            "You cannot use --restrict-yml with --project-id or --environment-id. Please remove the --restrict-yml flag."
+        )
+        sys.exit(1)
 
     if project_id:
         cloud_project_ids = list(project_id)
@@ -103,7 +130,12 @@ def plan(config, project_id, environment_id, disable_ssl_verification):
         cloud_environment_ids = list(environment_id)
 
     change_set = build_change_set(
-        config, disable_ssl_verification, cloud_project_ids, cloud_environment_ids
+        config,
+        vars_yml,
+        disable_ssl_verification,
+        cloud_project_ids,
+        cloud_environment_ids,
+        restrict_yml,
     )
     if len(change_set) == 0:
         logger.success("-- PLAN -- No changes detected.")
@@ -118,7 +150,7 @@ def plan(config, project_id, environment_id, disable_ssl_verification):
 @click.argument("config", type=click.File("r"))
 @option_vars_yml
 @click.option("--online", is_flag=True, help="Connect to dbt Cloud to check that IDs are correct.")
-def validate(config, online, disable_ssl_verification):
+def validate(config, vars_yml, online, disable_ssl_verification):
     """Check that the config file is valid
 
     CONFIG is the path to your jobs.yml config file.
@@ -245,7 +277,7 @@ def import_jobs(
     if account_id:
         cloud_account_id = account_id
     elif config:
-        defined_jobs = load_job_configuration(config).jobs.values()
+        defined_jobs = load_job_configuration(config, None).jobs.values()
         cloud_account_id = list(defined_jobs)[0].account_id
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
@@ -292,7 +324,7 @@ def import_jobs(
             cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
 
     for cloud_job in cloud_jobs:
-        logger.info(f"Getting en vars overwrites for the job {cloud_job.id}:{cloud_job.name}")
+        logger.info(f"Getting en vars_yml overwrites for the job {cloud_job.id}:{cloud_job.name}")
         env_vars = dbt_cloud.get_env_vars(
             project_id=cloud_job.project_id,
             job_id=cloud_job.id,  # type: ignore # in that case, we have an ID as we are importing
