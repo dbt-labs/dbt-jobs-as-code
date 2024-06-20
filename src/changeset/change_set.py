@@ -105,6 +105,7 @@ def filter_config(
 
 def build_change_set(
     config,
+    yml_vars,
     disable_ssl_verification: bool,
     project_ids: List[int],
     environment_ids: List[int],
@@ -114,11 +115,8 @@ def build_change_set(
 
     CONFIG is the path to your jobs.yml config file.
     """
-    configuration = load_job_configuration(config)
-    unfiltered_defined_jobs = configuration.jobs
+    configuration = load_job_configuration(config, yml_vars)
 
-    # If a project_id or environment_id is passed in as a parameter (one or multiple), check if these match the ID's in Jobs YAML file, otherwise add a warning and continue the process
-    defined_jobs = filter_config(unfiltered_defined_jobs, project_ids, environment_ids)
 
     if len(defined_jobs) == 0:
         logger.warning(

@@ -36,6 +36,12 @@ option_environment_ids = click.option(
     multiple=True,
     help="[Optional] The ID of dbt Cloud environment(s) to use for sync",
 )
+option_vars_yml = click.option(
+    "--vars-yml",
+    "-v",
+    type=click.File("r"),
+    help="The path to your vars_yml YML file when using a templated job YML file.",
+)
 
 
 @click.group()
@@ -46,6 +52,7 @@ def cli() -> None:
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
+@option_vars_yml
 @option_project_ids
 @option_environment_ids
 def sync(config, project_id, environment_id, disable_ssl_verification):
@@ -78,6 +85,7 @@ def sync(config, project_id, environment_id, disable_ssl_verification):
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
+@option_vars_yml
 @option_project_ids
 @option_environment_ids
 def plan(config, project_id, environment_id, disable_ssl_verification):
@@ -108,6 +116,7 @@ def plan(config, project_id, environment_id, disable_ssl_verification):
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=click.File("r"))
+@option_vars_yml
 @click.option("--online", is_flag=True, help="Connect to dbt Cloud to check that IDs are correct.")
 def validate(config, online, disable_ssl_verification):
     """Check that the config file is valid
@@ -117,7 +126,7 @@ def validate(config, online, disable_ssl_verification):
 
     # Parse the config file and check if it follows the Pydantic model
     logger.info(f"Parsing the YML file {config.name}")
-    defined_jobs = load_job_configuration(config).jobs.values()
+    defined_jobs = load_job_configuration(config, vars_yml).jobs.values()
 
     if defined_jobs:
         logger.success("✅ The config file has a valid YML format.")
@@ -318,13 +327,13 @@ def unlink(config, account_id, dry_run, identifier, disable_ssl_verification):
     if account_id:
         cloud_account_id = account_id
     elif config:
-        defined_jobs = load_job_configuration(config).jobs.values()
+        defined_jobs = load_job_configuration(config, None).jobs.values()
         cloud_account_id = list(defined_jobs)[0].account_id
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
 
     # we get the account id from the config file
-    defined_jobs = load_job_configuration(config).jobs.values()
+    defined_jobs = load_job_configuration(config, None).jobs.values()
     cloud_account_id = list(defined_jobs)[0].account_id
 
     dbt_cloud = DBTCloud(
@@ -380,7 +389,7 @@ def deactivate_jobs(config, account_id, job_id, disable_ssl_verification):
     if account_id:
         cloud_account_id = account_id
     elif config:
-        defined_jobs = load_job_configuration(config).jobs.values()
+        defined_jobs = load_job_configuration(config, None).jobs.values()
         cloud_account_id = list(defined_jobs)[0].account_id
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")

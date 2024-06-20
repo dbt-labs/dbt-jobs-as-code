@@ -64,6 +64,14 @@ jobs:
       git_provider_webhook: false
       github_webhook: true # this job runs from webhooks
       schedule: false # this doesn't run on a schedule
+      on_merge: true
     custom_environment_variables:
       - DBT_ENV1: My val
       - DBT_ENV2: My val2
+    job_type: "other"
+    triggers_on_draft_pr: true
+    job_completion_trigger_condition:
+      condition:
+        job_id: 123
+        project_id: 234
+        statuses: [10, 20]
