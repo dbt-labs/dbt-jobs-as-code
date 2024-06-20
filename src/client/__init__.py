@@ -1,5 +1,8 @@
+import os
+
 import requests
 from beartype.typing import Any, Dict, List, Optional
+from importlib_metadata import version
 from loguru import logger
 from urllib3.exceptions import InsecureRequestWarning
 
@@ -9,7 +12,10 @@ from src.schemas.custom_environment_variable import (
 )
 from src.schemas.job import JobDefinition, JobMissingFields
 
-VERSION = "0.5.0"
+if os.getenv("DBT_JOB_ID", "") == "":
+    VERSION = version("dbt-jobs-as-code")
+else:
+    VERSION = "dev"
 
 
 class DBTCloud:
