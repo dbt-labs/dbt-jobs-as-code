@@ -13,18 +13,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9.x"
+          python-version: "3.12.x"
 
       - name: Install dbt-jobs-as-code
-        run: pip install git+https://github.com/dbt-labs/dbt-jobs-as-code.git@v0.4.0
+        run: pip install git+https://github.com/dbt-labs/dbt-jobs-as-code.git@v0.6.0
 
       - name: Run dbt-jobs-as-code
         run: dbt-jobs-as-code sync jobs/jobs.yml
+        # or to template the jobs YAML file and only check the projects/environments from the project
+        # run: dbt-jobs-as-code sync jobs/jobs.yml --vars-yml vars_qa.yml --restrict-yml
         env: 
           DBT_API_KEY: "${{secrets.DBT_API_KEY}}"
           # DBT_BASE_URL is optional
