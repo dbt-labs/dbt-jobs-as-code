@@ -177,7 +177,7 @@ def validate(config, vars_yml, online, disable_ssl_verification):
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
     )
-    all_environments = dbt_cloud.get_environments()
+    all_environments = dbt_cloud.get_environments(project_ids=list(config_project_ids))
     cloud_project_ids = set([env["project_id"] for env in all_environments])
     cloud_environment_ids = set([env["id"] for env in all_environments])
 
@@ -209,7 +209,8 @@ def validate(config, vars_yml, online, disable_ssl_verification):
     )
     if deferral_jobs:
         logger.info(f"Checking that Deferring Job IDs are valid")
-        cloud_jobs = dbt_cloud.get_jobs()
+        project_ids = set([job.project_id for job in defined_jobs])
+        cloud_jobs = dbt_cloud.get_jobs(project_ids=list(project_ids))
         cloud_job_ids = set([job.id for job in cloud_jobs])
         if deferral_jobs - cloud_job_ids:
             logger.error(
@@ -223,7 +224,8 @@ def validate(config, vars_yml, online, disable_ssl_verification):
     )
     if deferral_envs:
         logger.info(f"Checking that Deferring Env IDs are valid")
-        cloud_envs = dbt_cloud.get_environments()
+        list_project_ids = set([job.project_id for job in defined_jobs])
+        cloud_envs = dbt_cloud.get_environments(project_ids=list(list_project_ids))
         cloud_envs_ids = set([env["id"] for env in cloud_envs])
         if deferral_envs - cloud_envs_ids:
             logger.error(

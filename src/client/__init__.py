@@ -350,13 +350,9 @@ class DBTCloud:
 
         logger.success("Env Var Job Overwrite deleted successfully.")
 
-    def get_environments(self) -> Dict:
-        """Return a list of Environments for all the dbt Cloud jobs in an account"""
-
-        self._check_for_creds()
-
+    def _fetch_environment(self, url) -> List[dict]:
         response = requests.get(
-            url=(f"{self.base_url}/api/v3/accounts/" f"{self.account_id}/environments/"),
+            url=url,
             headers=self._headers,
             verify=self._verify,
         )
@@ -364,6 +360,20 @@ class DBTCloud:
         if response.status_code >= 400:
             logger.error(response.json())
             logger.error(f"Does the Account ID {self.account_id} exist?")
-            return {}
+            return []
 
         return response.json()["data"]
+
+    def get_environments(self, project_ids: List[int]) -> List[dict]:
+        """Return a list of Environments for all the dbt Cloud jobs in an account"""
+
+        self._check_for_creds()
+
+        all_envs = []
+        for project_id in project_ids:
+            url = (
+                f"{self.base_url}/api/v3/accounts/"
+                f"{self.account_id}/environments/?project_id={project_id}"
+            )
+            all_envs.extend(self._fetch_environment(url))
+        return all_envs
