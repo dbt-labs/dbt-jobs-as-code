@@ -1,6 +1,6 @@
 import re
 
-from beartype.typing import Any, List, Optional
+from beartype.typing import Any, List, Optional, Dict
 from pydantic import BaseModel, ConfigDict, Field
 
 from .common_types import (
@@ -8,10 +8,27 @@ from .common_types import (
     JobCompletionTriggerCondition,
     Schedule,
     Settings,
-    Time,
     Triggers,
 )
 from .custom_environment_variable import CustomEnvironmentVariable
+
+
+def set_one_of_string_integer(schema: Dict[str, Any]):
+    schema.pop("type", None)
+    schema["oneOf"] = [{"type": "string"}, {"type": "integer"}]
+
+
+def set_any_of_string_integer_null(schema: Dict[str, Any]):
+    schema.pop("type", None)
+    schema["anyOf"] = [{"type": "string"}, {"type": "integer"}, {"type": "null"}]
+
+
+field_mandatory_int_allowed_as_string_in_schema = Field(
+    json_schema_extra=set_one_of_string_integer
+)
+field_optional_int_allowed_as_string_in_schema = Field(
+    default=None, json_schema_extra=set_any_of_string_integer_null
+)
 
 
 # Main model for loader
@@ -20,15 +37,15 @@ class JobDefinition(BaseModel):
 
     id: Optional[int] = None
     identifier: Optional[str] = None
-    account_id: int
-    project_id: int
-    environment_id: int
+    account_id: int = field_mandatory_int_allowed_as_string_in_schema
+    project_id: int = field_mandatory_int_allowed_as_string_in_schema
+    environment_id: int = field_mandatory_int_allowed_as_string_in_schema
     dbt_version: Optional[str] = None
     name: str
     settings: Settings
     execution: Execution = Execution()
-    deferring_job_definition_id: Optional[int] = None
-    deferring_environment_id: Optional[int] = None
+    deferring_job_definition_id: Optional[int] = field_optional_int_allowed_as_string_in_schema
+    deferring_environment_id: Optional[int] = field_optional_int_allowed_as_string_in_schema
     run_generate_sources: bool
     execute_steps: List[str]
     generate_docs: bool
@@ -43,7 +60,25 @@ class JobDefinition(BaseModel):
     )
     triggers_on_draft_pr: bool = False
     job_completion_trigger_condition: Optional[JobCompletionTriggerCondition] = None
-    custom_environment_variables: List[CustomEnvironmentVariable] = []
+    custom_environment_variables: List[CustomEnvironmentVariable] = Field(
+        default=[],
+        json_schema_extra={
+            "items": {
+                "type": "object",
+                "patternProperties": {
+                    "^DBT_": {
+                        "oneOf": [
+                            {"type": "string"},
+                            {"type": "number"},
+                            {"type": "boolean"},
+                        ]
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+        description="Dictionary of custom environment variables name and value for the job. The env var name must start with DBT_.",
+    )
 
     def __init__(self, **data: Any):
         # Check if `name` includes an identifier. If yes, set the identifier in the object. Remove the identifier from

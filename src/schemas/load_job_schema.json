@@ -36,66 +36,6 @@
       "title": "Condition",
       "type": "object"
     },
-    "CustomEnvironmentVariable": {
-      "properties": {
-        "name": {
-          "title": "Name",
-          "type": "string"
-        },
-        "type": {
-          "default": "job",
-          "enum": [
-            "project",
-            "environment",
-            "job",
-            "user"
-          ],
-          "title": "Type",
-          "type": "string"
-        },
-        "value": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Value"
-        },
-        "display_value": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Display Value"
-        },
-        "job_definition_id": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Job Definition Id"
-        }
-      },
-      "required": [
-        "name"
-      ],
-      "title": "CustomEnvironmentVariable",
-      "type": "object"
-    },
     "Date": {
       "properties": {
         "type": {
@@ -172,16 +112,37 @@
           "title": "Identifier"
         },
         "account_id": {
-          "title": "Account Id",
-          "type": "integer"
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Account Id"
         },
         "project_id": {
-          "title": "Project Id",
-          "type": "integer"
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Project Id"
         },
         "environment_id": {
-          "title": "Environment Id",
-          "type": "integer"
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Environment Id"
         },
         "dbt_version": {
           "anyOf": [
@@ -215,6 +176,9 @@
         "deferring_job_definition_id": {
           "anyOf": [
             {
+              "type": "string"
+            },
+            {
               "type": "integer"
             },
             {
@@ -226,6 +190,9 @@
         },
         "deferring_environment_id": {
           "anyOf": [
+            {
+              "type": "string"
+            },
             {
               "type": "integer"
             },
@@ -296,8 +263,25 @@
         },
         "custom_environment_variables": {
           "default": [],
+          "description": "Dictionary of custom environment variables name and value for the job. The env var name must start with DBT_.",
           "items": {
-            "$ref": "#/$defs/CustomEnvironmentVariable"
+            "additionalProperties": false,
+            "patternProperties": {
+              "^DBT_": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              }
+            },
+            "type": "object"
           },
           "title": "Custom Environment Variables",
           "type": "array"
@@ -361,13 +345,11 @@
           "type": "integer"
         },
         "target_name": {
+          "default": "default",
           "title": "Target Name",
           "type": "string"
         }
       },
-      "required": [
-        "target_name"
-      ],
       "title": "Settings",
       "type": "object"
     },
@@ -399,17 +381,24 @@
     "Triggers": {
       "properties": {
         "github_webhook": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            }
+          ],
           "default": false,
-          "title": "Github Webhook",
-          "type": "boolean"
+          "title": "Github Webhook"
         },
         "git_provider_webhook": {
           "anyOf": [
             {
-              "type": "boolean"
+              "type": "string"
             },
             {
-              "type": "null"
+              "type": "boolean"
             }
           ],
           "default": false,
@@ -418,10 +407,10 @@
         "custom_branch_only": {
           "anyOf": [
             {
-              "type": "boolean"
+              "type": "string"
             },
             {
-              "type": "null"
+              "type": "boolean"
             }
           ],
           "default": false,
@@ -430,10 +419,10 @@
         "schedule": {
           "anyOf": [
             {
-              "type": "boolean"
+              "type": "string"
             },
             {
-              "type": "null"
+              "type": "boolean"
             }
           ],
           "default": false,
@@ -442,10 +431,10 @@
         "on_merge": {
           "anyOf": [
             {
-              "type": "boolean"
+              "type": "string"
             },
             {
-              "type": "null"
+              "type": "boolean"
             }
           ],
           "default": false,

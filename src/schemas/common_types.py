@@ -7,17 +7,27 @@ class Execution(BaseModel):
     timeout_seconds: int = 0
 
 
+def set_any_of_string_boolean(schema: Dict[str, Any]):
+    schema.pop("type", None)
+    schema["anyOf"] = [{"type": "string"}, {"type": "boolean"}]
+
+
+field_optional_bool_allowed_as_string_in_schema = Field(
+    default=False, json_schema_extra=set_any_of_string_boolean
+)
+
+
 class Triggers(BaseModel):
-    github_webhook: bool = False
-    git_provider_webhook: Optional[bool] = False
-    custom_branch_only: Optional[bool] = False
-    schedule: Optional[bool] = False
-    on_merge: Optional[bool] = False
+    github_webhook: bool = field_optional_bool_allowed_as_string_in_schema
+    git_provider_webhook: Optional[bool] = field_optional_bool_allowed_as_string_in_schema
+    custom_branch_only: Optional[bool] = field_optional_bool_allowed_as_string_in_schema
+    schedule: Optional[bool] = field_optional_bool_allowed_as_string_in_schema
+    on_merge: Optional[bool] = field_optional_bool_allowed_as_string_in_schema
 
 
 class Settings(BaseModel):
     threads: int = 4
-    target_name: str
+    target_name: str = "default"
 
 
 class Date(BaseModel):
@@ -60,7 +70,7 @@ class Schedule(BaseModel):
         return v
 
     @field_serializer("time", when_used="json")
-    def serialize_field(time: Optional[Time]):
+    def serialize_field(time: Optional[Time]):  # type: ignore
         if time is None:
             return None
         return time.serialize()
