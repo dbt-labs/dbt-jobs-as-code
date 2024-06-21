@@ -410,7 +410,7 @@ def unlink(config, account_id, dry_run, identifier, disable_ssl_verification):
     "-j",
     type=int,
     multiple=True,
-    help="[Optional] The ID of the job to deactivate.",
+    help="The ID of the job to deactivate.",
 )
 def deactivate_jobs(config, account_id, job_id, disable_ssl_verification):
     """
