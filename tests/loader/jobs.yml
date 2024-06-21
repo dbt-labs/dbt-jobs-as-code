@@ -1,9 +1,11 @@
+# yaml-language-server: $schema=../../src/schemas/load_job_schema.json
+
 jobs:
 
   job1:
     account_id: 43791
     project_id: 176941
-    environment_id: 134459
+    environment_id: "134459"
     dbt_version:
     name: My Job 1 with a new name
     settings:
@@ -23,7 +25,7 @@ jobs:
       cron: 0 */2 * * *
     triggers:
       github_webhook: false
-      git_provider_webhook: false
+      git_provider_webhook: "false"
       custom_branch_only: true
       schedule: true
       on_merge: false
