@@ -13,7 +13,7 @@ from src.schemas.custom_environment_variable import (
 from src.schemas.job import JobDefinition, JobMissingFields
 
 if os.getenv("DBT_JOB_ID", "") == "":
-    VERSION = version("dbt-jobs-as-code")
+    VERSION = f'v{version("dbt-jobs-as-code")}'
 else:
     VERSION = "dev"
 
@@ -38,7 +38,7 @@ class DBTCloud:
         self._headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
-            "User-Agent": f"dbt-jobs-as-code/v{VERSION}",
+            "User-Agent": f"dbt-jobs-as-code/{VERSION}",
         }
         self._verify = not disable_ssl_verification
         if not self._verify:
