@@ -441,11 +441,13 @@ def deactivate_jobs(config, account_id, job_id, disable_ssl_verification):
             cloud_job.triggers.git_provider_webhook
             or cloud_job.triggers.github_webhook
             or cloud_job.triggers.schedule
+            or cloud_job.triggers.on_merge
         ):
             logger.info(f"Deactivating the job {cloud_job.id}:{cloud_job.name}")
             cloud_job.triggers.github_webhook = False
             cloud_job.triggers.git_provider_webhook = False
             cloud_job.triggers.schedule = False
+            cloud_job.triggers.on_merge = False
             dbt_cloud.update_job(job=cloud_job)
         else:
             logger.info(f"The job {cloud_job.id}:{cloud_job.name} is already deactivated")
