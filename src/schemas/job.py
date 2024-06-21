@@ -1,6 +1,6 @@
 import re
 
-from beartype.typing import Any, List, Optional, Dict
+from beartype.typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from .common_types import (
