@@ -143,7 +143,7 @@ project_id: 123
 environment_id: 456
 ```
 
-There are some example of files under `example_jobs_file/jobs_templated...`
+There are some example of files under `example_jobs_file/jobs_templated...`. Those examples also show how we can use Jinja logic to set some parameters based on our variables.
 
 When using templates, you might also want to use the flag `--restrict-yml`. This flag will make sure that only the projects and environments of the rendered YAML files will be checked to see what jobs to create/delete/update.
 
@@ -156,6 +156,20 @@ The tool will raise errors if:
 
 - the jobs YAML file provided contains Jinja variables but `--vars-yml` is not provided
 - the jobs YAML file provided contains Jinja variables that are not listed in the `--vars-yml` file
+
+### Summary of parameters
+
+| Command         | `--project-id` / `-p` | `--environment-id` / `-e` | `--restrict-yml` / `-r` | `--vars-yml` / `-v` | `--online` | `--job-id` / `-j` | `--identifier` / `-i` | `--dry-run` |
+| --------------- | :-------------------: | :-----------------------: | :---------------------: | :-----------------: | :--------: | :---------------: | :-------------------: | :---------: |
+| plan            |          ✅           |            ✅             |           ✅            |         ✅          |            |                   |                       |             |
+| sync            |          ✅           |            ✅             |           ✅            |         ✅          |            |                   |                       |             |
+| validate        |                       |                           |                         |         ✅          |     ✅     |                   |                       |             |
+| import-jobs     |          ✅           |            ✅             |                         |                     |            |        ✅         |                       |             |
+| unlink          |                       |                           |                         |                     |            |                   |          ✅           |     ✅      |
+| deactivate-jobs |                       |                           |                         |                     |            |        ✅         |                       |             |
+
+As a reminder using `--project-id` and/or `--environment-id` is not compatible with using `--restrict-yml`.
+We can only restricts by providing the IDs or by forcing to restrict on the environments and projects in the YML file.
 
 ## Running the tool as part of CI/CD
 
