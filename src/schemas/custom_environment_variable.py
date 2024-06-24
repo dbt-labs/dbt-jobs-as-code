@@ -1,5 +1,6 @@
 from beartype.typing import Any, Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 
 class CustomEnvironmentVariable(BaseModel):
@@ -9,14 +10,13 @@ class CustomEnvironmentVariable(BaseModel):
     display_value: Optional[str] = None
     job_definition_id: Optional[int] = None
 
-    def do_validate(self):
-        if not self.value:
-            return "Value must be defined!"
+    @model_validator(mode="after")
+    def check_env_var(self) -> Self:
         if not self.name.startswith("DBT_"):
-            return "Key must have `DBT_` prefix."
+            raise ValueError("Key must have `DBT_` prefix.")
         if not self.name.isupper():
-            return "Key name must be SCREAMING_SNAKE_CASE"
-        return None
+            raise ValueError("Key name must be SCREAMING_SNAKE_CASE")
+        return self
 
 
 class CustomEnvironmentVariablePayload(CustomEnvironmentVariable):
