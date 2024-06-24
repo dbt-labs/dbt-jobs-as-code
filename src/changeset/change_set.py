@@ -1,5 +1,6 @@
 import os
 import string
+from collections import Counter
 
 from beartype import BeartypeConf, BeartypeStrategy, beartype
 from beartype.typing import Callable, List
@@ -103,6 +104,34 @@ def filter_config(
     return {job_id: job for job_id, job in defined_jobs.items() if job_id not in removed_job_ids}
 
 
+def _check_no_duplicate_job_identifier(remote_jobs: List[JobDefinition]):
+    """Check if there are duplicate job identifiers in dbt Cloud.
+
+    If so, raise some error logs"""
+    count_identifiers = Counter(
+        [job.identifier for job in remote_jobs if job.identifier is not None]
+    )
+    multiple_counts = {item: count for item, count in count_identifiers.items() if count > 1}
+
+    jobs_affected = [job for job in remote_jobs if job.identifier in multiple_counts]
+    for job in jobs_affected:
+        logger.error(
+            f"The job {job.id} has a duplicate identifier '{job.identifier}' in dbt Cloud: {job.to_url(account_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"))}"
+        )
+
+
+def _check_single_account_id(defined_jobs: List[JobDefinition]):
+    """Check if there are duplicate job identifiers in dbt Cloud.
+
+    If so, raise some error logs"""
+    count_account_ids = Counter([job.account_id for job in defined_jobs])
+
+    if len(count_account_ids) > 1:
+        logger.error(
+            f"There are different account_id in the jobs YAML file: {count_account_ids.keys()}"
+        )
+
+
 def build_change_set(
     config,
     yml_vars,
@@ -136,6 +165,8 @@ def build_change_set(
         )
         return ChangeSet()
 
+    _check_single_account_id(list(defined_jobs.values()))
+
     # HACK for getting the account_id of one entry
     dbt_cloud = DBTCloud(
         account_id=list(defined_jobs.values())[0].account_id,
@@ -145,6 +176,7 @@ def build_change_set(
     )
 
     cloud_jobs = dbt_cloud.get_jobs(project_ids=project_ids, environment_ids=environment_ids)
+    _check_no_duplicate_job_identifier(cloud_jobs)
     tracked_jobs = {job.identifier: job for job in cloud_jobs if job.identifier is not None}
 
     dbt_cloud_change_set = ChangeSet()

@@ -136,6 +136,10 @@ class JobDefinition(BaseModel):
             data["custom_environment_variables"].append({env_var.name: env_var.value})
         return data
 
+    def to_url(self, account_url: str) -> str:
+        """Generate a URL for the job in dbt Cloud."""
+        return f"{account_url}/deploy/{self.account_id}/projects/{self.project_id}/jobs/{self.id}"
+
 
 class JobMissingFields(JobDefinition):
     """This class can be used to identify when there are new fields added to jobs
