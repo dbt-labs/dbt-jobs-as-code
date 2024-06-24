@@ -3,12 +3,26 @@
     "Condition": {
       "properties": {
         "job_id": {
-          "title": "Job Id",
-          "type": "integer"
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Job Id"
         },
         "project_id": {
-          "title": "Project Id",
-          "type": "integer"
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Project Id"
         },
         "statuses": {
           "default": [
