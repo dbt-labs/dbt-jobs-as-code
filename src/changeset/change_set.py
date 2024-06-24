@@ -109,7 +109,7 @@ def build_change_set(
     disable_ssl_verification: bool,
     project_ids: List[int],
     environment_ids: List[int],
-    restrict_yml: bool = False,
+    limit_projects_envs_to_yml: bool = False,
 ):
     """Compares the config of YML files versus dbt Cloud.
     Depending on the value of no_update, it will either update the dbt Cloud config or not.
@@ -118,8 +118,8 @@ def build_change_set(
     """
     configuration = load_job_configuration(config, yml_vars)
 
-    if restrict_yml:
-        # if restrict_yml is True, we keep all the YML jobs
+    if limit_projects_envs_to_yml:
+        # if limit_projects_envs_to_yml is True, we keep all the YML jobs
         defined_jobs = configuration.jobs
         # and only the remote jobs with project_id and environment_id existing in the job YML file are considered
         project_ids = [job.project_id for job in defined_jobs.values()]

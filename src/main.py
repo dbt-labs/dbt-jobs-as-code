@@ -37,7 +37,7 @@ option_environment_ids = click.option(
     help="[Optional] The ID of dbt Cloud environment(s) to use for sync",
 )
 
-option_restrict_to_yml = click.option(
+option_limit_projects_envs_to_yml = click.option(
     "--limit-projects-envs-to-yml",
     "-l",
     is_flag=True,
@@ -63,8 +63,8 @@ def cli() -> None:
 @option_vars_yml
 @option_project_ids
 @option_environment_ids
-@option_restrict_to_yml
-def sync(config, vars_yml, project_id, environment_id, restrict_yml, disable_ssl_verification):
+@option_limit_projects_envs_to_yml
+def sync(config, vars_yml, project_id, environment_id, limit_projects_envs_to_yml, disable_ssl_verification):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
@@ -72,7 +72,7 @@ def sync(config, vars_yml, project_id, environment_id, restrict_yml, disable_ssl
     cloud_project_ids = []
     cloud_environment_ids = []
 
-    if restrict_yml and (project_id or environment_id):
+    if limit_projects_envs_to_yml and (project_id or environment_id):
         logger.error(
             "You cannot use --limit-projects-envs-to-yml with --project-id or --environment-id. Please remove the --limit-projects-envs-to-yml flag."
         )
@@ -91,7 +91,7 @@ def sync(config, vars_yml, project_id, environment_id, restrict_yml, disable_ssl
         disable_ssl_verification,
         cloud_project_ids,
         cloud_environment_ids,
-        restrict_yml,
+        limit_projects_envs_to_yml,
     )
     if len(change_set) == 0:
         logger.success("-- SYNC -- No changes detected.")
@@ -108,8 +108,8 @@ def sync(config, vars_yml, project_id, environment_id, restrict_yml, disable_ssl
 @option_vars_yml
 @option_project_ids
 @option_environment_ids
-@option_restrict_to_yml
-def plan(config, vars_yml, project_id, environment_id, restrict_yml, disable_ssl_verification):
+@option_limit_projects_envs_to_yml
+def plan(config, vars_yml, project_id, environment_id, limit_projects_envs_to_yml, disable_ssl_verification):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
@@ -117,7 +117,7 @@ def plan(config, vars_yml, project_id, environment_id, restrict_yml, disable_ssl
     cloud_project_ids = []
     cloud_environment_ids = []
 
-    if restrict_yml and (project_id or environment_id):
+    if limit_projects_envs_to_yml and (project_id or environment_id):
         logger.error(
             "You cannot use --limit-projects-envs-to-yml with --project-id or --environment-id. Please remove the --limit-projects-envs-to-yml flag."
         )
@@ -135,7 +135,7 @@ def plan(config, vars_yml, project_id, environment_id, restrict_yml, disable_ssl
         disable_ssl_verification,
         cloud_project_ids,
         cloud_environment_ids,
-        restrict_yml,
+        limit_projects_envs_to_yml,
     )
     if len(change_set) == 0:
         logger.success("-- PLAN -- No changes detected.")
