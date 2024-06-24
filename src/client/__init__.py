@@ -277,7 +277,7 @@ class DBTCloud:
         response = requests.post(
             f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{env_var.project_id}/environment-variables/",
             headers=self._headers,
-            data=env_var.json(),
+            data=env_var.model_dump_json(),
             verify=self._verify,
         )
         logger.debug(response.json())
@@ -294,8 +294,8 @@ class DBTCloud:
         self,
         custom_env_var: CustomEnvironmentVariable,
         project_id: int,
-        job_id: int,
-        env_var_id: int,
+        job_id: Optional[int],
+        env_var_id: Optional[int],
         yml_job_identifier: Optional[str] = None,
     ) -> Optional[CustomEnvironmentVariablePayload]:
         """Update env vars job overwrite in dbt Cloud."""
@@ -323,7 +323,7 @@ class DBTCloud:
         )
 
         response = requests.post(
-            url=url, headers=self._headers, data=payload.json(), verify=self._verify
+            url=url, headers=self._headers, data=payload.model_dump_json(), verify=self._verify
         )
 
         if response.status_code >= 400:
