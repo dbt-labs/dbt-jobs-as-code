@@ -122,8 +122,8 @@ def build_change_set(
         # if limit_projects_envs_to_yml is True, we keep all the YML jobs
         defined_jobs = configuration.jobs
         # and only the remote jobs with project_id and environment_id existing in the job YML file are considered
-        project_ids = [job.project_id for job in defined_jobs.values()]
-        environment_ids = [job.project_id for job in defined_jobs.values()]
+        project_ids = list({job.project_id for job in defined_jobs.values()})
+        environment_ids = list({job.environment_id for job in defined_jobs.values()})
 
     else:
         # If a project_id or environment_id is passed in as a parameter (one or multiple), check if these match the ID's in Jobs YAML file, otherwise add a warning and continue the process
