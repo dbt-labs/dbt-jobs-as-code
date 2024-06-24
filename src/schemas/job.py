@@ -9,26 +9,10 @@ from .common_types import (
     Schedule,
     Settings,
     Triggers,
+    field_mandatory_int_allowed_as_string_in_schema,
+    field_optional_int_allowed_as_string_in_schema,
 )
 from .custom_environment_variable import CustomEnvironmentVariable
-
-
-def set_one_of_string_integer(schema: Dict[str, Any]):
-    schema.pop("type", None)
-    schema["oneOf"] = [{"type": "string"}, {"type": "integer"}]
-
-
-def set_any_of_string_integer_null(schema: Dict[str, Any]):
-    schema.pop("type", None)
-    schema["anyOf"] = [{"type": "string"}, {"type": "integer"}, {"type": "null"}]
-
-
-field_mandatory_int_allowed_as_string_in_schema = Field(
-    json_schema_extra=set_one_of_string_integer
-)
-field_optional_int_allowed_as_string_in_schema = Field(
-    default=None, json_schema_extra=set_any_of_string_integer_null
-)
 
 
 # Main model for loader

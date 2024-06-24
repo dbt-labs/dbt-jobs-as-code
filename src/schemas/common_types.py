@@ -3,6 +3,24 @@ from croniter import croniter
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 
+def set_one_of_string_integer(schema: Dict[str, Any]):
+    schema.pop("type", None)
+    schema["oneOf"] = [{"type": "string"}, {"type": "integer"}]
+
+
+def set_any_of_string_integer_null(schema: Dict[str, Any]):
+    schema.pop("type", None)
+    schema["anyOf"] = [{"type": "string"}, {"type": "integer"}, {"type": "null"}]
+
+
+field_mandatory_int_allowed_as_string_in_schema = Field(
+    json_schema_extra=set_one_of_string_integer
+)
+field_optional_int_allowed_as_string_in_schema = Field(
+    default=None, json_schema_extra=set_any_of_string_integer_null
+)
+
+
 class Execution(BaseModel):
     timeout_seconds: int = 0
 
@@ -77,8 +95,8 @@ class Schedule(BaseModel):
 
 
 class Condition(BaseModel):
-    job_id: int
-    project_id: int
+    job_id: int = field_mandatory_int_allowed_as_string_in_schema
+    project_id: int = field_mandatory_int_allowed_as_string_in_schema
     statuses: List[Literal[10, 20, 30]] = Field(
         default=[10, 20, 30],
         description="The statuses that will trigger the job. 10=success 20=error 30=cancelled",
