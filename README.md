@@ -159,14 +159,14 @@ The tool will raise errors if:
 
 ### Summary of parameters
 
-| Command         | `--project-id` / `-p` | `--environment-id` / `-e` | `--limit-projects-envs-to-yml` / `-r` | `--vars-yml` / `-v` | `--online` | `--job-id` / `-j` | `--identifier` / `-i` | `--dry-run` |
-| --------------- | :-------------------: | :-----------------------: | :---------------------: | :-----------------: | :--------: | :---------------: | :-------------------: | :---------: |
-| plan            |          ✅           |            ✅             |           ✅            |         ✅          |            |                   |                       |             |
-| sync            |          ✅           |            ✅             |           ✅            |         ✅          |            |                   |                       |             |
-| validate        |                       |                           |                         |         ✅          |     ✅     |                   |                       |             |
-| import-jobs     |          ✅           |            ✅             |                         |                     |            |        ✅         |                       |             |
-| unlink          |                       |                           |                         |                     |            |                   |          ✅           |     ✅      |
-| deactivate-jobs |                       |                           |                         |                     |            |        ✅         |                       |             |
+| Command         | `--project-id` / `-p` | `--environment-id` / `-e` | `--limit-projects-envs-to-yml` / `-l` | `--vars-yml` / `-v` | `--online` | `--job-id` / `-j` | `--identifier` / `-i` | `--dry-run` |
+| --------------- | :-------------------: | :-----------------------: | :-----------------------------------: | :-----------------: | :--------: | :---------------: | :-------------------: | :---------: |
+| plan            |          ✅           |            ✅             |                  ✅                   |         ✅          |            |                   |                       |             |
+| sync            |          ✅           |            ✅             |                  ✅                   |         ✅          |            |                   |                       |             |
+| validate        |                       |                           |                                       |         ✅          |     ✅     |                   |                       |             |
+| import-jobs     |          ✅           |            ✅             |                                       |                     |            |        ✅         |                       |             |
+| unlink          |                       |                           |                                       |                     |            |                   |          ✅           |     ✅      |
+| deactivate-jobs |                       |                           |                                       |                     |            |        ✅         |                       |             |
 
 As a reminder using `--project-id` and/or `--environment-id` is not compatible with using `--limit-projects-envs-to-yml`.
 We can only restricts by providing the IDs or by forcing to restrict on the environments and projects in the YML file.
