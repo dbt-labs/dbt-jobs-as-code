@@ -116,7 +116,7 @@ def _check_no_duplicate_job_identifier(remote_jobs: List[JobDefinition]):
     jobs_affected = [job for job in remote_jobs if job.identifier in multiple_counts]
     for job in jobs_affected:
         logger.error(
-            f"The job {job.id} has a duplicate identifier '{job.identifier}' in dbt Cloud: {job.to_url(account_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"))}"
+            f"The job {job.id} has a duplicate identifier '{job.identifier}' in dbt Cloud: {job.to_url(account_url=os.environ.get('DBT_BASE_URL', 'https://cloud.getdbt.com'))}"
         )
 
 
