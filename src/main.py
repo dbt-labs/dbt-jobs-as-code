@@ -64,7 +64,14 @@ def cli() -> None:
 @option_project_ids
 @option_environment_ids
 @option_limit_projects_envs_to_yml
-def sync(config, vars_yml, project_id, environment_id, limit_projects_envs_to_yml, disable_ssl_verification):
+def sync(
+    config,
+    vars_yml,
+    project_id,
+    environment_id,
+    limit_projects_envs_to_yml,
+    disable_ssl_verification,
+):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
@@ -109,7 +116,14 @@ def sync(config, vars_yml, project_id, environment_id, limit_projects_envs_to_ym
 @option_project_ids
 @option_environment_ids
 @option_limit_projects_envs_to_yml
-def plan(config, vars_yml, project_id, environment_id, limit_projects_envs_to_yml, disable_ssl_verification):
+def plan(
+    config,
+    vars_yml,
+    project_id,
+    environment_id,
+    limit_projects_envs_to_yml,
+    disable_ssl_verification,
+):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
 
     CONFIG is the path to your jobs.yml config file.
