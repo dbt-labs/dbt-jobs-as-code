@@ -22,7 +22,7 @@ With this package's approach, people don't need to learn another tool and can co
 
 - **no state file required**: the link between the YAML jobs and the dbt Cloud jobs is stored in the jobs name, in the `[[<identifier>]]` part
 - **YAML**: dbt users are familiar with YAML and we created a JSON schema allowing people to verify that their YAML files are correct
-- by using filters like `--project-id`, `--environment-id` or `-restrict-yml` people can limit the projects and environments checked by the tool, which can be used to "promote" jobs between different dbt Cloud environments
+- by using filters like `--project-id`, `--environment-id` or `--limit-projects-envs-to-yml` people can limit the projects and environments checked by the tool, which can be used to "promote" jobs between different dbt Cloud environments
 
 ## Usage
 
@@ -65,7 +65,7 @@ Returns the list of actions create/update/delete that are required to have dbt C
   - it accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code plan <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
     - it is possible to limit for specific projects and/or specific environments
     - when both projects and environments are provided, the command will run for the jobs that are both part of the environment ID(s) and the project ID(s) provided
-  - or it accepts the flag `--restrict-yml` to only check jobs that are in the projects and environments listed in the jobs YAML file
+  - or it accepts the flag `--limit-projects-envs-to-yml` to only check jobs that are in the projects and environments listed in the jobs YAML file
 - it supports templating the jobs YAML file (see [templating](#templating-jobs-yaml-file))
 
 #### `sync`
@@ -79,7 +79,7 @@ Create/update/delete jobs and env vars overwrites in jobs to align dbt Cloud wit
   - it accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code sync <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
     - it is possible to limit for specific projects and/or specific environments
   environment ID(s) and the project ID(s) provided
-  - or it accepts the flag `--restrict-yml` to only check jobs that are in the projects and environments listed in the jobs YAML file
+  - or it accepts the flag `--limit-projects-envs-to-yml` to only check jobs that are in the projects and environments listed in the jobs YAML file
 - it supports templating the jobs YAML file (see [templating](#templating-jobs-yaml-file))
 
 #### `import-jobs`
@@ -145,12 +145,12 @@ environment_id: 456
 
 There are some example of files under `example_jobs_file/jobs_templated...`. Those examples also show how we can use Jinja logic to set some parameters based on our variables.
 
-When using templates, you might also want to use the flag `--restrict-yml`. This flag will make sure that only the projects and environments of the rendered YAML files will be checked to see what jobs to create/delete/update.
+When using templates, you might also want to use the flag `--limit-projects-envs-to-yml`. This flag will make sure that only the projects and environments of the rendered YAML files will be checked to see what jobs to create/delete/update.
 
 Templating also allows people to version control those YAML files and to have different files for different development layers, like:
 
-- `dbt-jobs-as-code jobs.yml --vars-yml vars_qa.yml --restrict-yml` for QA
-- `dbt-jobs-as-code jobs.yml --vars-yml vars_prod.yml --restrict-yml` for Prod
+- `dbt-jobs-as-code jobs.yml --vars-yml vars_qa.yml --limit-projects-envs-to-yml` for QA
+- `dbt-jobs-as-code jobs.yml --vars-yml vars_prod.yml --limit-projects-envs-to-yml` for Prod
 
 The tool will raise errors if:
 
@@ -159,7 +159,7 @@ The tool will raise errors if:
 
 ### Summary of parameters
 
-| Command         | `--project-id` / `-p` | `--environment-id` / `-e` | `--restrict-yml` / `-r` | `--vars-yml` / `-v` | `--online` | `--job-id` / `-j` | `--identifier` / `-i` | `--dry-run` |
+| Command         | `--project-id` / `-p` | `--environment-id` / `-e` | `--limit-projects-envs-to-yml` / `-r` | `--vars-yml` / `-v` | `--online` | `--job-id` / `-j` | `--identifier` / `-i` | `--dry-run` |
 | --------------- | :-------------------: | :-----------------------: | :---------------------: | :-----------------: | :--------: | :---------------: | :-------------------: | :---------: |
 | plan            |          ✅           |            ✅             |           ✅            |         ✅          |            |                   |                       |             |
 | sync            |          ✅           |            ✅             |           ✅            |         ✅          |            |                   |                       |             |
@@ -168,7 +168,7 @@ The tool will raise errors if:
 | unlink          |                       |                           |                         |                     |            |                   |          ✅           |     ✅      |
 | deactivate-jobs |                       |                           |                         |                     |            |        ✅         |                       |             |
 
-As a reminder using `--project-id` and/or `--environment-id` is not compatible with using `--restrict-yml`.
+As a reminder using `--project-id` and/or `--environment-id` is not compatible with using `--limit-projects-envs-to-yml`.
 We can only restricts by providing the IDs or by forcing to restrict on the environments and projects in the YML file.
 
 ## Running the tool as part of CI/CD

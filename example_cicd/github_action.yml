@@ -26,7 +26,7 @@ jobs:
       - name: Run dbt-jobs-as-code
         run: dbt-jobs-as-code sync jobs/jobs.yml
         # or to template the jobs YAML file and only check the projects/environments from the project
-        # run: dbt-jobs-as-code sync jobs/jobs.yml --vars-yml vars_qa.yml --restrict-yml
+        # run: dbt-jobs-as-code sync jobs/jobs.yml --vars-yml vars_qa.yml --limit-projects-envs-to-yml
         env: 
           DBT_API_KEY: "${{secrets.DBT_API_KEY}}"
           # DBT_BASE_URL is optional

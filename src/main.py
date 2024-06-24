@@ -38,10 +38,10 @@ option_environment_ids = click.option(
 )
 
 option_restrict_to_yml = click.option(
-    "--restrict-yml",
-    "-r",
+    "--limit-projects-envs-to-yml",
+    "-l",
     is_flag=True,
-    help="[Flag] Restrict sync/plan to the jobs and environments listed in the jobs YML file",
+    help="[Flag] Limit sync/plan to the projects and environments listed in the jobs YML file",
 )
 
 option_vars_yml = click.option(
@@ -74,7 +74,7 @@ def sync(config, vars_yml, project_id, environment_id, restrict_yml, disable_ssl
 
     if restrict_yml and (project_id or environment_id):
         logger.error(
-            "You cannot use --restrict-yml with --project-id or --environment-id. Please remove the --restrict-yml flag."
+            "You cannot use --limit-projects-envs-to-yml with --project-id or --environment-id. Please remove the --limit-projects-envs-to-yml flag."
         )
         sys.exit(1)
 
@@ -119,7 +119,7 @@ def plan(config, vars_yml, project_id, environment_id, restrict_yml, disable_ssl
 
     if restrict_yml and (project_id or environment_id):
         logger.error(
-            "You cannot use --restrict-yml with --project-id or --environment-id. Please remove the --restrict-yml flag."
+            "You cannot use --limit-projects-envs-to-yml with --project-id or --environment-id. Please remove the --limit-projects-envs-to-yml flag."
         )
         sys.exit(1)
 
