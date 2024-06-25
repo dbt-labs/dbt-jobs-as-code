@@ -2,10 +2,12 @@
 name = "dbt-jobs-as-code"
 version = "0.6.0"
 description = "A CLI to allow defining dbt Cloud jobs as code"
-authors = []
+authors = ["dbt Labs <info@dbtlabs.com>"]
 license = "Apache License 2.0"
 readme = "README.md"
 packages = [{include = "src"}]
+repository = "https://github.com/dbt-labs/dbt-jobs-as-code.git"
+keywords = ["dbt", "dbt Cloud"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
