@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=../../src/schemas/load_job_schema.json
+
 anchors:
   schedule: &every_hour # using a non-job as an anchor
     cron: "0 * * * *"
@@ -44,7 +46,6 @@ jobs:
       git_provider_webhook: false
       github_webhook: false
       schedule: true
-    custom_environment_variables: null
   job2:
     <<: *main_job # << means that we take all the values from the first job but we then overwrite them
     deferring_job_definition_id: null
@@ -64,6 +65,14 @@ jobs:
       git_provider_webhook: false
       github_webhook: true # this job runs from webhooks
       schedule: false # this doesn't run on a schedule
+      on_merge: true
     custom_environment_variables:
       - DBT_ENV1: My val
       - DBT_ENV2: My val2
+    job_type: "other"
+    triggers_on_draft_pr: true
+    job_completion_trigger_condition:
+      condition:
+        job_id: 123
+        project_id: 234
+        statuses: [10, 20]

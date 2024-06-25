@@ -12,6 +12,8 @@ def test_export_jobs_yml(capsys):
     """Test that the export_jobs_yml function works as expected."""
 
     expected_output = """
+# yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/schemas/load_job_schema.json
+
 jobs:
   import_1:
     account_id: 50
@@ -28,8 +30,8 @@ jobs:
     deferring_environment_id:
     run_generate_sources: true
     execute_steps:
-    - dbt source freshness
-    - dbt build
+      - dbt source freshness
+      - dbt build
     generate_docs: false
     schedule:
       cron: 0 14 * * 0,1,2,3,4,5,6
@@ -38,6 +40,11 @@ jobs:
       git_provider_webhook: false
       custom_branch_only: true
       schedule: false
+      on_merge: false
+    description: ''
+    job_type: scheduled
+    triggers_on_draft_pr: false
+    job_completion_trigger_condition:
     custom_environment_variables: []
 """.strip()
 
@@ -72,6 +79,7 @@ jobs:
         ),
         state=1,
         custom_environment_variables=[],
+        description="",
     )
 
     export_jobs_yml([job_def])

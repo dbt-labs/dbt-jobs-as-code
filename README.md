@@ -2,6 +2,8 @@
 
 `dbt-jobs-as-code` is a tool built to handle dbt Cloud Jobs as a well-defined YAML file. Being standard YAML, it is possible to use YAML anchors to reduce duplicate configuration across jobs.
 
+There is also a templating capability to use the same YAML file to update different dbt Cloud projects and/or environments (see [templating](#templating-jobs-yaml-file)).
+
 A given dbt Cloud project can use both jobs-as-code and jobs-as-ui at the same time, without any conflict.
 
 The way we differentiate jobs defined from code from the ones defined from the UI is that the code ones have a name ending with `[[<identifier>]]`.
@@ -12,21 +14,22 @@ The way we differentiate jobs defined from code from the ones defined from the U
 
 ## Why not Terraform
 
-Terrraform is widely used to manage infrastructure as code. And a [Terraform provider](https://registry.terraform.io/providers/dbt-labs/dbtcloud/latest) exists for dbt Cloud, able to manage dbt Cloud jobs (as well as projects, environments etc...).
+Terrraform is widely used to manage infrastructure as code. And a comprehensive [Terraform provider](https://registry.terraform.io/providers/dbt-labs/dbtcloud/latest) exists for dbt Cloud, able to manage dbt Cloud jobs (as well as most of the rest of the dbt Cloud configuration like projects, environments, warehouse connections etc...).
 
-Using Terraform requires some knowledge about the tool and requires managing/storing/sharing a state file, containing information about the state of the application.
+Terraform is much more powerful but using it requires some knowledge about the tool and requires managing/storing/sharing a state file, containing information about the state of the application.
 
 With this package's approach, people don't need to learn another tool and can configure dbt Cloud using YAML, a language used across the dbt ecosystem:
 
 - **no state file required**: the link between the YAML jobs and the dbt Cloud jobs is stored in the jobs name, in the `[[<identifier>]]` part
 - **YAML**: dbt users are familiar with YAML and we created a JSON schema allowing people to verify that their YAML files are correct
+- by using filters like `--project-id`, `--environment-id` or `--limit-projects-envs-to-yml` people can limit the projects and environments checked by the tool, which can be used to "promote" jobs between different dbt Cloud environments
 
 ## Usage
 
 ### Installation
 
 - Create a Python virtual environment and activate it
-- Run `pip install git+https://github.com/dbt-labs/dbt-jobs-as-code.git` (or `pip install git+https://github.com/dbt-labs/dbt-jobs-as-code.git@v0.4.0` to install a specific release)
+- Run `pip install git+https://github.com/dbt-labs/dbt-jobs-as-code.git` (or `pip install git+https://github.com/dbt-labs/dbt-jobs-as-code.git@v0.6.0` to install a specific release)
 
 The CLI is now available as `dbt-jobs-as-code`
 
@@ -49,6 +52,7 @@ Validates that the YAML file has the correct structure
 
 - it is possible to run the validation offline, without doing any API call
 - or online using `--online`, in order to check that the different IDs provided are correct
+- it supports templating the jobs YAML file (see [templating](#templating-jobs-yaml-file))
 
 #### `plan`
 
@@ -57,9 +61,12 @@ Command: `dbt-jobs-as-code plan <config_file.yml>`
 Returns the list of actions create/update/delete that are required to have dbt Cloud reflecting the configuration file
 
 - this command doesn't modify the dbt Cloud jobs
-- this command also accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code plan <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
-  - it is possible to limit for specific projects and/or specific environments
-  - when both projects and environments are provided, the command will run for the jobs that are both part of the environment ID(s) and the project ID(s) provided
+- this command can be restricted to specific projects and environments
+  - it accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code plan <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
+    - it is possible to limit for specific projects and/or specific environments
+    - when both projects and environments are provided, the command will run for the jobs that are both part of the environment ID(s) and the project ID(s) provided
+  - or it accepts the flag `--limit-projects-envs-to-yml` to only check jobs that are in the projects and environments listed in the jobs YAML file
+- it supports templating the jobs YAML file (see [templating](#templating-jobs-yaml-file))
 
 #### `sync`
 
@@ -68,8 +75,12 @@ Command: `dbt-jobs-as-code sync <config_file.yml>`
 Create/update/delete jobs and env vars overwrites in jobs to align dbt Cloud with the configuration file
 
 - ⚠️ this command will modify your dbt Cloud jobs if the current configuration is different from the YAML file
-- this command also accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code sync <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
-  - it is possible to limit for specific projects and/or specific environments
+- this command can be restricted to specific projects and environments
+  - it accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code sync <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
+    - it is possible to limit for specific projects and/or specific environments
+  environment ID(s) and the project ID(s) provided
+  - or it accepts the flag `--limit-projects-envs-to-yml` to only check jobs that are in the projects and environments listed in the jobs YAML file
+- it supports templating the jobs YAML file (see [templating](#templating-jobs-yaml-file))
 
 #### `import-jobs`
 
@@ -85,7 +96,7 @@ To move some ui-jobs to jobs-as-code, perform the following steps:
 
 - run the command to import the jobs
 - copy paste the job/jobs into a YAML file
-- change the `import_` id of the job in the YML file to another unique identifier
+- change the `import_` id of the job in the YAML file to another unique identifier
 - rename the job in the UI to end with `[[new_job_identifier]]`
 - run a `plan` command to verify that no changes are required for the given job
 
@@ -107,13 +118,58 @@ This command can be used to deactivate both the schedule and the CI triggers for
 
 ### Job Configuration YAML Schema
 
-The file `src/schemas/load_job_schema.json` is a JSON Schema file that can be used to verify that the YAML config files syntax is correct.
+The file `src/schemas/load_job_schema.json` is a JSON Schema file that can be used to verify that the YAML config files syntax is correct and to provide completion suggestions for the different fields supported.
 
 To use it in VSCode, install [the extension `YAML`](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) and add the following line at the top of your YAML config file (change the path if need be):
 
 ```yaml
 # yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/schemas/load_job_schema.json
 ```
+
+### Templating jobs YAML file
+
+`validate`, `sync` and `plan` support templating the YML jobs file since version 0.6.0
+
+To do so:
+
+- update the jobs YAML file by setting some values as Jinja variables
+  - e.g `project_id: {{ project_id }}` or `environment_id: {{ environment_id }}`
+- and add the parameter `--vars-yml` (or `-v`) pointing to a YAML file containing values for your variables
+
+The file called in `--vars-yml` needs to be a valid YAML file like the following:
+
+```yml
+project_id: 123
+environment_id: 456
+```
+
+There are some example of files under `example_jobs_file/jobs_templated...`. Those examples also show how we can use Jinja logic to set some parameters based on our variables.
+
+When using templates, you might also want to use the flag `--limit-projects-envs-to-yml`. This flag will make sure that only the projects and environments of the rendered YAML files will be checked to see what jobs to create/delete/update.
+
+Templating also allows people to version control those YAML files and to have different files for different development layers, like:
+
+- `dbt-jobs-as-code jobs.yml --vars-yml vars_qa.yml --limit-projects-envs-to-yml` for QA
+- `dbt-jobs-as-code jobs.yml --vars-yml vars_prod.yml --limit-projects-envs-to-yml` for Prod
+
+The tool will raise errors if:
+
+- the jobs YAML file provided contains Jinja variables but `--vars-yml` is not provided
+- the jobs YAML file provided contains Jinja variables that are not listed in the `--vars-yml` file
+
+### Summary of parameters
+
+| Command         | `--project-id` / `-p` | `--environment-id` / `-e` | `--limit-projects-envs-to-yml` / `-l` | `--vars-yml` / `-v` | `--online` | `--job-id` / `-j` | `--identifier` / `-i` | `--dry-run` |
+| --------------- | :-------------------: | :-----------------------: | :-----------------------------------: | :-----------------: | :--------: | :---------------: | :-------------------: | :---------: |
+| plan            |          ✅           |            ✅             |                  ✅                   |         ✅          |            |                   |                       |             |
+| sync            |          ✅           |            ✅             |                  ✅                   |         ✅          |            |                   |                       |             |
+| validate        |                       |                           |                                       |         ✅          |     ✅     |                   |                       |             |
+| import-jobs     |          ✅           |            ✅             |                                       |                     |            |        ✅         |                       |             |
+| unlink          |                       |                           |                                       |                     |            |                   |          ✅           |     ✅      |
+| deactivate-jobs |                       |                           |                                       |                     |            |        ✅         |                       |             |
+
+As a reminder using `--project-id` and/or `--environment-id` is not compatible with using `--limit-projects-envs-to-yml`.
+We can only restricts by providing the IDs or by forcing to restrict on the environments and projects in the YML file.
 
 ## Running the tool as part of CI/CD
 

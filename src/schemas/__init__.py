@@ -1,5 +1,4 @@
-from typing import Any, Optional, Tuple
-
+from beartype.typing import Any, Optional, Tuple
 from deepdiff import DeepDiff
 from loguru import logger
 
@@ -19,7 +18,7 @@ def _get_mismatched_dict_entries(
 
 
 def _job_to_dict(job: JobDefinition):
-    dict_vals = job.dict(
+    dict_vals = job.model_dump(
         exclude={
             "id",  # we want to exclude id because our YAML file will not have it
             "custom_environment_variables",  # TODO: Add this back in. Requires extra API calls.
@@ -37,10 +36,10 @@ def check_job_mapping_same(source_job: JobDefinition, dest_job: JobDefinition) -
     diffs = _get_mismatched_dict_entries(source_job_dict, dest_job_dict)
 
     if len(diffs) == 0:
-        logger.success("✅ Jobs identical")
+        logger.success(f"✅ Job {source_job.identifier} is identical")
         return True
     else:
-        logger.info(f"❌ Jobs are different - Diff: {diffs}")
+        logger.info(f"❌ Job {source_job.identifier} is different - Diff: {diffs}")
         return False
 
 

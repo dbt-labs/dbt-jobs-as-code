@@ -4,16 +4,16 @@ jobs:
 
   job1:
     account_id: 43791
-    project_id: 176941
-    environment_id: "134459"
+    project_id: "{{project_id}}"
+    environment_id: "{{ environment_id }}"
     dbt_version:
     name: My Job 1 with a new name
     settings:
       threads: 4
-      target_name: production
+      # we can use the typical Jinja concatenation
+      target_name: "{{ env_type ~ 'uction' }}"
     execution:
       timeout_seconds: 0
-    deferring_job_definition_id:
     deferring_environment_id:
     run_generate_sources: true
     execute_steps:
@@ -25,24 +25,23 @@ jobs:
       cron: 0 */2 * * *
     triggers:
       github_webhook: false
-      git_provider_webhook: "false"
+      git_provider_webhook: false
       custom_branch_only: true
-      schedule: true
+      # we can put some logic to decide for true/false
+      schedule: "{{ env_type == 'prod' }}"
       on_merge: false
     job_completion_trigger_condition:
+    
 
   job2:
     account_id: 43791
-    project_id: 176941
-    environment_id: 134459
+    project_id: "{{project_id}}"
+    environment_id: "{{environment_id}}"
     dbt_version:
     name: CI/CD run
     settings:
       threads: 4
       target_name: TEST
-    execution:
-      timeout_seconds: 0
-    deferring_job_definition_id:
     deferring_environment_id:
     run_generate_sources: true
     execute_steps:

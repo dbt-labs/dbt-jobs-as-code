@@ -1,6 +1,8 @@
-from typing import Any, Dict, List, Optional
+import os
 
 import requests
+from beartype.typing import Any, Dict, List, Optional
+from importlib_metadata import version
 from loguru import logger
 from urllib3.exceptions import InsecureRequestWarning
 
@@ -8,9 +10,12 @@ from src.schemas.custom_environment_variable import (
     CustomEnvironmentVariable,
     CustomEnvironmentVariablePayload,
 )
-from src.schemas.job import JobDefinition
+from src.schemas.job import JobDefinition, JobMissingFields
 
-VERSION = "0.4.0"
+if os.getenv("DBT_JOB_ID", "") == "":
+    VERSION = f'v{version("dbt-jobs-as-code")}'
+else:
+    VERSION = "dev"
 
 
 class DBTCloud:
@@ -33,11 +38,11 @@ class DBTCloud:
         self._headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
-            "User-Agent": f"dbt-jobs-as-code/v{VERSION}",
+            "User-Agent": f"dbt-jobs-as-code/{VERSION}",
         }
         self._verify = not disable_ssl_verification
         if not self._verify:
-            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)  # type: ignore
             logger.warning(
                 "SSL verification is disabled. This is not recommended unless you absolutely need this config."
             )
@@ -58,7 +63,6 @@ class DBTCloud:
     def build_mapping_job_identifier_job_id(
         self, cloud_jobs: Optional[List[JobDefinition]] = None
     ):
-
         if cloud_jobs is None:
             # TODO, we should filter things here at least if we call it often
             cloud_jobs = self.get_jobs()
@@ -84,8 +88,8 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
-
-        logger.success("Job updated successfully.")
+        else:
+            logger.success("Job updated successfully.")
 
         return JobDefinition(**(response.json()["data"]), identifier=job.identifier)
 
@@ -104,8 +108,8 @@ class DBTCloud:
         if response.status_code >= 400:
             logger.error(response.json())
             return None
-
-        logger.success("Job created successfully.")
+        else:
+            logger.success("Job created successfully.")
 
         return JobDefinition(**(response.json()["data"]), identifier=job.identifier)
 
@@ -122,8 +126,8 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
-
-        logger.success("Job deleted successfully.")
+        else:
+            logger.success("Job deleted successfully.")
 
     def get_job(self, job_id: int) -> Optional[JobDefinition]:
         """Generate a Job based on a dbt Cloud job."""
@@ -140,8 +144,25 @@ class DBTCloud:
             return None
         return JobDefinition(**response.json()["data"])
 
+    def get_job_missing_fields(self, job_id: int) -> Optional[JobMissingFields]:
+        """Generate a Job based on a dbt Cloud job."""
+
+        self._check_for_creds()
+
+        response = requests.get(
+            url=(f"{self.base_url}/api/v2/accounts/" f"{self.account_id}/jobs/{job_id}/"),
+            headers=self._headers,
+            verify=self._verify,
+        )
+        if response.status_code > 200:
+            logger.error(f"Issue getting the job {job_id}")
+            return None
+        return JobMissingFields(**response.json()["data"])
+
     def get_jobs(
-        self, project_ids: Optional[List[int]] = None, environment_ids: Optional[List[int]] = None
+        self,
+        project_ids: Optional[List[int]] = None,
+        environment_ids: Optional[List[int]] = None,
     ) -> List[JobDefinition]:
         """Return a list of Jobs for all the dbt Cloud jobs in an environment."""
 
@@ -149,7 +170,7 @@ class DBTCloud:
         project_ids = project_ids or []
         environment_ids = environment_ids or []
 
-        jobs: List[JobDefinition] = []
+        jobs: List[dict] = []
         if len(environment_ids) > 1:
             for env_id in environment_ids:
                 jobs.extend(self._fetch_jobs(project_ids, env_id))
@@ -160,11 +181,9 @@ class DBTCloud:
 
         return [JobDefinition(**job) for job in jobs]
 
-    def _fetch_jobs(
-        self, project_ids: List[int], environment_id: Optional[int]
-    ) -> List[JobDefinition]:
+    def _fetch_jobs(self, project_ids: List[int], environment_id: Optional[int]) -> List[dict]:
         offset = 0
-        jobs: List[JobDefinition] = []
+        jobs: List[dict] = []
 
         while True:
             parameters = self._build_parameters(project_ids, environment_id, offset)
@@ -258,7 +277,7 @@ class DBTCloud:
         response = requests.post(
             f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{env_var.project_id}/environment-variables/",
             headers=self._headers,
-            data=env_var.json(),
+            data=env_var.model_dump_json(),
             verify=self._verify,
         )
         logger.debug(response.json())
@@ -275,8 +294,8 @@ class DBTCloud:
         self,
         custom_env_var: CustomEnvironmentVariable,
         project_id: int,
-        job_id: int,
-        env_var_id: int,
+        job_id: Optional[int],
+        env_var_id: Optional[int],
         yml_job_identifier: Optional[str] = None,
     ) -> Optional[CustomEnvironmentVariablePayload]:
         """Update env vars job overwrite in dbt Cloud."""
@@ -300,11 +319,11 @@ class DBTCloud:
             account_id=self.account_id,
             project_id=project_id,
             id=env_var_id,
-            **custom_env_var.dict(),
+            **custom_env_var.model_dump(),
         )
 
         response = requests.post(
-            url=url, headers=self._headers, data=payload.json(), verify=self._verify
+            url=url, headers=self._headers, data=payload.model_dump_json(), verify=self._verify
         )
 
         if response.status_code >= 400:
@@ -331,13 +350,9 @@ class DBTCloud:
 
         logger.success("Env Var Job Overwrite deleted successfully.")
 
-    def get_environments(self) -> Dict:
-        """Return a list of Environments for all the dbt Cloud jobs in an account"""
-
-        self._check_for_creds()
-
+    def _fetch_environment(self, url) -> List[dict]:
         response = requests.get(
-            url=(f"{self.base_url}/api/v3/accounts/" f"{self.account_id}/environments/"),
+            url=url,
             headers=self._headers,
             verify=self._verify,
         )
@@ -345,5 +360,20 @@ class DBTCloud:
         if response.status_code >= 400:
             logger.error(response.json())
             logger.error(f"Does the Account ID {self.account_id} exist?")
+            return []
 
         return response.json()["data"]
+
+    def get_environments(self, project_ids: List[int]) -> List[dict]:
+        """Return a list of Environments for all the dbt Cloud jobs in an account"""
+
+        self._check_for_creds()
+
+        all_envs = []
+        for project_id in project_ids:
+            url = (
+                f"{self.base_url}/api/v3/accounts/"
+                f"{self.account_id}/environments/?project_id={project_id}"
+            )
+            all_envs.extend(self._fetch_environment(url))
+        return all_envs

@@ -1,5 +1,3 @@
-from typing import Any, List, Optional
-
 import pytest
 
 from src.client import DBTCloud
@@ -8,6 +6,7 @@ service = DBTCloud(
     account_id=0,
     api_key="test_api_key",
 )
+
 
 # Define our test cases
 @pytest.mark.parametrize(
@@ -20,7 +19,7 @@ service = DBTCloud(
         ([], None, 50, {"offset": 50}),
         ([], 4, 60, {"offset": 60, "environment_id": 4}),
         ([], None, 0, {"offset": 0}),
-    ]
+    ],
 )
 def test_build_parameters(project_ids, environment_id, offset, expected):
     result = service._build_parameters(project_ids, environment_id, offset)

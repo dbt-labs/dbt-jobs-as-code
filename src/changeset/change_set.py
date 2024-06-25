@@ -1,14 +1,20 @@
 import os
 import string
-from typing import List, Optional
+from collections import Counter
 
+from beartype import BeartypeConf, BeartypeStrategy, beartype
+from beartype.typing import Callable, List
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 from rich.table import Table
 
 from src.client import DBTCloud
 from src.loader.load import load_job_configuration
 from src.schemas import check_env_var_same, check_job_mapping_same
+from src.schemas.job import JobDefinition
+
+# Dynamically create a new @nobeartype decorator disabling type-checking.
+nobeartype = beartype(conf=BeartypeConf(strategy=BeartypeStrategy.O0))
 
 
 class Change(BaseModel):
@@ -19,7 +25,7 @@ class Change(BaseModel):
     action: str
     proj_id: int
     env_id: int
-    sync_function: object
+    sync_function: Callable
     parameters: dict
 
     def __str__(self):
@@ -29,19 +35,19 @@ class Change(BaseModel):
         self.sync_function(**self.parameters)
 
 
-class ChangeSet(BaseModel):
+class ChangeSet(RootModel):
     """Store the set of changes to be displayed or applied."""
 
-    __root__: List[Change] = []
+    root: List[Change] = []
 
     def __iter__(self):
-        return iter(self.__root__)
+        return iter(self.root)
 
     def append(self, change: Change):
-        self.__root__.append(change)
+        self.root.append(change)
 
     def __str__(self):
-        list_str = [str(change) for change in self.__root__]
+        list_str = [str(change) for change in self.root]
         return "\n".join(list_str)
 
     def to_table(self) -> Table:
@@ -55,7 +61,7 @@ class ChangeSet(BaseModel):
         table.add_column("Proj ID", style="yellow")
         table.add_column("Env ID", style="red")
 
-        for change in self.__root__:
+        for change in self.root:
             table.add_row(
                 change.action.upper(),
                 string.capwords(change.type),
@@ -67,26 +73,30 @@ class ChangeSet(BaseModel):
         return table
 
     def __len__(self):
-        return len(self.__root__)
+        return len(self.root)
 
     def apply(self):
-        for change in self.__root__:
+        for change in self.root:
             change.apply()
 
 
-def filter_config(defined_jobs, project_ids: List[int], environment_ids: List[int]):
+# Don't bear type this function as we do some odd things in tests
+@nobeartype
+def filter_config(
+    defined_jobs: dict[str, JobDefinition], project_ids: List[int], environment_ids: List[int]
+) -> dict[str, JobDefinition]:
     """Filters the config based on the inputs provided for project ids and environment ids."""
-    removed_job_ids = set()
+    removed_job_ids: set[str] = set()
     if len(environment_ids) != 0:
         for job_id, job in defined_jobs.items():
-            if not job.environment_id in environment_ids:
+            if job.environment_id not in environment_ids:
                 removed_job_ids.add(job_id)
                 logger.warning(
                     f"For Job# {job.identifier}, environment_id(s) provided as arguments does not match the ID's in Jobs YAML file!!!"
                 )
     if len(project_ids) != 0:
         for job_id, job in defined_jobs.items():
-            if not job.project_id in project_ids:
+            if job.project_id not in project_ids:
                 removed_job_ids.add(job_id)
                 logger.warning(
                     f"For Job# {job.identifier}, project_id(s) provided as arguments does not match the ID's in Jobs YAML file!!!"
@@ -94,17 +104,60 @@ def filter_config(defined_jobs, project_ids: List[int], environment_ids: List[in
     return {job_id: job for job_id, job in defined_jobs.items() if job_id not in removed_job_ids}
 
 
-def build_change_set(config, disable_ssl_verification: bool, project_ids: List[int], environment_ids: List[int]):
+def _check_no_duplicate_job_identifier(remote_jobs: List[JobDefinition]):
+    """Check if there are duplicate job identifiers in dbt Cloud.
+
+    If so, raise some error logs"""
+    count_identifiers = Counter(
+        [job.identifier for job in remote_jobs if job.identifier is not None]
+    )
+    multiple_counts = {item: count for item, count in count_identifiers.items() if count > 1}
+
+    jobs_affected = [job for job in remote_jobs if job.identifier in multiple_counts]
+    for job in jobs_affected:
+        logger.error(
+            f"The job {job.id} has a duplicate identifier '{job.identifier}' in dbt Cloud: {job.to_url(account_url=os.environ.get('DBT_BASE_URL', 'https://cloud.getdbt.com'))}"
+        )
+
+
+def _check_single_account_id(defined_jobs: List[JobDefinition]):
+    """Check if there are duplicate job identifiers in dbt Cloud.
+
+    If so, raise some error logs"""
+    count_account_ids = Counter([job.account_id for job in defined_jobs])
+
+    if len(count_account_ids) > 1:
+        logger.error(
+            f"There are different account_id in the jobs YAML file: {count_account_ids.keys()}"
+        )
+
+
+def build_change_set(
+    config,
+    yml_vars,
+    disable_ssl_verification: bool,
+    project_ids: List[int],
+    environment_ids: List[int],
+    limit_projects_envs_to_yml: bool = False,
+):
     """Compares the config of YML files versus dbt Cloud.
     Depending on the value of no_update, it will either update the dbt Cloud config or not.
 
     CONFIG is the path to your jobs.yml config file.
     """
-    configuration = load_job_configuration(config)
-    unfiltered_defined_jobs = configuration.jobs
+    configuration = load_job_configuration(config, yml_vars)
 
-    # If a project_id or environment_id is passed in as a parameter (one or multiple), check if these match the ID's in Jobs YAML file, otherwise add a warning and continue the process
-    defined_jobs = filter_config(unfiltered_defined_jobs, project_ids, environment_ids)
+    if limit_projects_envs_to_yml:
+        # if limit_projects_envs_to_yml is True, we keep all the YML jobs
+        defined_jobs = configuration.jobs
+        # and only the remote jobs with project_id and environment_id existing in the job YML file are considered
+        project_ids = list({job.project_id for job in defined_jobs.values()})
+        environment_ids = list({job.environment_id for job in defined_jobs.values()})
+
+    else:
+        # If a project_id or environment_id is passed in as a parameter (one or multiple), check if these match the ID's in Jobs YAML file, otherwise add a warning and continue the process
+        unfiltered_defined_jobs = configuration.jobs
+        defined_jobs = filter_config(unfiltered_defined_jobs, project_ids, environment_ids)
 
     if len(defined_jobs) == 0:
         logger.warning(
@@ -112,7 +165,8 @@ def build_change_set(config, disable_ssl_verification: bool, project_ids: List[i
         )
         return ChangeSet()
 
-    # HACK for getting the account_id of one entry
+    _check_single_account_id(list(defined_jobs.values()))
+
     dbt_cloud = DBTCloud(
         account_id=list(defined_jobs.values())[0].account_id,
         api_key=os.environ.get("DBT_API_KEY"),
@@ -121,6 +175,7 @@ def build_change_set(config, disable_ssl_verification: bool, project_ids: List[i
     )
 
     cloud_jobs = dbt_cloud.get_jobs(project_ids=project_ids, environment_ids=environment_ids)
+    _check_no_duplicate_job_identifier(cloud_jobs)
     tracked_jobs = {job.identifier: job for job in cloud_jobs if job.identifier is not None}
 
     dbt_cloud_change_set = ChangeSet()
@@ -245,7 +300,7 @@ def build_change_set(config, disable_ssl_verification: bool, project_ids: List[i
                 if env_var not in env_vars_for_job and env_var_val.id:
                     logger.info(f"{env_var} not in the YML file but in the dbt Cloud job")
                     dbt_cloud_change = Change(
-                        identifier=f"{job.identifier}:{env_var_yml.name}",
+                        identifier=f"{job.identifier}:{env_var}",
                         type="env var overwrite",
                         action="delete",
                         proj_id=job.project_id,
