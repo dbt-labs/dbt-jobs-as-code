@@ -167,7 +167,6 @@ def build_change_set(
 
     _check_single_account_id(list(defined_jobs.values()))
 
-    # HACK for getting the account_id of one entry
     dbt_cloud = DBTCloud(
         account_id=list(defined_jobs.values())[0].account_id,
         api_key=os.environ.get("DBT_API_KEY"),
