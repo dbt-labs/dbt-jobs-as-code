@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy-to:
+        type: choice
+        description: Choose where to publish (test/prod)
+        options:
+          - PypiProd
+          - PypiTest
+        default: PypiTest
+
+permissions: read-all
+
+defaults:
+  run:
+    shell: bash
+
+# will cancel previous workflows triggered by the same event and for the same ref for PRs or same SHA otherwise
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ contains(github.event_name, 'pull_request') && github.event.pull_request.head.ref || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+
+  release:
+    name: PyPI - ${{ inputs.deploy-to }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Build artifacts
+        run: poetry build
+        shell: bash
+
+      - name: Publish artifacts to PyPI Test
+        if: inputs.deploy-to == 'PypiTest'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+      - name: Publish artifacts to PyPI Prod
+        if: inputs.deploy-to == 'PypiProd'
+        uses: pypa/gh-action-pypi-publish@release/v1

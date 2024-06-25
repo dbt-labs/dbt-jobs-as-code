@@ -5,4 +5,5 @@ venv/
 __pycache__/
 .envrc
 .env
-jobs_rendered.yml
+dist/
+tests/integration-tests/jobs_rendered.yml
