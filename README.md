@@ -10,7 +10,9 @@ The way we differentiate jobs defined from code from the ones defined from the U
 
 ⚠️ Important: If you plan to use this tool but have existing jobs ending with `[[...]]` you should rename them before running any command.
 
-[Here is a short demonstration](https://www.loom.com/share/f134030151d649bfb5ff77dd615aab8d) on how to set CI/CD with jobs as code
+Below is a demonstration of how to use dbt-jobs-as-code as part of CI/CD, leveraging the new templating features.
+
+<div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/7c263c560d2044cea9fc82ac8ec125ea?sid=b12f6a63-3299-4300-88f7-df5ff41afe59" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
 ## Why not Terraform
 
