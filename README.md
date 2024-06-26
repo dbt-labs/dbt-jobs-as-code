@@ -12,7 +12,7 @@ The way we differentiate jobs defined from code from the ones defined from the U
 
 Below is a demonstration of how to use dbt-jobs-as-code as part of CI/CD, leveraging the new templating features.
 
-<div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/7c263c560d2044cea9fc82ac8ec125ea?sid=b12f6a63-3299-4300-88f7-df5ff41afe59" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+[![screenshot-jobs-as-code](screenshot.png | width=300)](https://www.loom.com/share/7c263c560d2044cea9fc82ac8ec125ea?sid=4c2fe693-0aa5-4021-9e94-69d826f3eac5)
 
 ## Why not Terraform
 
