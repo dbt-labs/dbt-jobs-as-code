@@ -5,6 +5,8 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'jobs/**'  # Only trigger the workflow if files under the jobs/ directory are modified
 
 jobs:
   run-python-script:
