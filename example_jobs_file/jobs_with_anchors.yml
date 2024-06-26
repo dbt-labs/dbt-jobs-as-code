@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/schemas/load_job_schema.json
+
 anchors:
   schedule: &every_hour # using a non-job as an anchor
     cron: "0 * * * *"
@@ -47,7 +49,7 @@ jobs:
       git_provider_webhook: false
       github_webhook: false
       schedule: true
-    custom_environment_variables: null
+    custom_environment_variables: []
   job2:
     <<: *main_job # << means that we take all the values from the first job but we then overwrite them
     deferring_job_definition_id: null
