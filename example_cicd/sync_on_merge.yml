@@ -1,5 +1,6 @@
 name: Replicate dbt Cloud Jobs from YAML
-run-name: Running dbt-jobs-as-code to replicate dbt Cloud jobs from YAML
+run-name: Running dbt-jobs-as-code sync to replicate dbt Cloud jobs from YAML
+
 on:
   pull_request:
     types:
