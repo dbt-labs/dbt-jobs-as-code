@@ -46,6 +46,7 @@ class DBTCloud:
             logger.warning(
                 "SSL verification is disabled. This is not recommended unless you absolutely need this config."
             )
+        self._session = requests.Session()
 
     def _clear_env_var_cache(self, job_definition_id: Optional[int]) -> None:
         """Clear out any cached environment variables for a given job."""
@@ -79,7 +80,7 @@ class DBTCloud:
 
         logger.debug("Updating {job_name}. {job}", job_name=job.name, job=job)
 
-        response = requests.post(  # Yes, it's actually a POST. Ew.
+        response = self._session.post(  # Yes, it's actually a POST. Ew.
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job.id}/",
             headers=self._headers,
             data=job.to_payload(),
@@ -98,7 +99,7 @@ class DBTCloud:
 
         logger.debug("Creating {job_name}. {job}", job_name=job.name, job=job)
 
-        response = requests.post(
+        response = self._session.post(
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
             headers=self._headers,
             data=job.to_payload(),
@@ -118,7 +119,7 @@ class DBTCloud:
 
         logger.debug("Deleting {job_name}. {job}", job_name=job.name, job=job)
 
-        response = requests.delete(
+        response = self._session.delete(
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job.id}/",
             headers=self._headers,
             verify=self._verify,
@@ -134,7 +135,7 @@ class DBTCloud:
 
         self._check_for_creds()
 
-        response = requests.get(
+        response = self._session.get(
             url=(f"{self.base_url}/api/v2/accounts/" f"{self.account_id}/jobs/{job_id}/"),
             headers=self._headers,
             verify=self._verify,
@@ -149,7 +150,7 @@ class DBTCloud:
 
         self._check_for_creds()
 
-        response = requests.get(
+        response = self._session.get(
             url=(f"{self.base_url}/api/v2/accounts/" f"{self.account_id}/jobs/{job_id}/"),
             headers=self._headers,
             verify=self._verify,
@@ -222,7 +223,7 @@ class DBTCloud:
         return parameters
 
     def _make_request(self, parameters: dict[str, Any]):
-        response = requests.get(
+        response = self._session.get(
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
             params=parameters,
             headers=self._headers,
@@ -246,7 +247,7 @@ class DBTCloud:
 
         self._check_for_creds()
 
-        response = requests.get(
+        response = self._session.get(
             url=(
                 f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/job/?job_definition_id={job_id}"
             ),
@@ -274,7 +275,7 @@ class DBTCloud:
     ) -> CustomEnvironmentVariablePayload:
         """Create a new Custom Environment Variable in dbt Cloud."""
 
-        response = requests.post(
+        response = self._session.post(
             f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{env_var.project_id}/environment-variables/",
             headers=self._headers,
             data=env_var.model_dump_json(),
@@ -322,7 +323,7 @@ class DBTCloud:
             **custom_env_var.model_dump(),
         )
 
-        response = requests.post(
+        response = self._session.post(
             url=url, headers=self._headers, data=payload.model_dump_json(), verify=self._verify
         )
 
@@ -339,7 +340,7 @@ class DBTCloud:
 
         logger.debug(f"Deleting env var id {env_var_id}")
 
-        response = requests.delete(
+        response = self._session.delete(
             url=f"{self.base_url}/api/v3/accounts/{self.account_id}/projects/{project_id}/environment-variables/{env_var_id}/",
             headers=self._headers,
             verify=self._verify,
@@ -351,7 +352,7 @@ class DBTCloud:
         logger.success("Env Var Job Overwrite deleted successfully.")
 
     def _fetch_environment(self, url) -> List[dict]:
-        response = requests.get(
+        response = self._session.get(
             url=url,
             headers=self._headers,
             verify=self._verify,
