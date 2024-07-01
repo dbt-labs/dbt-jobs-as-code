@@ -1,0 +1,31 @@
+name: Plan for syncing dbt Cloud Jobs from YAML
+run-name: Running dbt-jobs-as-code plan to see what is going to be changed/deleted
+
+on:
+  pull_request:
+    branches:
+      - qa
+    paths:
+      - 'jobs/**'  # Only trigger the workflow if files under the jobs/ directory are modified
+
+jobs:
+  run-python-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12.x"
+
+      - name: Install dbt-jobs-as-code
+        run: pip install dbt-jobs-as-code~=0.6.0
+
+      - name: Run dbt-jobs-as-code
+        run: dbt-jobs-as-code plan jobs/jobs.yml --vars-yml jobs/vars_qa.yml --limit-projects-envs-to-yml
+        env: 
+          DBT_API_KEY: "${{secrets.DBT_API_KEY}}"
+          # DBT_BASE_URL is optional
+          # DBT_BASE_URL: "${{secrets.DBT_BASE_URL}}"
