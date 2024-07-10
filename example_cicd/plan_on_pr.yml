@@ -1,0 +1,50 @@
+name: Plan for syncing dbt Cloud Jobs from YAML
+run-name: Running dbt-jobs-as-code plan to see what is going to be changed/deleted
+
+on:
+  pull_request:
+    branches:
+      - '**'  # Trigger on all branches
+    paths:
+      - 'jobs/**' # we only trigger when files change under the `jobs/` folder which is where we store our config
+
+env:
+  BRANCH_FILE_MAP: |
+    {
+      "main": "jobs/vars_prod.yml",
+      "qa": "jobs/vars_qa.yml"
+    }
+
+jobs:
+  run-python-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12.x"
+
+      - name: Install dbt-jobs-as-code
+        run: pip install dbt-jobs-as-code~=0.6.0
+
+      - name: Set vars file based on branch
+        id: set-vars-file
+        run: |
+          target_branch="${{ github.base_ref }}"
+          vars_file=$(echo '${{ env.BRANCH_FILE_MAP }}' | jq -r --arg branch "$target_branch" '.[$branch] // empty')
+          
+          if [[ -z "$vars_file" ]]; then
+            echo "Branch $branch not found in BRANCH_FILE_MAP. Exiting."
+            exit 0  # Exit gracefully if branch is not in the map
+          fi
+
+          echo "vars_file=$vars_file" >> $GITHUB_OUTPUT
+
+      - name: Run dbt-jobs-as-code
+        if: steps.set-vars-file.outputs.vars_file != ''  # Only run if vars_file is set
+        run: dbt-jobs-as-code plan jobs/jobs.yml --vars-yml ${{ steps.set-vars-file.outputs.vars_file }} --limit-projects-envs-to-yml
+        env: 
+          DBT_API_KEY: "${{secrets.DBT_API_KEY}}"
