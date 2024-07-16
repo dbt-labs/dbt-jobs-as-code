@@ -31,7 +31,7 @@ With this package's approach, people don't need to learn another tool and can co
 ### Installation
 
 - Create a Python virtual environment and activate it
-- Run `pip install dbt-jobs-as-code` (or `pip install dbt-jobs-as-code~=0.6.0` to install a specific release and its patches)
+- Run `pip install dbt-jobs-as-code` (or `pip install dbt-jobs-as-code~=0.7` to install a specific release and its patches)
 
 The CLI is now available as `dbt-jobs-as-code`
 
