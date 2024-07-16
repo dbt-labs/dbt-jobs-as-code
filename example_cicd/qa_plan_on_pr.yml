@@ -21,7 +21,7 @@ jobs:
           python-version: "3.12.x"
 
       - name: Install dbt-jobs-as-code
-        run: pip install dbt-jobs-as-code~=0.6.0
+        run: pip install dbt-jobs-as-code~=0.7.0
 
       - name: Run dbt-jobs-as-code
         run: dbt-jobs-as-code plan jobs/jobs.yml --vars-yml jobs/vars_qa.yml --limit-projects-envs-to-yml

@@ -108,6 +108,10 @@ def sync(
         console.log(change_set.to_table())
     change_set.apply()
 
+    if not change_set.apply_success:
+        logger.error("-- SYNC -- There were some errors during the sync. Check the logs.")
+        sys.exit(1)
+
 
 @cli.command()
 @option_disable_ssl_verification
