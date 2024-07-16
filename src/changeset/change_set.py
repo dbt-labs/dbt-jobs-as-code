@@ -8,7 +8,7 @@ from loguru import logger
 from pydantic import BaseModel, RootModel
 from rich.table import Table
 
-from src.client import DBTCloud
+from src.client import DBTCloud, DBTCloudException
 from src.loader.load import load_job_configuration
 from src.schemas import check_env_var_same, check_job_mapping_same
 from src.schemas.job import JobDefinition
@@ -35,10 +35,11 @@ class Change(BaseModel):
         self.sync_function(**self.parameters)
 
 
-class ChangeSet(RootModel):
+class ChangeSet(BaseModel):
     """Store the set of changes to be displayed or applied."""
 
     root: List[Change] = []
+    apply_success: bool = True
 
     def __iter__(self):
         return iter(self.root)
@@ -77,7 +78,10 @@ class ChangeSet(RootModel):
 
     def apply(self):
         for change in self.root:
-            change.apply()
+            try:
+                change.apply()
+            except DBTCloudException:
+                self.apply_success = False
 
 
 # Don't bear type this function as we do some odd things in tests
