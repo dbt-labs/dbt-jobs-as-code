@@ -18,6 +18,14 @@ else:
     VERSION = "dev"
 
 
+class DBTCloudException(Exception):
+    pass
+
+
+class DBTCloudParamsException(Exception):
+    pass
+
+
 class DBTCloud:
     """A minimalistic API client for fetching dbt Cloud data."""
 
@@ -56,10 +64,10 @@ class DBTCloud:
     def _check_for_creds(self):
         """Confirm the presence of credentials"""
         if not self._api_key:
-            raise Exception("An API key is required to get dbt Cloud jobs.")
+            raise DBTCloudParamsException("An API key is required to get dbt Cloud jobs.")
 
         if not self.account_id:
-            raise Exception("An account_id is required to get dbt Cloud jobs.")
+            raise DBTCloudParamsException("An account_id is required to get dbt Cloud jobs.")
 
     def build_mapping_job_identifier_job_id(
         self, cloud_jobs: Optional[List[JobDefinition]] = None
@@ -89,6 +97,7 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
+            raise DBTCloudException(f"Error updating job {job.name}")
         else:
             logger.success("Job updated successfully.")
 
@@ -108,6 +117,7 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
+            raise DBTCloudException(f"Error creating job {job.name}")
             return None
         else:
             logger.success("Job created successfully.")
@@ -127,6 +137,7 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
+            raise DBTCloudException(f"Error deleting job {job.name}")
         else:
             logger.success("Job deleted successfully.")
 
@@ -142,7 +153,7 @@ class DBTCloud:
         )
         if response.status_code > 200:
             logger.error(f"Issue getting the job {job_id}")
-            return None
+            raise DBTCloudException(f"Error getting the job {job_id}")
         return JobDefinition(**response.json()["data"])
 
     def get_job_missing_fields(self, job_id: int) -> Optional[JobMissingFields]:
@@ -157,7 +168,7 @@ class DBTCloud:
         )
         if response.status_code > 200:
             logger.error(f"Issue getting the job {job_id}")
-            return None
+            raise DBTCloudException(f"Error getting the job {job_id}")
         return JobMissingFields(**response.json()["data"])
 
     def get_jobs(
@@ -285,6 +296,7 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
+            raise DBTCloudException(f"Error creating the env var {env_var.name}")
 
         # If the new environment variables has a job_definition_id, then clear the EnvVar cache.
         self._clear_env_var_cache(job_definition_id=env_var.job_definition_id)
@@ -329,6 +341,7 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
+            raise DBTCloudException(f"Error updating the env var {custom_env_var.name}")
 
         self._clear_env_var_cache(job_definition_id=payload.job_definition_id)
 
@@ -348,6 +361,7 @@ class DBTCloud:
 
         if response.status_code >= 400:
             logger.error(response.json())
+            raise DBTCloudException(f"Error deleting the env var {env_var_id}")
 
         logger.success("Env Var Job Overwrite deleted successfully.")
 
