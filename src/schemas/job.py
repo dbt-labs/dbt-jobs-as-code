@@ -136,6 +136,9 @@ class JobMissingFields(JobDefinition):
 
     # TODO: Add to JobDefinition model when the feature is out
     run_compare_changes: bool = False
+    integration_id: Optional[int] = None
+    run_lint: Optional[bool] = None
+    errors_on_lint_failure: Optional[bool] = None
 
     # Unneeded read-only fields
     raw_dbt_version: Optional[str] = None
@@ -150,4 +153,3 @@ class JobMissingFields(JobDefinition):
     cron_humanized: str = ""
     next_run: Optional[str] = ""
     next_run_humanized: Optional[str] = ""
-    integration_id: Optional[int] = None
