@@ -153,3 +153,4 @@ class JobMissingFields(JobDefinition):
     cron_humanized: str = ""
     next_run: Optional[str] = ""
     next_run_humanized: Optional[str] = ""
+    is_system: bool
