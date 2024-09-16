@@ -50,9 +50,8 @@ There are some tools that will be helpful to you in developing locally. While th
 These are the tools used in `dbt-jobs-as-code` development and testing:
 
 - [`poetry`](https://python-poetry.org/docs/) for packaging and virtual environment setup.
-- [`pytest`](https://docs.pytest.org/en/latest/) to define, discover, and run tests
-- [`flake8`](https://flake8.pycqa.org/en/latest/) for code linting
-- [`black`](https://github.com/psf/black) for code formatting
+- [`pytest`](https://docs.pytest.org/en/latest/) to define, discover, and run tests.
+- [`ruff`](https://github.com/astral-sh/ruff) for code linting and formatting.
 
 A deep understanding of these tools in not required to effectively contribute to`dbt-jobs-as-code`, but we recommend 
 checking out the attached documentation if you're interested in learning more about each one.
@@ -82,10 +81,10 @@ With a virtualenv active and dev dependencies installed you can do things like:
 
 ```sh
 # Run all unit tests in a file
-python3 -m pytest tests/exporter/test_export.py
+poetry run pytest tests/exporter/test_export.py
 
 # Run a specific unit test
-python3 -m pytest tests/exporter/test_export.py::test_export_jobs_yml
+poetry run pytest tests/exporter/test_export.py::test_export_jobs_yml
 ```
 
 ## Submitting a Pull Request
