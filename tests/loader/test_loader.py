@@ -42,6 +42,7 @@ expected_config_dict = {
                 "schedule": True,
             },
             "triggers_on_draft_pr": False,
+            "run_compare_changes": False,
         },
         "job2": {
             "account_id": 43791,
@@ -93,6 +94,7 @@ expected_config_dict = {
                 "schedule": False,
             },
             "triggers_on_draft_pr": True,
+            "run_compare_changes": True,
         },
     }
 }

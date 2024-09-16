@@ -21,6 +21,7 @@ jobs:
       - dbt run --select model2+
       - dbt compile
     generate_docs: false
+    run_compare_changes: false
     schedule:
       cron: 0 */2 * * *
     triggers:
@@ -44,6 +45,7 @@ jobs:
       target_name: TEST
     deferring_environment_id:
     run_generate_sources: true
+    run_compare_changes: true
     execute_steps:
       - dbt run-operation clone_all_production_schemas
       - dbt compile

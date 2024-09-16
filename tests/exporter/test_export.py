@@ -42,6 +42,7 @@ jobs:
       schedule: false
       on_merge: false
     description: ''
+    run_compare_changes: false
     job_type: scheduled
     triggers_on_draft_pr: false
     job_completion_trigger_condition:

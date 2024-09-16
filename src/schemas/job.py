@@ -37,6 +37,7 @@ class JobDefinition(BaseModel):
     triggers: Triggers
     description: str = ""
     state: int = 1
+    run_compare_changes: bool = False
     # we don't want to enforce the list in case we add more, but still want to get those in the JSON schema
     job_type: str = Field(
         json_schema_extra={"enum": ["scheduled", "merge", "ci", "other"]},
@@ -135,7 +136,6 @@ class JobMissingFields(JobDefinition):
     # when adding fields we also need to update the test for pytest
 
     # TODO: Add to JobDefinition model when the feature is out
-    run_compare_changes: bool = False
     integration_id: Optional[int] = None
     run_lint: Optional[bool] = None
     errors_on_lint_failure: Optional[bool] = None
