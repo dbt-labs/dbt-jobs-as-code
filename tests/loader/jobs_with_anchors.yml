@@ -26,6 +26,7 @@ jobs:
       timeout_seconds: 0
     generate_docs: false
     generate_sources: true
+    run_compare_changes: false
     name: "My Job 1 with a new name"
     project_id: 176941
     run_generate_sources: true
@@ -71,6 +72,7 @@ jobs:
       - DBT_ENV2: My val2
     job_type: "other"
     triggers_on_draft_pr: true
+    run_compare_changes: true
     job_completion_trigger_condition:
       condition:
         job_id: 123

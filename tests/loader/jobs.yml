@@ -59,6 +59,7 @@ jobs:
       on_merge: true
     job_type: other
     triggers_on_draft_pr: true
+    run_compare_changes: true
     job_completion_trigger_condition:
       condition:
         job_id: 123
