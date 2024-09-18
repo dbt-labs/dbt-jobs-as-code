@@ -248,6 +248,11 @@
           "title": "State",
           "type": "integer"
         },
+        "run_compare_changes": {
+          "default": false,
+          "title": "Run Compare Changes",
+          "type": "boolean"
+        },
         "job_type": {
           "default": "scheduled",
           "enum": [
@@ -417,18 +422,6 @@
           ],
           "default": false,
           "title": "Git Provider Webhook"
-        },
-        "custom_branch_only": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "boolean"
-            }
-          ],
-          "default": false,
-          "title": "Custom Branch Only"
         },
         "schedule": {
           "anyOf": [
