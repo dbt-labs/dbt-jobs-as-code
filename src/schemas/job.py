@@ -154,3 +154,8 @@ class JobMissingFields(JobDefinition):
     next_run: Optional[str] = ""
     next_run_humanized: Optional[str] = ""
     is_system: bool
+    account: Any
+    project: Any
+    environment: Any
+    most_recent_run: Any
+    most_recent_completed_run: Any
