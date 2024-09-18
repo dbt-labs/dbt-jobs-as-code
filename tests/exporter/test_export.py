@@ -38,7 +38,6 @@ jobs:
     triggers:
       github_webhook: false
       git_provider_webhook: false
-      custom_branch_only: true
       schedule: false
       on_merge: false
     description: ''
@@ -75,7 +74,6 @@ jobs:
         triggers=Triggers(
             github_webhook=False,
             git_provider_webhook=False,
-            custom_branch_only=True,
             schedule=False,
         ),
         state=1,

@@ -26,7 +26,6 @@ jobs:
     triggers:
       github_webhook: false
       git_provider_webhook: "false"
-      custom_branch_only: true
       schedule: true
       on_merge: false
     job_completion_trigger_condition:
@@ -54,7 +53,6 @@ jobs:
     triggers:
       github_webhook: true
       git_provider_webhook: false
-      custom_branch_only: true
       schedule: false
       on_merge: true
     job_type: other
