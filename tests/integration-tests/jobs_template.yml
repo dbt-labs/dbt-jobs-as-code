@@ -27,7 +27,6 @@ jobs:
     triggers:
       github_webhook: false
       git_provider_webhook: false
-      custom_branch_only: false
       schedule: false
     job_completion_trigger_condition:
       condition:
@@ -60,7 +59,6 @@ jobs:
     triggers:
       github_webhook: false
       git_provider_webhook: false
-      custom_branch_only: false
       schedule: false
     custom_environment_variables:
       - DBT_ALPHA: "true"
