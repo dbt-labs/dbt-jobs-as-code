@@ -27,7 +27,6 @@ jinja2 = "^3.1.4"
 importlib-metadata = "^7.2.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.4.0"
 pytest = "^7.2.0"
 jsonschema = "^4.17.3"
 
@@ -43,9 +42,6 @@ pythonpath = [
   ".", "src",
 ]
 beartype_packages = 'src'
-
-[tool.black]
-line-length = 99
 
 [tool.ruff]
 line-length = 99
