@@ -24,7 +24,7 @@ python-dateutil = "^2.9"
 beartype = "^0.18.5"
 pytest-beartype = "^0.0.2"
 jinja2 = "^3.1.4"
-importlib-metadata = "^7.2.0"
+importlib-metadata = ">=6.0,<7"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.0"
