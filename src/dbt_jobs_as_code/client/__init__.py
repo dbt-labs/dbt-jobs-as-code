@@ -6,11 +6,11 @@ from importlib_metadata import version
 from loguru import logger
 from urllib3.exceptions import InsecureRequestWarning
 
-from src.schemas.custom_environment_variable import (
+from dbt_jobs_as_code.schemas.custom_environment_variable import (
     CustomEnvironmentVariable,
     CustomEnvironmentVariablePayload,
 )
-from src.schemas.job import JobDefinition, JobMissingFields
+from dbt_jobs_as_code.schemas.job import JobDefinition, JobMissingFields
 
 if os.getenv("DBT_JOB_ID", "") == "":
     VERSION = f'v{version("dbt-jobs-as-code")}'

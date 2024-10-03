@@ -3,7 +3,7 @@ import json
 from beartype.typing import Any, Dict
 from pydantic import BaseModel
 
-from src.schemas import JobDefinition
+from dbt_jobs_as_code.schemas import JobDefinition
 
 
 class Config(BaseModel):

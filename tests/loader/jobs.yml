@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../src/schemas/load_job_schema.json
+# yaml-language-server: $schema=../../src/dbt_jobs_as_code/schemas/load_job_schema.json
 
 jobs:
 

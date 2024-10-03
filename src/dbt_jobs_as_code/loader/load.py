@@ -4,7 +4,7 @@ from jinja2 import Environment, StrictUndefined, meta
 from jinja2.exceptions import UndefinedError
 from loguru import logger
 
-from src.schemas.config import Config
+from dbt_jobs_as_code.schemas.config import Config
 
 
 class LoadingJobsYAMLError(Exception):

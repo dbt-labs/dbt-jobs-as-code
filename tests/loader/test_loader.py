@@ -1,5 +1,5 @@
 import pytest
-from loader.load import LoadingJobsYAMLError, load_job_configuration
+from dbt_jobs_as_code.loader.load import LoadingJobsYAMLError, load_job_configuration
 
 # all the different ways of defining a set of jobs still create the same Pydantic jobs
 

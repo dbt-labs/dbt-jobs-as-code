@@ -1,9 +1,8 @@
 import os
 
 import pytest
+from dbt_jobs_as_code.client import DBTCloud
 from pydantic_core import ValidationError
-
-from src.client import DBTCloud
 
 DBT_ACCOUNT_ID = int(os.getenv("DBT_ACCOUNT_ID", 0))
 DBT_API_KEY = os.getenv("DBT_API_KEY")

@@ -5,10 +5,9 @@ from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
+from dbt_jobs_as_code.client import DBTCloud
+from dbt_jobs_as_code.main import cli
 from loguru import logger
-
-from src.client import DBTCloud
-from src.main import cli
 
 ACCOUNT_ID = int(os.getenv("DBT_ACCOUNT_ID", 0))
 PROJECT_ID = int(os.getenv("DBT_PROJECT_ID", 0))

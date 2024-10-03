@@ -2,7 +2,7 @@ import sys
 
 from ruamel.yaml import YAML
 
-from src.schemas.job import JobDefinition
+from dbt_jobs_as_code.schemas.job import JobDefinition
 
 
 def export_jobs_yml(jobs: list[JobDefinition]):
@@ -13,7 +13,7 @@ def export_jobs_yml(jobs: list[JobDefinition]):
         export_yml["jobs"][f"import_{id + 1}"] = cloud_job.to_load_format()
 
     print(
-        "# yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/schemas/load_job_schema.json"
+        "# yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/dbt_jobs_as_code/schemas/load_job_schema.json"
     )
     print("")
 

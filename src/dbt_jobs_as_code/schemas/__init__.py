@@ -2,11 +2,11 @@ from beartype.typing import Any, Optional, Tuple
 from deepdiff import DeepDiff
 from loguru import logger
 
-from src.schemas.custom_environment_variable import (
+from dbt_jobs_as_code.schemas.custom_environment_variable import (
     CustomEnvironmentVariable,
     CustomEnvironmentVariablePayload,
 )
-from src.schemas.job import JobDefinition
+from dbt_jobs_as_code.schemas.job import JobDefinition
 
 
 def _get_mismatched_dict_entries(

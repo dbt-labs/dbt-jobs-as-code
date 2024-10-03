@@ -2,9 +2,8 @@ import re
 from io import StringIO
 
 import pytest
+from dbt_jobs_as_code.changeset.change_set import filter_config
 from loguru import logger
-
-from src.changeset.change_set import filter_config
 
 
 # Mock Job class for testing
