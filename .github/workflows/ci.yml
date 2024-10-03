@@ -10,6 +10,7 @@ on:
 jobs:
   test:
     if: |
+      github.event_name == 'schedule' ||
       github.event.pull_request.head.repo.full_name == github.repository ||
       contains(github.event.pull_request.labels.*.name, 'ci-ok')
     runs-on: ubuntu-latest
