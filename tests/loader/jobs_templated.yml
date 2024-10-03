@@ -27,7 +27,6 @@ jobs:
     triggers:
       github_webhook: false
       git_provider_webhook: false
-      custom_branch_only: true
       # we can put some logic to decide for true/false
       schedule: "{{ env_type == 'prod' }}"
       on_merge: false
@@ -55,7 +54,6 @@ jobs:
     triggers:
       github_webhook: true
       git_provider_webhook: false
-      custom_branch_only: true
       schedule: false
       on_merge: true
     job_type: other

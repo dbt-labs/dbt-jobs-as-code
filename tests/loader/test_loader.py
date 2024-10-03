@@ -35,7 +35,6 @@ expected_config_dict = {
             "settings": {"target_name": "production", "threads": 4},
             "state": 1,
             "triggers": {
-                "custom_branch_only": True,
                 "git_provider_webhook": False,
                 "github_webhook": False,
                 "on_merge": False,
@@ -87,7 +86,6 @@ expected_config_dict = {
             "settings": {"target_name": "TEST", "threads": 4},
             "state": 1,
             "triggers": {
-                "custom_branch_only": True,
                 "git_provider_webhook": False,
                 "github_webhook": True,
                 "on_merge": True,

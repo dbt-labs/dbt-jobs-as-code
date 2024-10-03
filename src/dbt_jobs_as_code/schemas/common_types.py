@@ -38,7 +38,6 @@ field_optional_bool_allowed_as_string_in_schema = Field(
 class Triggers(BaseModel):
     github_webhook: bool = field_optional_bool_allowed_as_string_in_schema
     git_provider_webhook: Optional[bool] = field_optional_bool_allowed_as_string_in_schema
-    custom_branch_only: Optional[bool] = field_optional_bool_allowed_as_string_in_schema
     schedule: Optional[bool] = field_optional_bool_allowed_as_string_in_schema
     on_merge: Optional[bool] = field_optional_bool_allowed_as_string_in_schema
 

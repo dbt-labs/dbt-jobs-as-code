@@ -13,10 +13,6 @@ on:
 
 permissions: read-all
 
-defaults:
-  run:
-    shell: bash
-
 # will cancel previous workflows triggered by the same event and for the same ref for PRs or same SHA otherwise
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ contains(github.event_name, 'pull_request') && github.event.pull_request.head.ref || github.sha }}
@@ -41,7 +37,6 @@ jobs:
 
       - name: Build artifacts
         run: poetry build
-        shell: bash
 
       - name: Publish artifacts to PyPI Test
         if: inputs.deploy-to == 'PypiTest'
