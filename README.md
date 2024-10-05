@@ -120,12 +120,12 @@ This command can be used to deactivate both the schedule and the CI triggers for
 
 ### Job Configuration YAML Schema
 
-The file `src/schemas/load_job_schema.json` is a JSON Schema file that can be used to verify that the YAML config files syntax is correct and to provide completion suggestions for the different fields supported.
+The file `src/dbt_jobs_as_code/schemas/load_job_schema.json` is a JSON Schema file that can be used to verify that the YAML config files syntax is correct and to provide completion suggestions for the different fields supported.
 
 To use it in VSCode, install [the extension `YAML`](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) and add the following line at the top of your YAML config file (change the path if need be):
 
 ```yaml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/schemas/load_job_schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/dbt_jobs_as_code/schemas/load_job_schema.json
 ```
 
 ### Templating jobs YAML file

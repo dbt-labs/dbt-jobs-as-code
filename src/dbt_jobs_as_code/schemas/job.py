@@ -3,7 +3,7 @@ import re
 from beartype.typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
-from .common_types import (
+from dbt_jobs_as_code.schemas.common_types import (
     Execution,
     JobCompletionTriggerCondition,
     Schedule,
@@ -12,7 +12,7 @@ from .common_types import (
     field_mandatory_int_allowed_as_string_in_schema,
     field_optional_int_allowed_as_string_in_schema,
 )
-from .custom_environment_variable import CustomEnvironmentVariable
+from dbt_jobs_as_code.schemas.custom_environment_variable import CustomEnvironmentVariable
 
 
 # Main model for loader

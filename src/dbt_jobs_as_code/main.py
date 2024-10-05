@@ -6,11 +6,11 @@ import click
 from loguru import logger
 from rich.console import Console
 
-from src.changeset.change_set import build_change_set
-from src.client import DBTCloud
-from src.exporter.export import export_jobs_yml
-from src.loader.load import load_job_configuration
-from src.schemas.config import generate_config_schema
+from dbt_jobs_as_code.changeset.change_set import build_change_set
+from dbt_jobs_as_code.client import DBTCloud
+from dbt_jobs_as_code.exporter.export import export_jobs_yml
+from dbt_jobs_as_code.loader.load import load_job_configuration
+from dbt_jobs_as_code.schemas.config import generate_config_schema
 
 # adding the ability to disable ssl verification, useful for self-signed certificates and local testing
 option_disable_ssl_verification = click.option(
@@ -478,7 +478,7 @@ def deactivate_jobs(config, account_id, job_id, disable_ssl_verification):
 @cli.command(hidden=True)
 def update_json_schema():
     json_schema = generate_config_schema()
-    Path("src/schemas/load_job_schema.json").write_text(json_schema)
+    Path("src/dbt_jobs_as_code/schemas/load_job_schema.json").write_text(json_schema)
 
 
 if __name__ == "__main__":

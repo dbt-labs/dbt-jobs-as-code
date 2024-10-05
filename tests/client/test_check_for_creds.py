@@ -1,6 +1,5 @@
 import pytest
-
-from src.client import DBTCloud
+from dbt_jobs_as_code.client import DBTCloud
 
 
 def test_check_for_creds_no_api_key():

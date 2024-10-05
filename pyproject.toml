@@ -5,7 +5,7 @@ description = "A CLI to allow defining dbt Cloud jobs as code"
 authors = ["dbt Labs <info@dbtlabs.com>"]
 license = "Apache License 2.0"
 readme = "README.md"
-packages = [{include = "src"}]
+packages = [{include = "dbt_jobs_as_code", from = "src"}]
 repository = "https://github.com/dbt-labs/dbt-jobs-as-code.git"
 keywords = ["dbt", "dbt Cloud"]
 

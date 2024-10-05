@@ -1,6 +1,5 @@
 import pytest
-
-from src.client import DBTCloud
+from dbt_jobs_as_code.client import DBTCloud
 
 service = DBTCloud(
     account_id=0,

@@ -1,18 +1,24 @@
 import json
 
-from exporter.export import export_jobs_yml
+from dbt_jobs_as_code.exporter.export import export_jobs_yml
+from dbt_jobs_as_code.schemas.common_types import (
+    Date,
+    Execution,
+    Schedule,
+    Settings,
+    Time,
+    Triggers,
+)
+from dbt_jobs_as_code.schemas.job import JobDefinition
 from jsonschema import validate
 from ruamel.yaml import YAML
-
-from src.schemas.common_types import Date, Execution, Schedule, Settings, Time, Triggers
-from src.schemas.job import JobDefinition
 
 
 def test_export_jobs_yml(capsys):
     """Test that the export_jobs_yml function works as expected."""
 
     expected_output = """
-# yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/schemas/load_job_schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/dbt_jobs_as_code/schemas/load_job_schema.json
 
 jobs:
   import_1:
@@ -86,7 +92,7 @@ jobs:
     assert captured.out.strip() == expected_output
 
     # checking that the output YAML is a valid job
-    with open("src/schemas/load_job_schema.json") as f:
+    with open("src/dbt_jobs_as_code/schemas/load_job_schema.json") as f:
         schema = f.read()
 
     yaml = YAML(typ="safe")
