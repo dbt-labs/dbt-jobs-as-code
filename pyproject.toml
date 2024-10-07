@@ -31,7 +31,7 @@ pytest = "^7.2.0"
 jsonschema = "^4.17.3"
 
 [tool.poetry.scripts]
-dbt-jobs-as-code = "src.main:cli"
+dbt-jobs-as-code = "dbt_jobs_as_code.main:cli"
 
 [build-system]
 requires = ["poetry-core"]
