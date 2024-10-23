@@ -7,6 +7,14 @@ on:
   schedule:
     - cron: '0 2 * * 0'
 
+env:
+  DBT_BASE_URL: ${{ secrets.DBT_BASE_URL }}
+  DBT_API_KEY: ${{ secrets.DBT_API_KEY }}
+  DBT_JOB_ID: ${{ secrets.DBT_JOB_ID }}
+  DBT_ACCOUNT_ID: ${{ secrets.DBT_ACCOUNT_ID }}
+  DBT_PROJECT_ID: ${{ secrets.DBT_PROJECT_ID }}
+  DBT_ENV_ID: ${{ secrets.DBT_ENV_ID }}
+
 jobs:
   test:
     if: |
@@ -17,7 +25,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12",  "3.13"]
 
     steps:
     - name: Checkout code
@@ -35,13 +43,19 @@ jobs:
       run: |
         poetry install
 
-    - name: Run tests
-      run: |
-        poetry run pytest
-      env:
-        DBT_BASE_URL: ${{ secrets.DBT_BASE_URL }}
-        DBT_API_KEY: ${{ secrets.DBT_API_KEY }}
-        DBT_JOB_ID: ${{ secrets.DBT_JOB_ID }}
-        DBT_ACCOUNT_ID: ${{ secrets.DBT_ACCOUNT_ID }}
-        DBT_PROJECT_ID: ${{ secrets.DBT_PROJECT_ID }}
-        DBT_ENV_ID: ${{ secrets.DBT_ENV_ID }}
+    - name: Run pytest (parallel)
+      if:  matrix.python-version != '3.13'
+      run: make test-parallel
+
+    - name: Run pytest (full)
+      if:  matrix.python-version == '3.13'
+      run: make test-parallel | tee pytest-coverage.txt && exit ${PIPESTATUS[0]}
+
+    - name: Pytest coverage comment
+      if: matrix.python-version == '3.13'
+      uses: MishaKav/pytest-coverage-comment@v1
+      with:
+        pytest-coverage-path: ./pytest-coverage.txt
+        title: Coverage Report
+        badge-title: Coverage
+        junitxml-path: ./coverage.xml
