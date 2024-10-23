@@ -185,3 +185,5 @@ After a PR on `main` is approved, the action will run a `sync` to compare the lo
 
 - Want to report a bug or request a feature? Let us know by opening [an issue](https://github.com/dbt-labs/dbt-jobs-as-code/issues/new)
 - Want to help us build dbt? Check out the [Contributing Guide](https://github.com/dbt-labs/dbt-jobs-as-code/blob/HEAD/CONTRIBUTING.md)
+
+N/A just for testing the CI flow
