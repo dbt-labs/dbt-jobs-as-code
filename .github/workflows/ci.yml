@@ -49,7 +49,7 @@ jobs:
 
     - name: Run pytest (full)
       if:  matrix.python-version == '3.13'
-      run: make test-parallel | tee pytest-coverage.txt && exit ${PIPESTATUS[0]}
+      run: make test-full | tee pytest-coverage.txt && exit ${PIPESTATUS[0]}
 
     - name: Pytest coverage comment
       if: matrix.python-version == '3.13'
