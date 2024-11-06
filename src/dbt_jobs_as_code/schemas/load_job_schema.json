@@ -178,11 +178,7 @@
           "$ref": "#/$defs/Settings"
         },
         "execution": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/Execution"
-            }
-          ],
+          "$ref": "#/$defs/Execution",
           "default": {
             "timeout_seconds": 0
           }
@@ -252,6 +248,11 @@
           "default": false,
           "title": "Run Compare Changes",
           "type": "boolean"
+        },
+        "compare_changes_flags": {
+          "default": "--select state:modified",
+          "title": "Compare Changes Flags",
+          "type": "string"
         },
         "job_type": {
           "default": "scheduled",
