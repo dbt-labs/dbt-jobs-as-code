@@ -38,6 +38,7 @@ class JobDefinition(BaseModel):
     description: str = ""
     state: int = 1
     run_compare_changes: bool = False
+    compare_changes_flags: str = "--select state:modified"
     # we don't want to enforce the list in case we add more, but still want to get those in the JSON schema
     job_type: str = Field(
         json_schema_extra={"enum": ["scheduled", "merge", "ci", "other"]},
