@@ -7,6 +7,7 @@ expected_config_dict = {
     "jobs": {
         "job1": {
             "account_id": 43791,
+            "compare_changes_flags": "--select state:modified",
             "custom_environment_variables": [],
             "dbt_version": None,
             "deferring_environment_id": None,
@@ -45,6 +46,7 @@ expected_config_dict = {
         },
         "job2": {
             "account_id": 43791,
+            "compare_changes_flags": "--select state:modified",
             "custom_environment_variables": [
                 {
                     "display_value": None,
