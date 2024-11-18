@@ -13,14 +13,14 @@ discussions and issues. We encourage you to first read our higher-level document
 
 The rest of this document serves as a more granular guide for contributing code changes to `dbt-jobs-as-code` (this 
 repository). It is not intended as a guide for using `dbt-jobs-as-code`, and some pieces assume a level of familiarity
-with Python development (poetry, pip, etc). Specific code snippets in this guide assume you are using macOS or Linux and
+with Python development (uv, pip, etc). Specific code snippets in this guide assume you are using macOS or Linux and
 are comfortable with the command line.
 
 ## Getting the code
+
 ## Installing git
 
-You will need git in order to download and modify this project's source code. On macOS, the best way to download git is 
-to just install Xcode. 
+You will need git in order to download and modify this project's source code. On macOS, the best way to download git is to just install Xcode. 
 
 ### External contributors
 
@@ -49,7 +49,7 @@ There are some tools that will be helpful to you in developing locally. While th
 
 These are the tools used in `dbt-jobs-as-code` development and testing:
 
-- [`poetry`](https://python-poetry.org/docs/) for packaging and virtual environment setup.
+- [`uv`](https://docs.astral.sh/uv/) for packaging and virtual environment setup.
 - [`pytest`](https://docs.pytest.org/en/latest/) to define, discover, and run tests.
 - [`ruff`](https://github.com/astral-sh/ruff) for code linting and formatting.
 
@@ -59,19 +59,21 @@ checking out the attached documentation if you're interested in learning more ab
 #### Virtual environments
 
 We strongly recommend using virtual environments when developing code in `dbt-jobs-as-code`. We recommend creating this
-environment in the root of the `dbt-jobs-as-code` repository using `poetry`. To create a new environment, run:
+environment in the root of the `dbt-jobs-as-code` repository using `uv`. To create and activate a new environment, run:
 ```sh
-poetry install
-poetry shell
+uv sync
+source .venv/bin/activate
 ```
 
 This will create and activate a new Python virtual environment.
 
+Alternatively, you can just call `uv run dbt-jobs-as-code`
 
 ## Testing
 
 Once you're able to manually test that your code change is working as expected, it's important to run existing automated
 tests, as well as adding some new ones. These tests will ensure that:
+
 - Your code changes do not unexpectedly break other established functionality
 - Your code changes can handle all known edge cases
 - The functionality you're adding will _keep_ working in the future
@@ -81,10 +83,10 @@ With a virtualenv active and dev dependencies installed you can do things like:
 
 ```sh
 # Run all unit tests in a file
-poetry run pytest tests/exporter/test_export.py
+uv run pytest tests/exporter/test_export.py
 
 # Run a specific unit test
-poetry run pytest tests/exporter/test_export.py::test_export_jobs_yml
+uv run pytest tests/exporter/test_export.py::test_export_jobs_yml
 ```
 
 ## Submitting a Pull Request
