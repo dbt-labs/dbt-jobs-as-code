@@ -101,6 +101,19 @@
     "JobDefinition": {
       "description": "A definition for a dbt Cloud job.",
       "properties": {
+        "linked_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The ID of the job in dbt Cloud that we want to link. Only used for the 'link' command.",
+          "title": "Linked Id"
+        },
         "id": {
           "anyOf": [
             {
@@ -123,6 +136,7 @@
             }
           ],
           "default": null,
+          "description": "The internal job identifier for the job for dbt-jobs-as-code. Will be added at the end of the job name.",
           "title": "Identifier"
         },
         "account_id": {

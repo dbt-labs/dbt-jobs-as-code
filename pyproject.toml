@@ -20,7 +20,7 @@ dependencies = [
     "importlib-metadata<7,>=6.0",
 ]
 name = "dbt-jobs-as-code"
-version = "0.10.1"
+version = "0.11.1"
 description = "A CLI to allow defining dbt Cloud jobs as code"
 readme = "README.md"
 keywords = [

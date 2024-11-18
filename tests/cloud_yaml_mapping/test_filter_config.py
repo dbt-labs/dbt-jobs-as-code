@@ -2,7 +2,7 @@ import re
 from io import StringIO
 
 import pytest
-from dbt_jobs_as_code.changeset.change_set import filter_config
+from dbt_jobs_as_code.cloud_yaml_mapping.change_set import filter_config
 from loguru import logger
 
 

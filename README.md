@@ -92,15 +92,21 @@ Queries dbt Cloud and provide the YAML definition for those jobs. It includes th
 
 - it is possible to restrict the list of dbt Cloud Job IDs by adding `... -j 101 -j 123 -j 234`
 - this command also accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code sync <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
+- this command accepts a `--include-linked-id` parameter to allow linking the jobs in the YAML to existing jobs in dbt Cloud, by renaming those
 - once the YAML has been retrieved, it is possible to copy/paste it in a local YAML file to create/update the local jobs definition.
 
-To move some ui-jobs to jobs-as-code, perform the following steps:
+Once the configuration is imported, it is possible to "link" existing jobs by using the `link` command explained below.
 
-- run the command to import the jobs
-- copy paste the job/jobs into a YAML file
-- change the `import_` id of the job in the YAML file to another unique identifier
-- rename the job in the UI to end with `[[new_job_identifier]]`
-- run a `plan` command to verify that no changes are required for the given job
+#### `link`
+
+Command: `dbt-jobs-as-code link <config_file.yml>`
+
+Links dbt Cloud jobs with the corresponding identifier from the YAML file by renaming the jobs, adding the `[[ ... ]]` part in the job name.
+
+To do so, the program looks at the YAML file for the config `linked_id`.
+`linked_id` can be added manually or can be added automatically when calling `dbt-jobs-as-code import-jobs` with the `--include-linked-id` parameter.
+
+Accepts a `--dry-run` flag to see what jobs would be changed, without actually changing them.
 
 #### `unlink`
 
@@ -161,14 +167,15 @@ The tool will raise errors if:
 
 ### Summary of parameters
 
-| Command         | `--project-id` / `-p` | `--environment-id` / `-e` | `--limit-projects-envs-to-yml` / `-l` | `--vars-yml` / `-v` | `--online` | `--job-id` / `-j` | `--identifier` / `-i` | `--dry-run` |
-| --------------- | :-------------------: | :-----------------------: | :-----------------------------------: | :-----------------: | :--------: | :---------------: | :-------------------: | :---------: |
-| plan            |          ✅           |            ✅             |                  ✅                   |         ✅          |            |                   |                       |             |
-| sync            |          ✅           |            ✅             |                  ✅                   |         ✅          |            |                   |                       |             |
-| validate        |                       |                           |                                       |         ✅          |     ✅     |                   |                       |             |
-| import-jobs     |          ✅           |            ✅             |                                       |                     |            |        ✅         |                       |             |
-| unlink          |                       |                           |                                       |                     |            |                   |          ✅           |     ✅      |
-| deactivate-jobs |                       |                           |                                       |                     |            |        ✅         |                       |             |
+| Command         | `--project-id` / `-p` | `--environment-id` / `-e` | `--limit-projects-envs-to-yml` / `-l` | `--vars-yml` / `-v` | `--online` | `--job-id` / `-j` | `--identifier` / `-i` | `--dry-run` | `--include-linked-id` |
+| --------------- | :-------------------: | :-----------------------: | :-----------------------------------: | :-----------------: | :--------: | :---------------: | :-------------------: | :---------: | :-------------------: |
+| plan            |          ✅           |            ✅             |                  ✅                   |         ✅          |            |                   |                       |             |                       |
+| sync            |          ✅           |            ✅             |                  ✅                   |         ✅          |            |                   |                       |             |                       |
+| validate        |                       |                           |                                       |         ✅          |     ✅     |                   |                       |             |                       |
+| import-jobs     |          ✅           |            ✅             |                                       |                     |            |        ✅         |                       |             |          ✅           |
+| link            |                       |                           |                                       |                     |            |                   |                       |     ✅      |                       |
+| unlink          |                       |                           |                                       |                     |            |                   |          ✅           |     ✅      |                       |
+| deactivate-jobs |                       |                           |                                       |                     |            |        ✅         |                       |             |                       |
 
 As a reminder using `--project-id` and/or `--environment-id` is not compatible with using `--limit-projects-envs-to-yml`.
 We can only restricts by providing the IDs or by forcing to restrict on the environments and projects in the YML file.
