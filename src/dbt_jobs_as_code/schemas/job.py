@@ -19,8 +19,15 @@ from dbt_jobs_as_code.schemas.custom_environment_variable import CustomEnvironme
 class JobDefinition(BaseModel):
     """A definition for a dbt Cloud job."""
 
+    linked_id: Optional[int] = Field(
+        default=None,
+        description="The ID of the job in dbt Cloud that we want to link. Only used for the 'link' command.",
+    )
     id: Optional[int] = None
-    identifier: Optional[str] = None
+    identifier: Optional[str] = Field(
+        default=None,
+        description="The internal job identifier for the job for dbt-jobs-as-code. Will be added at the end of the job name.",
+    )
     account_id: int = field_mandatory_int_allowed_as_string_in_schema
     project_id: int = field_mandatory_int_allowed_as_string_in_schema
     environment_id: int = field_mandatory_int_allowed_as_string_in_schema
@@ -100,23 +107,28 @@ class JobDefinition(BaseModel):
         # otherwise, it means that we are "unlinking" the job from the job.yml
         if self.identifier:
             payload.name = f"{self.name} [[{self.identifier}]]"
-        return payload.model_dump_json(exclude={"identifier", "custom_environment_variables"})
+        return payload.model_dump_json(
+            exclude={"linked_id", "identifier", "custom_environment_variables"}
+        )
 
-    def to_load_format(self):
+    def to_load_format(self, include_linked_id: bool = False):
         """Generate a dict following our YML format to dump as YML later."""
 
-        data = self.model_dump(
-            exclude={
-                "identifier": True,
-                "schedule": {
-                    "date": True,
-                    "time": True,
-                },
-                "custom_environment_variables": True,
-                "id": True,
-                "state": True,
-            }
-        )
+        self.linked_id = self.id
+        exclude_dict = {
+            "identifier": True,
+            "schedule": {
+                "date": True,
+                "time": True,
+            },
+            "id": True,
+            "custom_environment_variables": True,
+            "state": True,
+        }
+        if not include_linked_id:
+            exclude_dict["linked_id"] = True
+
+        data = self.model_dump(exclude=exclude_dict)
         data["custom_environment_variables"] = []
         for env_var in self.custom_environment_variables:
             data["custom_environment_variables"].append({env_var.name: env_var.value})

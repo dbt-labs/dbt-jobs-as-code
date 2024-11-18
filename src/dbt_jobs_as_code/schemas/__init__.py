@@ -22,6 +22,7 @@ def _job_to_dict(job: JobDefinition):
         exclude={
             "id",  # we want to exclude id because our YAML file will not have it
             "custom_environment_variables",  # TODO: Add this back in. Requires extra API calls.
+            "linked_id",  # we want to exclude linked_id because dbt Cloud doesn't save it
         }
     )
     return dict_vals

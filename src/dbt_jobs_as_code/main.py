@@ -1,16 +1,20 @@
 import os
 import sys
+from importlib.metadata import version
 from pathlib import Path
 
 import click
 from loguru import logger
 from rich.console import Console
 
-from dbt_jobs_as_code.changeset.change_set import build_change_set
-from dbt_jobs_as_code.client import DBTCloud
+from dbt_jobs_as_code.client import DBTCloud, DBTCloudException
+from dbt_jobs_as_code.cloud_yaml_mapping.change_set import build_change_set
+from dbt_jobs_as_code.cloud_yaml_mapping.validate_link import LinkableCheck, can_be_linked
 from dbt_jobs_as_code.exporter.export import export_jobs_yml
 from dbt_jobs_as_code.loader.load import load_job_configuration
 from dbt_jobs_as_code.schemas.config import generate_config_schema
+
+VERSION = version("dbt-jobs-as-code")
 
 # adding the ability to disable ssl verification, useful for self-signed certificates and local testing
 option_disable_ssl_verification = click.option(
@@ -52,7 +56,11 @@ option_vars_yml = click.option(
 )
 
 
-@click.group()
+@click.group(
+    help=f"dbt-jobs-as-code {VERSION}\n\nA CLI to allow defining dbt Cloud jobs as code",
+    context_settings={"max_content_width": 120},
+)
+@click.version_option(version=VERSION)
 def cli() -> None:
     pass
 
@@ -277,6 +285,11 @@ def validate(config, vars_yml, online, disable_ssl_verification):
     help="Check if the job model has missing fields.",
     hidden=True,
 )
+@click.option(
+    "--include-linked-id",
+    is_flag=True,
+    help="Include the job ID when exporting jobs.",
+)
 def import_jobs(
     config,
     account_id,
@@ -285,6 +298,7 @@ def import_jobs(
     job_id,
     disable_ssl_verification,
     check_missing_fields=False,
+    include_linked_id=False,
 ):
     """
     Generate YML file for import.
@@ -354,7 +368,57 @@ def import_jobs(
                 cloud_job.custom_environment_variables.append(env_var)
 
     logger.success(f"YML file for the current dbt Cloud jobs")
-    export_jobs_yml(cloud_jobs)
+    export_jobs_yml(cloud_jobs, include_linked_id)
+
+
+@cli.command()
+@option_disable_ssl_verification
+@click.argument("config", type=click.File("r"))
+@click.option("--dry-run", is_flag=True, help="In dry run mode we don't update dbt Cloud.")
+def link(config, dry_run, disable_ssl_verification):
+    """
+    Link the YML file to dbt Cloud by adding the identifier to the job name.
+    All relevant jobs get the part [[...]] added to their name
+    """
+
+    yaml_jobs = load_job_configuration(config, None).jobs
+    account_id = list(yaml_jobs.values())[0].account_id
+
+    dbt_cloud = DBTCloud(
+        account_id=account_id,
+        api_key=os.environ.get("DBT_API_KEY"),
+        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+        disable_ssl_verification=disable_ssl_verification,
+    )
+
+    some_jobs_updated = False
+    for current_identifier, job_details in yaml_jobs.items():
+        linkable_check = can_be_linked(current_identifier, job_details, dbt_cloud)
+        if not linkable_check.can_be_linked:
+            logger.error(linkable_check.message)
+            continue
+
+        # impossible according to the check but needed to fix type checking
+        assert linkable_check.linked_job is not None
+
+        cloud_job = linkable_check.linked_job
+        cloud_job.identifier = current_identifier
+        if dry_run:
+            logger.info(
+                f"Would link/rename the job {cloud_job.id}:{cloud_job.name} [[{current_identifier}]]"
+            )
+        else:
+            logger.info(
+                f"Linking/Renaming the job {cloud_job.id}:{cloud_job.name} [[{current_identifier}]]"
+            )
+            dbt_cloud.update_job(job=cloud_job)
+            some_jobs_updated = True
+
+    if not dry_run:
+        if some_jobs_updated:
+            logger.success(f"Updated all jobs!")
+        else:
+            logger.info(f"No jobs to link")
 
 
 @cli.command()
@@ -379,14 +443,11 @@ def unlink(config, account_id, dry_run, identifier, disable_ssl_verification):
     if account_id:
         cloud_account_id = account_id
     elif config:
+        # we get the account id from the config file
         defined_jobs = load_job_configuration(config, None).jobs.values()
         cloud_account_id = list(defined_jobs)[0].account_id
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
-
-    # we get the account id from the config file
-    defined_jobs = load_job_configuration(config, None).jobs.values()
-    cloud_account_id = list(defined_jobs)[0].account_id
 
     dbt_cloud = DBTCloud(
         account_id=cloud_account_id,
@@ -407,7 +468,7 @@ def unlink(config, account_id, dry_run, identifier, disable_ssl_verification):
         cloud_job.identifier = None
         if dry_run:
             logger.info(
-                f"Would unlink/rename the job {cloud_job.id}:{cloud_job.name} [[{current_identifier}]]"
+                f"Would link/rename the job {cloud_job.id}:{cloud_job.name} [[{current_identifier}]]"
             )
         else:
             logger.info(

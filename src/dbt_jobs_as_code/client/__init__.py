@@ -141,7 +141,7 @@ class DBTCloud:
         else:
             logger.success("Job deleted successfully.")
 
-    def get_job(self, job_id: int) -> Optional[JobDefinition]:
+    def get_job(self, job_id: int) -> JobDefinition:
         """Generate a Job based on a dbt Cloud job."""
 
         self._check_for_creds()
