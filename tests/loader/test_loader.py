@@ -25,6 +25,7 @@ expected_config_dict = {
             "identifier": "job1",
             "job_completion_trigger_condition": None,
             "job_type": "scheduled",
+            "linked_id": None,
             "name": "My Job 1 with a new name",
             "project_id": 176941,
             "run_generate_sources": True,
@@ -77,6 +78,7 @@ expected_config_dict = {
                 "condition": {"job_id": 123, "project_id": 234, "statuses": [10, 20]}
             },
             "job_type": "other",
+            "linked_id": None,
             "name": "CI/CD run",
             "project_id": 176941,
             "run_generate_sources": True,
