@@ -26,7 +26,7 @@ class CustomEnvironmentVariablePayload(CustomEnvironmentVariable):
     project_id: int
     account_id: int
     raw_value: Optional[str] = None
-    value: Optional[str] = Field(None, exclude=True)
+    value: Optional[str] = Field(default=None, exclude=True)
 
     def __init__(self, **data: Any):
         data["raw_value"] = data["value"] if "value" in data else data["display_value"]
