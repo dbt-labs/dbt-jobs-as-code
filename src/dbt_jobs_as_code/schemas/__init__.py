@@ -1,3 +1,5 @@
+import json
+
 from beartype.typing import Any, Optional, Tuple
 from deepdiff import DeepDiff
 from loguru import logger
@@ -40,7 +42,9 @@ def check_job_mapping_same(source_job: JobDefinition, dest_job: JobDefinition) -
         logger.success(f"✅ Job {source_job.identifier} is identical")
         return True
     else:
-        logger.info(f"❌ Job {source_job.identifier} is different - Diff: {diffs}")
+        logger.info(
+            f"❌ Job {source_job.identifier} is different - Diff:\n{json.dumps(diffs, indent=2)}"
+        )
         return False
 
 
