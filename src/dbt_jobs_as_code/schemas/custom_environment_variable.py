@@ -6,7 +6,7 @@ from typing_extensions import Self
 class CustomEnvironmentVariable(BaseModel):
     name: str
     type: Literal["project", "environment", "job", "user"] = "job"
-    value: Optional[str] = None
+    value: Optional[str] = Field(default=None)
     display_value: Optional[str] = None
     job_definition_id: Optional[int] = None
 

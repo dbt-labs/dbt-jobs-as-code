@@ -4,13 +4,14 @@ from collections import Counter
 
 from beartype import BeartypeConf, BeartypeStrategy, beartype
 from beartype.typing import Callable, List
+from loguru import logger
+from pydantic import BaseModel, RootModel
+from rich.table import Table
+
 from dbt_jobs_as_code.client import DBTCloud, DBTCloudException
 from dbt_jobs_as_code.loader.load import load_job_configuration
 from dbt_jobs_as_code.schemas import check_env_var_same, check_job_mapping_same
 from dbt_jobs_as_code.schemas.job import JobDefinition
-from loguru import logger
-from pydantic import BaseModel, RootModel
-from rich.table import Table
 
 # Dynamically create a new @nobeartype decorator disabling type-checking.
 nobeartype = beartype(conf=BeartypeConf(strategy=BeartypeStrategy.O0))

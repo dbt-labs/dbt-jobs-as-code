@@ -67,7 +67,7 @@ def _load_yaml_with_template(config_file: TextIO, vars_file: TextIO) -> dict:
         config_string_rendered = template.render(template_vars_values)
     except UndefinedError as e:
         print(f"Error: {e}")  # This will raise an error
-        raise LoadingJobsYAMLError(f"Some variables didn't have a value: {e.message}.")
+        raise LoadingJobsYAMLError(f"Some variables didn't have a value: {e.message}.") from e
 
     return yaml.safe_load(config_string_rendered)
 
