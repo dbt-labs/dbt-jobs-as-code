@@ -11,6 +11,7 @@ from dbt_jobs_as_code.client import DBTCloud, DBTCloudException
 from dbt_jobs_as_code.cloud_yaml_mapping.change_set import build_change_set
 from dbt_jobs_as_code.cloud_yaml_mapping.validate_link import LinkableCheck, can_be_linked
 from dbt_jobs_as_code.exporter.export import export_jobs_yml
+from dbt_jobs_as_code.importer import check_job_fields, fetch_jobs, get_account_id
 from dbt_jobs_as_code.loader.load import load_job_configuration
 from dbt_jobs_as_code.schemas.config import generate_config_schema
 
@@ -308,22 +309,10 @@ def import_jobs(
     """
 
     # we get the account id either from a parameter (e.g if the config file doesn't exist) or from the config file
-    if account_id:
-        cloud_account_id = account_id
-    elif config:
-        defined_jobs = load_job_configuration(config, None).jobs.values()
-        cloud_account_id = list(defined_jobs)[0].account_id
-    else:
-        raise click.BadParameter("Either --config or --account-id must be provided")
-
-    cloud_project_ids = []
-    cloud_environment_ids = []
-
-    if project_id:
-        cloud_project_ids = project_id
-
-    if environment_id:
-        cloud_environment_ids = environment_id
+    try:
+        cloud_account_id = get_account_id(config, account_id)
+    except ValueError as e:
+        raise click.BadParameter(str(e)) from e
 
     dbt_cloud = DBTCloud(
         account_id=cloud_account_id,
@@ -332,33 +321,15 @@ def import_jobs(
         disable_ssl_verification=disable_ssl_verification,
     )
 
-    # this is a special case to check if there are new fields in the job model
     if check_missing_fields:
-        if not job_id:
-            logger.error("We need to provide some job_id to test the import")
-        else:
-            logger.info(f"Checking if there are new fields for jobs")
-            # retrieve the job and raise errors if there are new fields
-            dbt_cloud.get_job_missing_fields(job_id=job_id[0])
+        check_job_fields(dbt_cloud, list(job_id))
         return
 
-    # we want to avoid querying all jobs if it's not needed
-    # if we don't provide a filter for project/env but provide a list of job ids, we get the jobs one by one
-    elif job_id and not (cloud_project_ids or cloud_environment_ids):
-        logger.info(f"Getting the jobs definition from dbt Cloud")
-        cloud_jobs_can_have_none = [dbt_cloud.get_job(job_id=id) for id in job_id]
-        cloud_jobs = [job for job in cloud_jobs_can_have_none if job is not None]
-    # otherwise, we get all the jobs and filter the list
-    else:
-        logger.info(f"Getting the jobs definition from dbt Cloud")
-        cloud_jobs = dbt_cloud.get_jobs(
-            project_ids=cloud_project_ids, environment_ids=cloud_environment_ids
-        )
-        if job_id:
-            cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
+    cloud_jobs = fetch_jobs(dbt_cloud, list(job_id), list(project_id), list(environment_id))
 
+    # Handle env vars
     for cloud_job in cloud_jobs:
-        logger.info(f"Getting en vars_yml overwrites for the job {cloud_job.id}:{cloud_job.name}")
+        logger.info(f"Getting env vars overwrites for job {cloud_job.id}:{cloud_job.name}")
         env_vars = dbt_cloud.get_env_vars(
             project_id=cloud_job.project_id,
             job_id=cloud_job.id,  # type: ignore # in that case, we have an ID as we are importing
@@ -367,7 +338,7 @@ def import_jobs(
             if env_var.value:
                 cloud_job.custom_environment_variables.append(env_var)
 
-    logger.success(f"YML file for the current dbt Cloud jobs")
+    logger.success("YML file for the current dbt Cloud jobs")
     export_jobs_yml(cloud_jobs, include_linked_id)
 
 
