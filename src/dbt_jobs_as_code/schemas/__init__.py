@@ -42,8 +42,14 @@ def check_job_mapping_same(source_job: JobDefinition, dest_job: JobDefinition) -
         logger.success(f"✅ Job {source_job.identifier} is identical")
         return True
     else:
+        # we can't json.dump types normally, so we provide a custom logic to just return the type name
+        def type_serializer(obj):
+            if isinstance(obj, type):
+                return obj.__name__
+            raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
         logger.info(
-            f"❌ Job {source_job.identifier} is different - Diff:\n{json.dumps(diffs, indent=2)}"
+            f"❌ Job {source_job.identifier} is different - Diff:\n{json.dumps(diffs, indent=2, default=type_serializer)}"
         )
         return False
 
