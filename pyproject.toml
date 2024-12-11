@@ -20,7 +20,7 @@ dependencies = [
     "importlib-metadata<7,>=6.0",
 ]
 name = "dbt-jobs-as-code"
-version = "1.0.1"
+dynamic = ["version"]
 description = "A CLI to allow defining dbt Cloud jobs as code"
 readme = "README.md"
 keywords = [
@@ -46,6 +46,9 @@ dev = [
 
 [tool.pdm.build]
 includes = ["src/dbt_jobs_as_code"]
+
+[tool.pdm.version]
+source = "scm"
 
 [build-system]
 requires = ["pdm-backend"]
