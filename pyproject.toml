@@ -16,7 +16,7 @@ dependencies = [
     "PyYAML<7.0.0,>=6.0.1",
     "python-dateutil<3.0,>=2.9",
     "beartype<1.0.0,>=0.18.5",
-    "jinja2<4.0.0,>=3.1.4",
+    "jinja2>=3.1.5,<4.0.0",
     "importlib-metadata<7,>=6.0",
 ]
 name = "dbt-jobs-as-code"
