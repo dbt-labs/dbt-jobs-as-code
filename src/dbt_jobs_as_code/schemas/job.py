@@ -1,6 +1,6 @@
 import re
 
-from beartype.typing import Any, Dict, List, Optional
+from beartype.typing import Any, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from dbt_jobs_as_code.schemas.common_types import (
