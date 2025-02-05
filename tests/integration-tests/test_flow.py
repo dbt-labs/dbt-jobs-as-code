@@ -1,13 +1,13 @@
 import io
 import os
-import sys
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
+from loguru import logger
+
 from dbt_jobs_as_code.client import DBTCloud
 from dbt_jobs_as_code.main import cli
-from loguru import logger
 
 ACCOUNT_ID = int(os.getenv("DBT_ACCOUNT_ID", 0))
 PROJECT_ID = int(os.getenv("DBT_PROJECT_ID", 0))
