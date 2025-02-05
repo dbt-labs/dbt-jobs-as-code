@@ -1,154 +1,233 @@
 import pytest
-from dbt_jobs_as_code.loader.load import LoadingJobsYAMLError, load_job_configuration
+
+from dbt_jobs_as_code.loader.load import (
+    LoadingJobsYAMLError,
+    _load_yaml_no_template,
+    _load_yaml_with_template,
+    load_job_configuration,
+    resolve_file_paths,
+)
 
 # all the different ways of defining a set of jobs still create the same Pydantic jobs
 
-expected_config_dict = {
-    "jobs": {
-        "job1": {
-            "account_id": 43791,
-            "compare_changes_flags": "--select state:modified",
-            "custom_environment_variables": [],
-            "dbt_version": None,
-            "deferring_environment_id": None,
-            "deferring_job_definition_id": None,
-            "description": "",
-            "environment_id": 134459,
-            "execute_steps": [
-                "dbt run --select model1+",
-                "dbt run --select model2+",
-                "dbt compile",
-            ],
-            "execution": {"timeout_seconds": 0},
-            "generate_docs": False,
-            "id": None,
-            "identifier": "job1",
-            "job_completion_trigger_condition": None,
-            "job_type": "scheduled",
-            "linked_id": None,
-            "name": "My Job 1 with a new name",
-            "project_id": 176941,
-            "run_generate_sources": True,
-            "schedule": {
-                "cron": "0 */2 * * *",
-                "date": {"cron": "0 */2 * * *", "type": "custom_cron"},
-                "time": {"interval": 1, "type": "every_hour"},
-            },
-            "settings": {"target_name": "production", "threads": 4},
-            "state": 1,
-            "triggers": {
-                "git_provider_webhook": False,
-                "github_webhook": False,
-                "on_merge": False,
-                "schedule": True,
-            },
-            "triggers_on_draft_pr": False,
-            "run_compare_changes": False,
-        },
-        "job2": {
-            "account_id": 43791,
-            "compare_changes_flags": "--select state:modified",
-            "custom_environment_variables": [
-                {
-                    "display_value": None,
-                    "job_definition_id": None,
-                    "name": "DBT_ENV1",
-                    "type": "job",
-                    "value": "My val",
-                },
-                {
-                    "display_value": None,
-                    "job_definition_id": None,
-                    "name": "DBT_ENV2",
-                    "type": "job",
-                    "value": "My val2",
-                },
-            ],
-            "dbt_version": None,
-            "deferring_environment_id": None,
-            "deferring_job_definition_id": None,
-            "description": "",
-            "environment_id": 134459,
-            "execute_steps": ["dbt run-operation clone_all_production_schemas", "dbt compile"],
-            "execution": {"timeout_seconds": 0},
-            "generate_docs": True,
-            "id": None,
-            "identifier": "job2",
-            "job_completion_trigger_condition": {
-                "condition": {"job_id": 123, "project_id": 234, "statuses": [10, 20]}
-            },
-            "job_type": "other",
-            "linked_id": None,
-            "name": "CI/CD run",
-            "project_id": 176941,
-            "run_generate_sources": True,
-            "schedule": {
-                "cron": "0 * * * *",
-                "date": {"cron": "0 * * * *", "type": "custom_cron"},
-                "time": {"interval": 1, "type": "every_hour"},
-            },
-            "settings": {"target_name": "TEST", "threads": 4},
-            "state": 1,
-            "triggers": {
-                "git_provider_webhook": False,
-                "github_webhook": True,
-                "on_merge": True,
-                "schedule": False,
-            },
-            "triggers_on_draft_pr": True,
-            "run_compare_changes": True,
-        },
-    }
-}
+
+class TestLoaderLoadJobConfiguration:
+    def test_load_yml_no_anchor(self, expected_config_dict):
+        """Test that loading configuration without YML anchors works as expected."""
+        loaded_config = load_job_configuration(["tests/loader/jobs.yml"], None)
+        assert loaded_config.model_dump() == expected_config_dict
+
+    def test_load_yml_anchors(self, expected_config_dict):
+        """Test that loading configuration with YML anchors works as expected."""
+        loaded_config = load_job_configuration(["tests/loader/jobs_with_anchors.yml"], None)
+        assert loaded_config.model_dump() == expected_config_dict
+
+    def test_load_yml_templated(self, expected_config_dict):
+        """Test that load_job_configuration works with templated YAML and variables."""
+        loaded_config = load_job_configuration(
+            ["tests/loader/jobs_templated.yml"], ["tests/loader/jobs_templated_vars.yml"]
+        )
+        assert loaded_config.model_dump() == expected_config_dict
+
+    def test_error_load_yml_templated_missing_vars_parameter(self):
+        """Test that load_job_configuration works with templated YAML and variables."""
+
+        with pytest.raises(LoadingJobsYAMLError) as exc_info:
+            load_job_configuration(
+                ["tests/loader/jobs_templated.yml"],
+                ["tests/loader/jobs_templated_vars_missing.yml"],
+            )
+
+        # we check that the error messages contains the missing variables
+        assert "'environment_id'" in str(exc_info.value)
+
+    def test_error_load_yml_templated_missing_specific_var(self):
+        """Test that load_job_configuration works with templated YAML and variables."""
+
+        with pytest.raises(LoadingJobsYAMLError) as exc_info:
+            load_job_configuration(["tests/loader/jobs_templated.yml"], None)
+
+        # we check that the error messages contains the missing variables
+        assert "'environment_id'" in str(exc_info.value)
+        assert "'project_id'" in str(exc_info.value)
+
+    def test_load_job_configuration_empty_jobs(self, tmp_path):
+        """Test loading a config file with no jobs"""
+        config_file = tmp_path / "empty.yml"
+        config_file.write_text("jobs: {}")
+
+        result = load_job_configuration([str(config_file)], None)
+        assert result.jobs == {}
 
 
-def test_load_yml_no_anchor():
-    """Test that loading configuration without YML anchors works as expected."""
+class TestLoaderLoadYamlWithTemplate:
+    def test_load_yaml_with_template_single_file(self, config_files, vars_files):
+        """Test loading a single templated YAML file with a single vars file"""
+        result = _load_yaml_with_template(config_files, vars_files)
 
-    with open("tests/loader/jobs.yml") as file:
-        loaded_config = load_job_configuration(file, None)
+        assert result == {"jobs": {"job1": {"project_id": 123, "environment_id": 456}}}
 
-    assert loaded_config.model_dump() == expected_config_dict
+    def test_load_yaml_with_template_multiple_files(
+        self, multiple_config_files, multiple_vars_files
+    ):
+        """Test loading multiple config files with multiple vars files"""
+        result = _load_yaml_with_template(multiple_config_files, multiple_vars_files)
+
+        assert result == {"jobs": {"job1": {"project_id": 123}, "job2": {"environment_id": 456}}}
+
+    def test_load_yaml_with_template_duplicate_vars(self, tmp_path, config_files):
+        """Test error when vars files contain duplicate variables"""
+        vars1 = tmp_path / "vars1.yml"
+        vars2 = tmp_path / "vars2.yml"
+
+        vars1.write_text("project_id: 123")
+        vars2.write_text("project_id: 456")
+
+        with pytest.raises(
+            LoadingJobsYAMLError, match="Variable 'project_id' is defined multiple times"
+        ):
+            _load_yaml_with_template(config_files, [str(vars1), str(vars2)])
+
+    def test_load_yaml_with_template_undefined_var(self, tmp_path):
+        """Test error when template contains undefined variables"""
+        config = tmp_path / "config.yml"
+        vars_file = tmp_path / "vars.yml"
+
+        config.write_text("""
+jobs:
+    job1:
+        project_id: {{ undefined_var }}
+    """)
+        vars_file.write_text("project_id: 123")
+
+        with pytest.raises(LoadingJobsYAMLError, match="Some variables didn't have a value"):
+            _load_yaml_with_template([str(config)], [str(vars_file)])
+
+    def test_load_yaml_with_template_empty_files(self, tmp_path):
+        """Test handling of empty config and vars files"""
+        config = tmp_path / "empty.yml"
+        vars_file = tmp_path / "empty_vars.yml"
+
+        config.write_text("")
+        vars_file.write_text("")
+
+        result = _load_yaml_with_template([str(config)], [str(vars_file)])
+        assert result == {}
+
+    def test_load_yaml_with_template_merge_jobs(self, tmp_path):
+        """Test merging of jobs from multiple config files"""
+        config1 = tmp_path / "config1.yml"
+        config2 = tmp_path / "config2.yml"
+        vars_file = tmp_path / "vars.yml"
+
+        config1.write_text("""
+jobs:
+    job1:
+        value: {{ val1 }}
+    """)
+
+        config2.write_text("""
+jobs:
+    job2:
+        value: {{ val2 }}
+    """)
+
+        vars_file.write_text("""
+val1: 123
+val2: 456
+    """)
+
+        result = _load_yaml_with_template([str(config1), str(config2)], [str(vars_file)])
+
+        assert result == {"jobs": {"job1": {"value": 123}, "job2": {"value": 456}}}
 
 
-def test_load_yml_anchors():
-    """Test that loading configuration with YML anchors works as expected."""
+class TestLoaderResolveFilePaths:
+    def test_resolve_file_paths_no_config(self):
+        """Test when no config pattern is provided"""
+        config_files, vars_files = resolve_file_paths(None)
+        assert config_files == []
+        assert vars_files == []
 
-    with open("tests/loader/jobs_with_anchors.yml") as file:
-        loaded_config = load_job_configuration(file, None)
+    def test_resolve_file_paths_single_file(self, tmp_path):
+        """Test resolving a single config file"""
+        config_file = tmp_path / "config.yml"
+        config_file.write_text("content")
 
-    assert loaded_config.model_dump() == expected_config_dict
+        config_files, vars_files = resolve_file_paths(str(config_file))
+        assert config_files == [str(config_file)]
+        assert vars_files == []
+
+    def test_resolve_file_paths_with_glob(self, tmp_path):
+        """Test resolving multiple config files using glob pattern"""
+        # Create test files
+        (tmp_path / "config1.yml").write_text("content1")
+        (tmp_path / "config2.yml").write_text("content2")
+        (tmp_path / "other.txt").write_text("other")
+
+        config_files, vars_files = resolve_file_paths(str(tmp_path / "*.yml"))
+        assert len(config_files) == 2
+        assert all(f.endswith(".yml") for f in config_files)
+        assert vars_files == []
+
+    def test_resolve_file_paths_with_vars(self, tmp_path):
+        """Test resolving both config and vars files"""
+        config_file = tmp_path / "config.yml"
+        vars_file = tmp_path / "vars.yml"
+        config_file.write_text("content")
+        vars_file.write_text("vars")
+
+        config_files, vars_files = resolve_file_paths(str(config_file), str(vars_file))
+        assert config_files == [str(config_file)]
+        assert vars_files == [str(vars_file)]
+
+    def test_resolve_file_paths_no_matches(self, tmp_path):
+        """Test error when no files match the pattern"""
+        with pytest.raises(LoadingJobsYAMLError, match="No files found matching pattern"):
+            resolve_file_paths(str(tmp_path / "nonexistent*.yml"))
+
+    def test_resolve_file_paths_no_vars_matches(self, tmp_path):
+        """Test error when no vars files match the pattern"""
+        config_file = tmp_path / "config.yml"
+        config_file.write_text("content")
+
+        with pytest.raises(LoadingJobsYAMLError, match="No files found matching pattern"):
+            resolve_file_paths(str(config_file), str(tmp_path / "nonexistent*.yml"))
+
+    def test_resolve_file_paths_multiple_vars(self, tmp_path):
+        """Test resolving multiple vars files"""
+        # Create test files
+        config_file = tmp_path / "config.yml"
+        config_file.write_text("content")
+        (tmp_path / "vars1.yml").write_text("vars1")
+        (tmp_path / "vars2.yml").write_text("vars2")
+
+        config_files, vars_files = resolve_file_paths(
+            str(config_file), str(tmp_path / "vars*.yml")
+        )
+        assert config_files == [str(config_file)]
+        assert len(vars_files) == 2
+        assert all(f.endswith(".yml") for f in vars_files)
 
 
-def test_load_yml_templated():
-    """Test that load_job_configuration works with templated YAML and variables."""
+class TestLoaderLoadYamlNoTemplate:
+    def test_load_yaml_no_template_multiple_files(self, tmp_path):
+        """Test merging multiple non-templated config files"""
+        config1 = tmp_path / "config1.yml"
+        config2 = tmp_path / "config2.yml"
 
-    with open("tests/loader/jobs_templated.yml") as file:
-        with open("tests/loader/jobs_templated_vars.yml") as templated_file:
-            loaded_config = load_job_configuration(file, templated_file)
+        config1.write_text("""
+jobs:
+    job1:
+        name: Job 1
+        """)
 
-    assert loaded_config.model_dump() == expected_config_dict
+        config2.write_text("""
+jobs:
+    job2:
+        name: Job 2
+        """)
 
-
-def test_error_load_yml_templated_missing_vars_parameter():
-    """Test that load_job_configuration works with templated YAML and variables."""
-
-    with pytest.raises(LoadingJobsYAMLError) as exc_info:
-        with open("tests/loader/jobs_templated.yml") as file:
-            with open("tests/loader/jobs_templated_vars_missing.yml") as templated_file:
-                load_job_configuration(file, templated_file)
-
-    # we check that the error messages contains the missing variables
-    assert "'environment_id'" in str(exc_info.value)
-
-
-def test_error_load_yml_templated_missing_specific_var():
-    """Test that load_job_configuration works with templated YAML and variables."""
-
-    with pytest.raises(LoadingJobsYAMLError) as exc_info:
-        with open("tests/loader/jobs_templated.yml") as file:
-            load_job_configuration(file, None)
-
-    # we check that the error messages contains the missing variables
-    assert "'environment_id'" in str(exc_info.value)
-    assert "'project_id'" in str(exc_info.value)
+        result = _load_yaml_no_template([str(config1), str(config2)])
+        assert "job1" in result["jobs"]
+        assert "job2" in result["jobs"]

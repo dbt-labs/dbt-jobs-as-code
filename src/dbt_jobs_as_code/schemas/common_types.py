@@ -1,6 +1,6 @@
 from beartype.typing import Any, Dict, List, Literal, Optional
 from croniter import croniter
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+from pydantic import BaseModel, Field, field_serializer, field_validator
 
 
 def set_one_of_string_integer(schema: Dict[str, Any]):

@@ -1,4 +1,4 @@
-from beartype.typing import List, Optional, TextIO
+from beartype.typing import List, Optional
 from loguru import logger
 
 from dbt_jobs_as_code.client import DBTCloud
@@ -6,12 +6,12 @@ from dbt_jobs_as_code.loader.load import load_job_configuration
 from dbt_jobs_as_code.schemas.job import JobDefinition
 
 
-def get_account_id(config_file: Optional[TextIO], account_id: Optional[int]) -> int:
+def get_account_id(config_files: Optional[List[str]], account_id: Optional[int]) -> int:
     """Get account ID from either config file or direct input"""
     if account_id:
         return account_id
-    elif config_file:
-        defined_jobs = load_job_configuration(config_file, None).jobs.values()
+    elif config_files:
+        defined_jobs = load_job_configuration(config_files, None).jobs.values()
         return list(defined_jobs)[0].account_id
     else:
         raise ValueError("Either config or account_id must be provided")

@@ -1,10 +1,10 @@
 import copy
-from typing import Optional
 from unittest.mock import Mock
 
 import pytest
+
 from dbt_jobs_as_code.client import DBTCloud, DBTCloudException
-from dbt_jobs_as_code.cloud_yaml_mapping.validate_link import LinkableCheck, can_be_linked
+from dbt_jobs_as_code.cloud_yaml_mapping.validate_link import can_be_linked
 from dbt_jobs_as_code.schemas.job import JobDefinition
 
 

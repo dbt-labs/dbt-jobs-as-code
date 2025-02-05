@@ -3,7 +3,6 @@ from pydantic import ValidationError
 
 from dbt_jobs_as_code.schemas.custom_environment_variable import (
     CustomEnvironmentVariable,
-    CustomEnvironmentVariablePayload,
 )
 
 
