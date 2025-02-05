@@ -25,6 +25,8 @@ jobs:
 
       - name: Run dbt-jobs-as-code
         run: dbt-jobs-as-code plan jobs/jobs.yml --vars-yml jobs/vars_prod.yml --limit-projects-envs-to-yml
+        # or using a file pattern
+        # run: dbt-jobs-as-code plan jobs/**.yml --vars-yml jobs/*_prod.yml --limit-projects-envs-to-yml
         env: 
           DBT_API_KEY: "${{secrets.DBT_API_KEY}}"
           # DBT_BASE_URL is optional
