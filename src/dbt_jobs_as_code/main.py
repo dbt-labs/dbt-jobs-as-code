@@ -2,17 +2,18 @@ import os
 import sys
 from importlib.metadata import version
 from pathlib import Path
+from typing import List
 
 import click
 from loguru import logger
 from rich.console import Console
 
-from dbt_jobs_as_code.client import DBTCloud, DBTCloudException
+from dbt_jobs_as_code.client import DBTCloud
 from dbt_jobs_as_code.cloud_yaml_mapping.change_set import build_change_set
-from dbt_jobs_as_code.cloud_yaml_mapping.validate_link import LinkableCheck, can_be_linked
+from dbt_jobs_as_code.cloud_yaml_mapping.validate_link import can_be_linked
 from dbt_jobs_as_code.exporter.export import export_jobs_yml
 from dbt_jobs_as_code.importer import check_job_fields, fetch_jobs, get_account_id
-from dbt_jobs_as_code.loader.load import load_job_configuration
+from dbt_jobs_as_code.loader.load import load_job_configuration, resolve_file_paths
 from dbt_jobs_as_code.schemas.config import generate_config_schema
 
 VERSION = version("dbt-jobs-as-code")
@@ -52,8 +53,8 @@ option_limit_projects_envs_to_yml = click.option(
 option_vars_yml = click.option(
     "--vars-yml",
     "-v",
-    type=click.File("r"),
-    help="The path to your vars_yml YML file when using a templated job YML file.",
+    type=str,
+    help="The path to your vars_yml YML file (or pattern for those files) when using a templated job YML file.",
 )
 
 
@@ -68,13 +69,13 @@ def cli() -> None:
 
 @cli.command()
 @option_disable_ssl_verification
-@click.argument("config", type=click.File("r"))
+@click.argument("config", type=str)
 @option_vars_yml
 @option_project_ids
 @option_environment_ids
 @option_limit_projects_envs_to_yml
 def sync(
-    config,
+    config: str,
     vars_yml,
     project_id,
     environment_id,
@@ -124,18 +125,18 @@ def sync(
 
 @cli.command()
 @option_disable_ssl_verification
-@click.argument("config", type=click.File("r"))
+@click.argument("config", type=str)
 @option_vars_yml
 @option_project_ids
 @option_environment_ids
 @option_limit_projects_envs_to_yml
 def plan(
-    config,
-    vars_yml,
-    project_id,
-    environment_id,
-    limit_projects_envs_to_yml,
-    disable_ssl_verification,
+    config: str,
+    vars_yml: str,
+    project_id: List[int],
+    environment_id: List[int],
+    limit_projects_envs_to_yml: bool,
+    disable_ssl_verification: bool,
 ):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
 
@@ -174,7 +175,7 @@ def plan(
 
 @cli.command()
 @option_disable_ssl_verification
-@click.argument("config", type=click.File("r"))
+@click.argument("config", type=str)
 @option_vars_yml
 @click.option("--online", is_flag=True, help="Connect to dbt Cloud to check that IDs are correct.")
 def validate(config, vars_yml, online, disable_ssl_verification):
@@ -182,94 +183,100 @@ def validate(config, vars_yml, online, disable_ssl_verification):
 
     CONFIG is the path to your jobs.yml config file.
     """
+    try:
+        config_files, vars_files = resolve_file_paths(config, vars_yml)
+        defined_jobs = load_job_configuration(config_files, vars_files).jobs.values()
 
-    # Parse the config file and check if it follows the Pydantic model
-    logger.info(f"Parsing the YML file {config.name}")
-    defined_jobs = load_job_configuration(config, vars_yml).jobs.values()
+        if defined_jobs:
+            logger.success("✅ The config file has a valid YML format.")
 
-    if defined_jobs:
-        logger.success("✅ The config file has a valid YML format.")
+        if not online:
+            return
 
-    if not online:
-        return
+        # Retrieve the list of Project IDs and Environment IDs from the config file
+        config_project_ids = set([job.project_id for job in defined_jobs])
+        config_environment_ids = set([job.environment_id for job in defined_jobs])
 
-    # Retrieve the list of Project IDs and Environment IDs from the config file
-    config_project_ids = set([job.project_id for job in defined_jobs])
-    config_environment_ids = set([job.environment_id for job in defined_jobs])
-
-    # Retrieve the list of Project IDs and Environment IDs from dbt Cloud by calling the environment API endpoint
-    dbt_cloud = DBTCloud(
-        account_id=list(defined_jobs)[0].account_id,
-        api_key=os.environ.get("DBT_API_KEY"),
-        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
-        disable_ssl_verification=disable_ssl_verification,
-    )
-    all_environments = dbt_cloud.get_environments(project_ids=list(config_project_ids))
-    cloud_project_ids = set([env["project_id"] for env in all_environments])
-    cloud_environment_ids = set([env["id"] for env in all_environments])
-
-    online_check_issues = False
-
-    # Check if some Project IDs in the config are not in Cloud
-    logger.info(f"Checking that Project IDs are valid")
-    if config_project_ids - cloud_project_ids:
-        logger.error(
-            f"❌ The following project IDs are not valid: {config_project_ids - cloud_project_ids}"
+        # Retrieve the list of Project IDs and Environment IDs from dbt Cloud by calling the environment API endpoint
+        dbt_cloud = DBTCloud(
+            account_id=list(defined_jobs)[0].account_id,
+            api_key=os.environ.get("DBT_API_KEY"),
+            base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+            disable_ssl_verification=disable_ssl_verification,
         )
-        online_check_issues = True
+        all_environments = dbt_cloud.get_environments(project_ids=list(config_project_ids))
+        cloud_project_ids = set([env["project_id"] for env in all_environments])
+        cloud_environment_ids = set([env["id"] for env in all_environments])
 
-    # Check if some Environment IDs in the config are not in Cloud
-    logger.info(f"Checking that Environments IDs are valid")
-    if config_environment_ids - cloud_environment_ids:
-        logger.error(
-            f"❌ The following environment IDs are not valid: {config_environment_ids - cloud_environment_ids}"
-        )
-        online_check_issues = True
+        online_check_issues = False
 
-    # In case deferral jobs are mentioned, check that they exist
-    deferral_jobs = set(
-        [
-            job.deferring_job_definition_id
-            for job in defined_jobs
-            if job.deferring_job_definition_id
-        ]
-    )
-    if deferral_jobs:
-        logger.info(f"Checking that Deferring Job IDs are valid")
-        project_ids = set([job.project_id for job in defined_jobs])
-        cloud_jobs = dbt_cloud.get_jobs(project_ids=list(project_ids))
-        cloud_job_ids = set([job.id for job in cloud_jobs])
-        if deferral_jobs - cloud_job_ids:
+        # Check if some Project IDs in the config are not in Cloud
+        logger.info(f"Checking that Project IDs are valid")
+        if config_project_ids - cloud_project_ids:
             logger.error(
-                f"❌ The following deferral job IDs are not valid: {deferral_jobs - cloud_job_ids}"
+                f"❌ The following project IDs are not valid: {config_project_ids - cloud_project_ids}"
             )
             online_check_issues = True
 
-    # In case deferral jobs are mentioned, check that they exist
-    deferral_envs = set(
-        [job.deferring_environment_id for job in defined_jobs if job.deferring_environment_id]
-    )
-    if deferral_envs:
-        logger.info(f"Checking that Deferring Env IDs are valid")
-        list_project_ids = set([job.project_id for job in defined_jobs])
-        cloud_envs = dbt_cloud.get_environments(project_ids=list(list_project_ids))
-        cloud_envs_ids = set([env["id"] for env in cloud_envs])
-        if deferral_envs - cloud_envs_ids:
+        # Check if some Environment IDs in the config are not in Cloud
+        logger.info(f"Checking that Environments IDs are valid")
+        if config_environment_ids - cloud_environment_ids:
             logger.error(
-                f"❌ The following deferral environment IDs are not valid: {deferral_envs - cloud_envs_ids}"
+                f"❌ The following environment IDs are not valid: {config_environment_ids - cloud_environment_ids}"
             )
             online_check_issues = True
 
-    if online_check_issues:
-        # return an error to handle with bash/CI
+        # In case deferral jobs are mentioned, check that they exist
+        deferral_jobs = set(
+            [
+                job.deferring_job_definition_id
+                for job in defined_jobs
+                if job.deferring_job_definition_id
+            ]
+        )
+        if deferral_jobs:
+            logger.info(f"Checking that Deferring Job IDs are valid")
+            project_ids = set([job.project_id for job in defined_jobs])
+            cloud_jobs = dbt_cloud.get_jobs(project_ids=list(project_ids))
+            cloud_job_ids = set([job.id for job in cloud_jobs])
+            if deferral_jobs - cloud_job_ids:
+                logger.error(
+                    f"❌ The following deferral job IDs are not valid: {deferral_jobs - cloud_job_ids}"
+                )
+                online_check_issues = True
+
+        # In case deferral jobs are mentioned, check that they exist
+        deferral_envs = set(
+            [job.deferring_environment_id for job in defined_jobs if job.deferring_environment_id]
+        )
+        if deferral_envs:
+            logger.info(f"Checking that Deferring Env IDs are valid")
+            list_project_ids = set([job.project_id for job in defined_jobs])
+            cloud_envs = dbt_cloud.get_environments(project_ids=list(list_project_ids))
+            cloud_envs_ids = set([env["id"] for env in cloud_envs])
+            if deferral_envs - cloud_envs_ids:
+                logger.error(
+                    f"❌ The following deferral environment IDs are not valid: {deferral_envs - cloud_envs_ids}"
+                )
+                online_check_issues = True
+
+        if online_check_issues:
+            # return an error to handle with bash/CI
+            sys.exit(1)
+
+        logger.success("✅ The config file is valid")
+    except ValueError as e:
+        logger.error(f"Error validating config: {e}")
         sys.exit(1)
-
-    logger.success("✅ The config file is valid")
 
 
 @cli.command()
 @option_disable_ssl_verification
-@click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
+@click.option(
+    "--config",
+    type=str,
+    help="The path to your YML jobs config file (or pattern for those files).",
+)
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
 @option_project_ids
 @option_environment_ids
@@ -307,44 +314,44 @@ def import_jobs(
     Optional parameters: --project-id,  --environment-id, --job-id
     It is possible to repeat the optional parameters --job-id, --project-id, --environment-id option to import specific jobs.
     """
-
-    # we get the account id either from a parameter (e.g if the config file doesn't exist) or from the config file
     try:
-        cloud_account_id = get_account_id(config, account_id)
-    except ValueError as e:
-        raise click.BadParameter(str(e)) from e
+        config_files, _ = resolve_file_paths(config, None)
+        cloud_account_id = get_account_id(config_files, account_id)
 
-    dbt_cloud = DBTCloud(
-        account_id=cloud_account_id,
-        api_key=os.environ.get("DBT_API_KEY"),
-        base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
-        disable_ssl_verification=disable_ssl_verification,
-    )
-
-    if check_missing_fields:
-        check_job_fields(dbt_cloud, list(job_id))
-        return
-
-    cloud_jobs = fetch_jobs(dbt_cloud, list(job_id), list(project_id), list(environment_id))
-
-    # Handle env vars
-    for cloud_job in cloud_jobs:
-        logger.info(f"Getting env vars overwrites for job {cloud_job.id}:{cloud_job.name}")
-        env_vars = dbt_cloud.get_env_vars(
-            project_id=cloud_job.project_id,
-            job_id=cloud_job.id,  # type: ignore # in that case, we have an ID as we are importing
+        dbt_cloud = DBTCloud(
+            account_id=cloud_account_id,
+            api_key=os.environ.get("DBT_API_KEY"),
+            base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
+            disable_ssl_verification=disable_ssl_verification,
         )
-        for env_var in env_vars.values():
-            if env_var.value:
-                cloud_job.custom_environment_variables.append(env_var)
 
-    logger.success("YML file for the current dbt Cloud jobs")
-    export_jobs_yml(cloud_jobs, include_linked_id)
+        if check_missing_fields:
+            check_job_fields(dbt_cloud, list(job_id))
+            return
+
+        cloud_jobs = fetch_jobs(dbt_cloud, list(job_id), list(project_id), list(environment_id))
+
+        # Handle env vars
+        for cloud_job in cloud_jobs:
+            logger.info(f"Getting env vars overwrites for job {cloud_job.id}:{cloud_job.name}")
+            env_vars = dbt_cloud.get_env_vars(
+                project_id=cloud_job.project_id,
+                job_id=cloud_job.id,  # type: ignore # in that case, we have an ID as we are importing
+            )
+            for env_var in env_vars.values():
+                if env_var.value:
+                    cloud_job.custom_environment_variables.append(env_var)
+
+        logger.success("YML file for the current dbt Cloud jobs")
+        export_jobs_yml(cloud_jobs, include_linked_id)
+    except ValueError as e:
+        logger.error(f"Error importing jobs: {e}")
+        sys.exit(1)
 
 
 @cli.command()
 @option_disable_ssl_verification
-@click.argument("config", type=click.File("r"))
+@click.argument("config", type=str)
 @click.option("--dry-run", is_flag=True, help="In dry run mode we don't update dbt Cloud.")
 def link(config, dry_run, disable_ssl_verification):
     """
@@ -394,7 +401,11 @@ def link(config, dry_run, disable_ssl_verification):
 
 @cli.command()
 @option_disable_ssl_verification
-@click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
+@click.option(
+    "--config",
+    type=str,
+    help="The path to your YML jobs config file (or pattern for those files).",
+)
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
 @click.option("--dry-run", is_flag=True, help="In dry run mode we don't update dbt Cloud.")
 @click.option(
@@ -455,7 +466,11 @@ def unlink(config, account_id, dry_run, identifier, disable_ssl_verification):
 
 @cli.command()
 @option_disable_ssl_verification
-@click.option("--config", type=click.File("r"), help="The path to your YML jobs config file.")
+@click.option(
+    "--config",
+    type=str,
+    help="The path to your YML jobs config file (or pattern for those files).",
+)
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
 @click.option(
     "--job-id",

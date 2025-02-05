@@ -1,3 +1,4 @@
+import glob
 import os
 import string
 from collections import Counter
@@ -5,11 +6,11 @@ from collections import Counter
 from beartype import BeartypeConf, BeartypeStrategy, beartype
 from beartype.typing import Callable, List
 from loguru import logger
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel
 from rich.table import Table
 
 from dbt_jobs_as_code.client import DBTCloud, DBTCloudException
-from dbt_jobs_as_code.loader.load import load_job_configuration
+from dbt_jobs_as_code.loader.load import LoadingJobsYAMLError, load_job_configuration
 from dbt_jobs_as_code.schemas import check_env_var_same, check_job_mapping_same
 from dbt_jobs_as_code.schemas.job import JobDefinition
 
@@ -137,8 +138,8 @@ def _check_single_account_id(defined_jobs: List[JobDefinition]):
 
 
 def build_change_set(
-    config,
-    yml_vars,
+    config: str,
+    yml_vars: str,
     disable_ssl_verification: bool,
     project_ids: List[int],
     environment_ids: List[int],
@@ -149,7 +150,19 @@ def build_change_set(
 
     CONFIG is the path to your jobs.yml config file.
     """
-    configuration = load_job_configuration(config, yml_vars)
+    # Get list of files matching the glob pattern
+    config_files = glob.glob(config)
+    if not config_files:
+        logger.error(f"No files found matching pattern: {config}")
+        return ChangeSet()
+
+    yml_vars_files = glob.glob(yml_vars) if yml_vars else None
+
+    try:
+        configuration = load_job_configuration(config_files, yml_vars_files)
+    except (LoadingJobsYAMLError, KeyError) as e:
+        logger.error(f"Error loading jobs YAML file ({type(e).__name__}): {e}")
+        exit(1)
 
     if limit_projects_envs_to_yml:
         # if limit_projects_envs_to_yml is True, we keep all the YML jobs
