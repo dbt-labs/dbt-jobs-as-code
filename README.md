@@ -48,7 +48,7 @@ The CLI comes with a few different commands
 
 #### `validate`
 
-Command: `dbt-jobs-as-code validate <config_file.yml>`
+Command: `dbt-jobs-as-code validate <config_file_or_pattern.yml>`
 
 Validates that the YAML file has the correct structure
 
@@ -58,13 +58,13 @@ Validates that the YAML file has the correct structure
 
 #### `plan`
 
-Command: `dbt-jobs-as-code plan <config_file.yml>`
+Command: `dbt-jobs-as-code plan <config_file_or_pattern.yml>`
 
 Returns the list of actions create/update/delete that are required to have dbt Cloud reflecting the configuration file
 
 - this command doesn't modify the dbt Cloud jobs
 - this command can be restricted to specific projects and environments
-  - it accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code plan <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
+  - it accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code plan <config_file_or_pattern.yml> -p 1234 -p 2345 -e 4567 -e 5678`
     - it is possible to limit for specific projects and/or specific environments
     - when both projects and environments are provided, the command will run for the jobs that are both part of the environment ID(s) and the project ID(s) provided
   - or it accepts the flag `--limit-projects-envs-to-yml` to only check jobs that are in the projects and environments listed in the jobs YAML file
@@ -72,13 +72,13 @@ Returns the list of actions create/update/delete that are required to have dbt C
 
 #### `sync`
 
-Command: `dbt-jobs-as-code sync <config_file.yml>`
+Command: `dbt-jobs-as-code sync <config_file_or_pattern.yml>`
 
 Create/update/delete jobs and env vars overwrites in jobs to align dbt Cloud with the configuration file
 
 - ⚠️ this command will modify your dbt Cloud jobs if the current configuration is different from the YAML file
 - this command can be restricted to specific projects and environments
-  - it accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code sync <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
+  - it accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code sync <config_file_or_pattern.yml> -p 1234 -p 2345 -e 4567 -e 5678`
     - it is possible to limit for specific projects and/or specific environments
   environment ID(s) and the project ID(s) provided
   - or it accepts the flag `--limit-projects-envs-to-yml` to only check jobs that are in the projects and environments listed in the jobs YAML file
@@ -86,12 +86,12 @@ Create/update/delete jobs and env vars overwrites in jobs to align dbt Cloud wit
 
 #### `import-jobs`
 
-Command: `dbt-jobs-as-code import-jobs --config <config_file.yml>` or `dbt-jobs-as-code import-jobs --account-id <account-id>`
+Command: `dbt-jobs-as-code import-jobs --config <config_file_or_pattern.yml>` or `dbt-jobs-as-code import-jobs --account-id <account-id>`
 
 Queries dbt Cloud and provide the YAML definition for those jobs. It includes the env var overwrite at the job level if some have been defined
 
 - it is possible to restrict the list of dbt Cloud Job IDs by adding `... -j 101 -j 123 -j 234`
-- this command also accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code sync <config_file.yml> -p 1234 -p 2345 -e 4567 -e 5678`
+- this command also accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code sync <config_file_or_pattern.yml> -p 1234 -p 2345 -e 4567 -e 5678`
 - this command accepts a `--include-linked-id` parameter to allow linking the jobs in the YAML to existing jobs in dbt Cloud, by renaming those
 - once the YAML has been retrieved, it is possible to copy/paste it in a local YAML file to create/update the local jobs definition.
 
@@ -99,7 +99,7 @@ Once the configuration is imported, it is possible to "link" existing jobs by us
 
 #### `link`
 
-Command: `dbt-jobs-as-code link <config_file.yml>`
+Command: `dbt-jobs-as-code link <config_file_or_pattern.yml>`
 
 Links dbt Cloud jobs with the corresponding identifier from the YAML file by renaming the jobs, adding the `[[ ... ]]` part in the job name.
 
@@ -110,7 +110,7 @@ Accepts a `--dry-run` flag to see what jobs would be changed, without actually c
 
 #### `unlink`
 
-Command: `dbt-jobs-as-code unlink --config <config_file.yml>` or `dbt-jobs-as-code unlink --account-id <account-id>`
+Command: `dbt-jobs-as-code unlink --config <config_file_or_pattern.yml>` or `dbt-jobs-as-code unlink --account-id <account-id>`
 
 Unlinking jobs removes the `[[ ... ]]` part of the job name in dbt Cloud.
 
