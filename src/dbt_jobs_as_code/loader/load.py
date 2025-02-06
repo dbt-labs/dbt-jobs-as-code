@@ -23,7 +23,7 @@ def load_job_configuration(config_files: List[str], vars_file: Optional[List[str
     else:
         config = _load_yaml_no_template(config_files)
 
-    if not config["jobs"]:
+    if config.get("jobs", {}) == {}:
         return Config(jobs={})
 
     date_config = [job.get("schedule", {}).get("date", None) for job in config["jobs"].values()]
@@ -61,7 +61,7 @@ def _load_yaml_no_template(config_files: List[str]) -> dict:
             config = yaml.safe_load(config_string)
             if config:
                 # Merge the jobs from each file into combined_config
-                if "jobs" in config:
+                if config.get("jobs", {}) != {}:
                     if "jobs" not in combined_config:
                         combined_config["jobs"] = {}
                     combined_config["jobs"].update(config["jobs"])
