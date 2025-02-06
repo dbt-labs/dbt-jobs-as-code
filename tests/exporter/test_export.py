@@ -1,5 +1,9 @@
 import json
 
+import pytest
+from jsonschema import validate
+from ruamel.yaml import YAML
+
 from dbt_jobs_as_code.exporter.export import export_jobs_yml
 from dbt_jobs_as_code.schemas.common_types import (
     Date,
@@ -10,8 +14,22 @@ from dbt_jobs_as_code.schemas.common_types import (
     Triggers,
 )
 from dbt_jobs_as_code.schemas.job import JobDefinition
-from jsonschema import validate
-from ruamel.yaml import YAML
+
+
+@pytest.fixture
+def base_job_definition():
+    return JobDefinition(
+        account_id=1,
+        project_id=1,
+        environment_id=1,
+        name="Test Job",
+        settings={},
+        run_generate_sources=False,
+        execute_steps=[],
+        generate_docs=False,
+        schedule={"cron": "0 14 * * 0,1,2,3,4,5,6"},
+        triggers={},
+    )
 
 
 def test_export_jobs_yml(capsys):
@@ -99,3 +117,57 @@ jobs:
     yaml = YAML(typ="safe")
     yaml_data = yaml.load(captured.out.strip())
     validate(instance=yaml_data, schema=json.loads(schema))
+
+
+def test_export_jobs_yml_with_identifier(base_job_definition, capsys):
+    # Create a job with identifier
+    job_with_identifier = base_job_definition.model_copy()
+    job_with_identifier.identifier = "existing_identifier"
+
+    # Create a job without identifier
+    job_without_identifier = base_job_definition.model_copy()
+
+    jobs = [job_with_identifier, job_without_identifier]
+
+    # Export jobs and capture output
+    export_jobs_yml(jobs)
+    captured = capsys.readouterr()
+
+    # Parse the YAML output (skipping the first two lines which contain the schema)
+    yaml = YAML()
+    exported_jobs = yaml.load("\n".join(captured.out.split("\n")[2:]))
+
+    # Verify the job keys
+    assert "existing_identifier" in exported_jobs["jobs"]
+    assert "import_2" in exported_jobs["jobs"]
+
+    # Verify the job contents
+    assert exported_jobs["jobs"]["existing_identifier"]["name"] == "Test Job"
+    assert exported_jobs["jobs"]["import_2"]["name"] == "Test Job"
+
+
+def test_export_jobs_yml_with_linked_id(base_job_definition, capsys):
+    # Create a job with both identifier and id
+    job = base_job_definition.model_copy()
+    job.identifier = "test_identifier"
+    job.id = 123
+
+    # Export with include_linked_id=True
+    export_jobs_yml([job], include_linked_id=True)
+    captured = capsys.readouterr()
+
+    yaml = YAML()
+    exported_jobs = yaml.load("\n".join(captured.out.split("\n")[2:]))
+
+    # Verify linked_id is included and matches the id
+    assert exported_jobs["jobs"]["test_identifier"]["linked_id"] == 123
+
+    # Export with include_linked_id=False
+    export_jobs_yml([job], include_linked_id=False)
+    captured = capsys.readouterr()
+
+    yaml = YAML()
+    exported_jobs = yaml.load("\n".join(captured.out.split("\n")[2:]))
+
+    # Verify linked_id is not included
+    assert "linked_id" not in exported_jobs["jobs"]["test_identifier"]
