@@ -288,6 +288,17 @@ def validate(config, vars_yml, online, disable_ssl_verification):
     help="[Optional] The ID of the job to import.",
 )
 @click.option(
+    "--identifier",
+    "-i",
+    type=str,
+    help="[Optional] The identifier you would like to use when exporting jobs. Default is import_ ",
+)
+@click.option(
+    "--add-jinja-variables",
+    type=str,
+    help="provide the list of fields that need to be updated with Jinja placeholders in YAML file",
+)
+@click.option(
     "--check-missing-fields",
     is_flag=True,
     help="Check if the job model has missing fields.",
@@ -305,13 +316,15 @@ def import_jobs(
     environment_id,
     job_id,
     disable_ssl_verification,
+    identifier,
+    add_jinja_variables,
     check_missing_fields=False,
     include_linked_id=False,
 ):
     """
     Generate YML file for import.
     Either --config or --account-id must be provided.
-    Optional parameters: --project-id,  --environment-id, --job-id
+    Optional parameters: --project-id,  --environment-id, --job-id --identifier, --include-linked-id
     It is possible to repeat the optional parameters --job-id, --project-id, --environment-id option to import specific jobs.
     """
     try:
@@ -343,7 +356,7 @@ def import_jobs(
                     cloud_job.custom_environment_variables.append(env_var)
 
         logger.success("YML file for the current dbt Cloud jobs")
-        export_jobs_yml(cloud_jobs, include_linked_id)
+        export_jobs_yml(cloud_jobs, include_linked_id, job_identifier=identifier, jinja_variables=add_jinja_variables)
     except ValueError as e:
         logger.error(f"Error importing jobs: {e}")
         sys.exit(1)
