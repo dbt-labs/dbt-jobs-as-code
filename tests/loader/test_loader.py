@@ -2,6 +2,7 @@ import pytest
 
 from dbt_jobs_as_code.loader.load import (
     LoadingJobsYAMLError,
+    _load_vars_files,
     _load_yaml_no_template,
     _load_yaml_with_template,
     load_job_configuration,
@@ -141,6 +142,23 @@ val2: 456
 
         assert result == {"jobs": {"job1": {"value": 123}, "job2": {"value": 456}}}
 
+    def test_load_yaml_with_template_nested_field(self, tmp_path):
+        """Test error when template contains undefined variables"""
+        config = tmp_path / "config.yml"
+        vars_file = tmp_path / "vars.yml"
+
+        config.write_text("""
+jobs:
+    job1:
+        schedule: {{ schedule }}
+    """)
+        vars_file.write_text("""
+schedule:
+  cron: 0 1,5 * * 0,1,2,3,4,5""")
+
+        result = _load_yaml_with_template([str(config)], [str(vars_file)])
+        assert result == {"jobs": {"job1": {"schedule": {"cron": "0 1,5 * * 0,1,2,3,4,5"}}}}
+
 
 class TestLoaderResolveFilePaths:
     def test_resolve_file_paths_no_config(self):
@@ -231,3 +249,69 @@ jobs:
         result = _load_yaml_no_template([str(config1), str(config2)])
         assert "job1" in result["jobs"]
         assert "job2" in result["jobs"]
+
+
+class TestLoaderLoadVarsFiles:
+    def test_load_vars_files_single_file(self, tmp_path):
+        """Test loading a single vars file"""
+        vars_file = tmp_path / "vars.yml"
+        vars_file.write_text("""
+project_id: 123
+environment_id: 456
+        """)
+
+        result = _load_vars_files([str(vars_file)])
+
+        assert result == {"project_id": 123, "environment_id": 456}
+
+    def test_load_vars_files_multiple_files(self, tmp_path):
+        """Test loading multiple vars files with different variables"""
+        vars1 = tmp_path / "vars1.yml"
+        vars2 = tmp_path / "vars2.yml"
+
+        vars1.write_text("project_id: 123")
+        vars2.write_text("environment_id: 456")
+
+        result = _load_vars_files([str(vars1), str(vars2)])
+
+        assert result == {"project_id": 123, "environment_id": 456}
+
+    def test_load_vars_files_empty_file(self, tmp_path):
+        """Test loading an empty vars file"""
+        vars_file = tmp_path / "empty.yml"
+        vars_file.write_text("")
+
+        result = _load_vars_files([str(vars_file)])
+
+        assert result == {}
+
+    def test_load_vars_files_duplicate_vars(self, tmp_path):
+        """Test error when vars files contain duplicate variables"""
+        vars1 = tmp_path / "vars1.yml"
+        vars2 = tmp_path / "vars2.yml"
+
+        vars1.write_text("project_id: 123")
+        vars2.write_text("project_id: 456")
+
+        with pytest.raises(
+            LoadingJobsYAMLError, match="Variable 'project_id' is defined multiple times"
+        ):
+            _load_vars_files([str(vars1), str(vars2)])
+
+    def test_load_vars_files_no_files(self):
+        """Test loading with empty list of files"""
+        result = _load_vars_files([])
+
+        assert result == {}
+
+    def test_load_vars_files_nested_vars(self, tmp_path):
+        """Test loading a single vars file"""
+        vars_file = tmp_path / "vars.yml"
+        vars_file.write_text("""
+schedule:
+  cron: 0 1,5 * * 0,1,2,3,4,5
+        """)
+
+        result = _load_vars_files([str(vars_file)])
+
+        assert result == {"schedule": {"cron": "0 1,5 * * 0,1,2,3,4,5"}}

@@ -83,8 +83,9 @@ def sync(
     disable_ssl_verification,
 ):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
+    This command will update dbt Cloud with the changes in the local YML file. It is recommended to run a `plan` first to see what will be changed.
 
-    CONFIG is the path to your jobs.yml config file.
+    CONFIG is the path to your jobs.yml config file or a glob pattern for those files.
     """
     cloud_project_ids = []
     cloud_environment_ids = []
@@ -139,8 +140,9 @@ def plan(
     disable_ssl_verification: bool,
 ):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
+    This command will not update dbt Cloud.
 
-    CONFIG is the path to your jobs.yml config file.
+    CONFIG is the path to your jobs.yml config file or a glob pattern for those files.
     """
     cloud_project_ids = []
     cloud_environment_ids = []
@@ -181,7 +183,7 @@ def plan(
 def validate(config, vars_yml, online, disable_ssl_verification):
     """Check that the config file is valid
 
-    CONFIG is the path to your jobs.yml config file.
+    CONFIG is the path to your jobs.yml config file or a glob pattern for those files.
     """
     try:
         config_files, vars_files = resolve_file_paths(config, vars_yml)
@@ -211,7 +213,7 @@ def validate(config, vars_yml, online, disable_ssl_verification):
         online_check_issues = False
 
         # Check if some Project IDs in the config are not in Cloud
-        logger.info(f"Checking that Project IDs are valid")
+        logger.info("Checking that Project IDs are valid")
         if config_project_ids - cloud_project_ids:
             logger.error(
                 f"❌ The following project IDs are not valid: {config_project_ids - cloud_project_ids}"
@@ -219,7 +221,7 @@ def validate(config, vars_yml, online, disable_ssl_verification):
             online_check_issues = True
 
         # Check if some Environment IDs in the config are not in Cloud
-        logger.info(f"Checking that Environments IDs are valid")
+        logger.info("Checking that Environments IDs are valid")
         if config_environment_ids - cloud_environment_ids:
             logger.error(
                 f"❌ The following environment IDs are not valid: {config_environment_ids - cloud_environment_ids}"
@@ -235,7 +237,7 @@ def validate(config, vars_yml, online, disable_ssl_verification):
             ]
         )
         if deferral_jobs:
-            logger.info(f"Checking that Deferring Job IDs are valid")
+            logger.info("Checking that Deferring Job IDs are valid")
             project_ids = set([job.project_id for job in defined_jobs])
             cloud_jobs = dbt_cloud.get_jobs(project_ids=list(project_ids))
             cloud_job_ids = set([job.id for job in cloud_jobs])
@@ -250,7 +252,7 @@ def validate(config, vars_yml, online, disable_ssl_verification):
             [job.deferring_environment_id for job in defined_jobs if job.deferring_environment_id]
         )
         if deferral_envs:
-            logger.info(f"Checking that Deferring Env IDs are valid")
+            logger.info("Checking that Deferring Env IDs are valid")
             list_project_ids = set([job.project_id for job in defined_jobs])
             cloud_envs = dbt_cloud.get_environments(project_ids=list(list_project_ids))
             cloud_envs_ids = set([env["id"] for env in cloud_envs])
@@ -298,6 +300,11 @@ def validate(config, vars_yml, online, disable_ssl_verification):
     is_flag=True,
     help="Include the job ID when exporting jobs.",
 )
+@click.option(
+    "--managed-only",
+    is_flag=True,
+    help="Only import jobs that are managed (have an identifier).",
+)
 def import_jobs(
     config,
     account_id,
@@ -307,11 +314,15 @@ def import_jobs(
     disable_ssl_verification,
     check_missing_fields=False,
     include_linked_id=False,
+    managed_only=False,
 ):
     """
     Generate YML file for import.
-    Either --config or --account-id must be provided.
+
+    Either --config or --account-id must be provided to mention what Account ID to use.
+
     Optional parameters: --project-id,  --environment-id, --job-id
+
     It is possible to repeat the optional parameters --job-id, --project-id, --environment-id option to import specific jobs.
     """
     try:
@@ -330,6 +341,10 @@ def import_jobs(
             return
 
         cloud_jobs = fetch_jobs(dbt_cloud, list(job_id), list(project_id), list(environment_id))
+
+        # Filter for managed jobs if requested
+        if managed_only:
+            cloud_jobs = [job for job in cloud_jobs if job.identifier is not None]
 
         # Handle env vars
         for cloud_job in cloud_jobs:
@@ -352,11 +367,15 @@ def import_jobs(
 @cli.command()
 @option_disable_ssl_verification
 @click.argument("config", type=str)
+@option_project_ids
+@option_environment_ids
 @click.option("--dry-run", is_flag=True, help="In dry run mode we don't update dbt Cloud.")
-def link(config, dry_run, disable_ssl_verification):
+def link(config, project_id, environment_id, dry_run, disable_ssl_verification):
     """
     Link the YML file to dbt Cloud by adding the identifier to the job name.
     All relevant jobs get the part [[...]] added to their name
+
+    The YAML file will need to contain a `linked_id` for each job that needs to be linked.
     """
 
     yaml_jobs = load_job_configuration(config, None).jobs
@@ -369,8 +388,19 @@ def link(config, dry_run, disable_ssl_verification):
         disable_ssl_verification=disable_ssl_verification,
     )
 
+    # Filter jobs based on project_id and environment_id if provided
+    cloud_project_ids = list(project_id) if project_id else None
+    cloud_environment_ids = list(environment_id) if environment_id else None
+
     some_jobs_updated = False
     for current_identifier, job_details in yaml_jobs.items():
+        # Skip if job doesn't match project_id filter
+        if cloud_project_ids and job_details.project_id not in cloud_project_ids:
+            continue
+        # Skip if job doesn't match environment_id filter
+        if cloud_environment_ids and job_details.environment_id not in cloud_environment_ids:
+            continue
+
         linkable_check = can_be_linked(current_identifier, job_details, dbt_cloud)
         if not linkable_check.can_be_linked:
             logger.error(linkable_check.message)
@@ -394,9 +424,9 @@ def link(config, dry_run, disable_ssl_verification):
 
     if not dry_run:
         if some_jobs_updated:
-            logger.success(f"Updated all jobs!")
+            logger.success("Updated all jobs!")
         else:
-            logger.info(f"No jobs to link")
+            logger.info("No jobs to link")
 
 
 @cli.command()
@@ -407,6 +437,8 @@ def link(config, dry_run, disable_ssl_verification):
     help="The path to your YML jobs config file (or pattern for those files).",
 )
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
+@option_project_ids
+@option_environment_ids
 @click.option("--dry-run", is_flag=True, help="In dry run mode we don't update dbt Cloud.")
 @click.option(
     "--identifier",
@@ -415,7 +447,9 @@ def link(config, dry_run, disable_ssl_verification):
     multiple=True,
     help="[Optional] The identifiers we want to unlink. If not provided, all jobs are unlinked.",
 )
-def unlink(config, account_id, dry_run, identifier, disable_ssl_verification):
+def unlink(
+    config, account_id, project_id, environment_id, dry_run, identifier, disable_ssl_verification
+):
     """
     Unlink the YML file to dbt Cloud.
     All relevant jobs get the part [[...]] removed from their name
@@ -439,8 +473,13 @@ def unlink(config, account_id, dry_run, identifier, disable_ssl_verification):
     )
     cloud_jobs = dbt_cloud.get_jobs()
     selected_jobs = [job for job in cloud_jobs if job.identifier is not None]
-    logger.info(f"Getting the jobs definition from dbt Cloud")
+    logger.info("Getting the jobs definition from dbt Cloud")
 
+    # Apply project_id and environment_id filters if provided
+    if project_id:
+        selected_jobs = [job for job in selected_jobs if job.project_id in project_id]
+    if environment_id:
+        selected_jobs = [job for job in selected_jobs if job.environment_id in environment_id]
     if identifier:
         selected_jobs = [job for job in selected_jobs if job.identifier in identifier]
 
@@ -459,9 +498,9 @@ def unlink(config, account_id, dry_run, identifier, disable_ssl_verification):
             dbt_cloud.update_job(job=cloud_job)
 
     if len(selected_jobs) == 0:
-        logger.info(f"No jobs to unlink")
+        logger.info("No jobs to unlink")
     elif not dry_run:
-        logger.success(f"Updated all jobs!")
+        logger.success("Updated all jobs!")
 
 
 @cli.command()
@@ -472,6 +511,8 @@ def unlink(config, account_id, dry_run, identifier, disable_ssl_verification):
     help="The path to your YML jobs config file (or pattern for those files).",
 )
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
+@option_project_ids
+@option_environment_ids
 @click.option(
     "--job-id",
     "-j",
@@ -479,9 +520,14 @@ def unlink(config, account_id, dry_run, identifier, disable_ssl_verification):
     multiple=True,
     help="The ID of the job to deactivate.",
 )
-def deactivate_jobs(config, account_id, job_id, disable_ssl_verification):
+def deactivate_jobs(
+    config, account_id, project_id, environment_id, job_id, disable_ssl_verification
+):
     """
-    Deactivate jobs triggers in dbt Cloud (schedule and CI/CI triggers)
+    Deactivate jobs triggers in dbt Cloud (schedule and CI/CI triggers) without remoing the jobs.
+
+    This can be useful when moving jobs from one project to another.
+    When the new jobs have been created, this command can be used to deactivate the jobs from the old project.
     """
 
     # we get the account id either from a parameter (e.g if the config file doesn't exist) or from the config file
@@ -501,7 +547,18 @@ def deactivate_jobs(config, account_id, job_id, disable_ssl_verification):
     )
     cloud_jobs = dbt_cloud.get_jobs()
 
-    selected_cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
+    # First filter by job_id if provided
+    selected_cloud_jobs = cloud_jobs
+    if job_id:
+        selected_cloud_jobs = [job for job in cloud_jobs if job.id in job_id]
+
+    # Then apply project_id and environment_id filters if provided
+    if project_id:
+        selected_cloud_jobs = [job for job in selected_cloud_jobs if job.project_id in project_id]
+    if environment_id:
+        selected_cloud_jobs = [
+            job for job in selected_cloud_jobs if job.environment_id in environment_id
+        ]
 
     for cloud_job in selected_cloud_jobs:
         if (
@@ -519,7 +576,7 @@ def deactivate_jobs(config, account_id, job_id, disable_ssl_verification):
         else:
             logger.info(f"The job {cloud_job.id}:{cloud_job.name} is already deactivated")
 
-    logger.success(f"Deactivated all jobs!")
+    logger.success("Deactivated all jobs!")
 
 
 @cli.command(hidden=True)
