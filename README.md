@@ -1,11 +1,11 @@
 # dbt-jobs-as-code
 
-`dbt-jobs-as-code` is a tool built to handle dbt Cloud Jobs as well-defined YAML files. Being standard YAML.
+`dbt-jobs-as-code` is a tool built to handle dbt Cloud Jobs as well-defined YAML files.
 
 > [!NOTE]  
 > The documentation is moving to [its dedicated website](https://dbt-labs.github.io/dbt-jobs-as-code/latest/).
 
-There is also a templating capability to use the same YAML file to update different dbt Cloud projects and/or environments (see [templating](#templating-jobs-yaml-file)).
+It offers some advanced configuration options, like some templating capability to use the same YAML file to update different dbt Cloud projects and/or environments (see [templating](#templating-jobs-yaml-file)).
 
 A given dbt Cloud project can use both jobs-as-code and jobs-as-ui at the same time, without any conflict.
 
