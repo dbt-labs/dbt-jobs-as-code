@@ -3,6 +3,7 @@ import json
 from beartype.typing import Any, Optional, Tuple
 from deepdiff import DeepDiff
 from loguru import logger
+from rich.console import Console
 
 from dbt_jobs_as_code.schemas.custom_environment_variable import (
     CustomEnvironmentVariable,
@@ -48,7 +49,9 @@ def check_job_mapping_same(source_job: JobDefinition, dest_job: JobDefinition) -
                 return obj.__name__
             raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
-        logger.info(
+        # TODO: Move printing to the main file
+        console = Console()
+        console.log(
             f"❌ Job {source_job.identifier} is different - Diff:\n{json.dumps(diffs, indent=2, default=type_serializer)}"
         )
         return False
@@ -74,5 +77,7 @@ def check_env_var_same(
         )
         return (True, env_var_id)
     else:
-        logger.info(f"❌ The env var overwrite for {source_env_var.name} is different")
+        # TODO: Move printing to the main file
+        console = Console()
+        console.log(f"❌ The env var overwrite for {source_env_var.name} is different")
         return (False, env_var_id)
