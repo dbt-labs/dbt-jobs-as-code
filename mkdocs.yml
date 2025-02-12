@@ -1,0 +1,82 @@
+site_name: dbt-jobs-as-code
+repo_url: https://github.com/dbt-labs/dbt-jobs-as-code
+repo_name: dbt-labs/dbt-jobs-as-code
+edit_uri: edit/main/docs/
+
+
+nav:
+  - Home: index.md
+  - Getting Started: getting_started.md
+  - Advanced configuration:
+    - Index: advanced_config/index.md
+    - YAML Templating: advanced_config/templating.md
+    - glob config files: advanced_config/glob_config_files.md
+    - Using YAML anchors: advanced_config/yaml_anchors.md
+    - Advanced jobs importing: advanced_config/jobs_importing.md
+  - Typical Flows: typical_flows.md
+  - CLI: cli.md
+  - Changelog: changelog.md
+
+
+theme:
+  name: material
+  palette:
+
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      primary: pink
+      accent: pink
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: pink
+      accent: pink
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/code-braces-box
+    # favicon: images/favicon.png 
+  features:
+    - content.action.edit
+    - navigation.tabs
+    - toc.integrate # not sure, let's see
+    - content.code.copy
+
+markdown_extensions:
+  - mkdocs-click
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+plugins:
+  - git-revision-date-localized:
+      enable_creation_date: false
+  - search:
+
+extra:
+  version:
+    provider: mike
+
+# plugins:
+#   - search
+
+extra_css:
+  - stylesheets/extra.css

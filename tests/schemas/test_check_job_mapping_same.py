@@ -31,4 +31,4 @@ def test_check_job_mapping_same():
         triggers={},
     )
 
-    assert check_job_mapping_same(mock_job1, mock_job2) == False
+    assert not check_job_mapping_same(mock_job1, mock_job2)

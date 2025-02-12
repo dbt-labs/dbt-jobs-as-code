@@ -22,7 +22,7 @@ def can_be_linked(
 
     try:
         cloud_job = dbt_cloud.get_job(job_id=job_definition.linked_id)
-    except DBTCloudException as e:
+    except DBTCloudException:
         return LinkableCheck(
             False,
             f"Job {job_definition.linked_id} doesn't exist in dbt Cloud. It cannot be linked",

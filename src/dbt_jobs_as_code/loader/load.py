@@ -31,11 +31,11 @@ def load_job_configuration(config_files: List[str], vars_file: Optional[List[str
 
     if any(date_config):
         logger.warning(
-            f"⚡️ There is some date config under 'schedule > date' in your YML. This data is auto generated and should be deleted. Only cron is supported in the config."
+            "⚡️ There is some date config under 'schedule > date' in your YML. This data is auto generated and should be deleted. Only cron is supported in the config."
         )
     if any(time_config):
         logger.warning(
-            f"⚡️ There is some time config under 'schedule > time' in your YML. This data is auto generated and should be deleted. Only cron is supported in the config."
+            "⚡️ There is some time config under 'schedule > time' in your YML. This data is auto generated and should be deleted. Only cron is supported in the config."
         )
 
     for identifier, job in config.get("jobs", {}).items():
@@ -73,9 +73,18 @@ def _load_yaml_no_template(config_files: List[str]) -> dict:
     return combined_config
 
 
-def _load_yaml_with_template(config_files: List[str], vars_file: List[str]) -> dict:
-    """Load a job YAML file into a Config object"""
-    # Load and merge vars files
+def _load_vars_files(vars_file: List[str]) -> dict:
+    """Load and merge multiple vars files into a single dictionary.
+
+    Args:
+        vars_file: List of paths to vars files
+
+    Returns:
+        Dictionary containing merged variable values
+
+    Raises:
+        LoadingJobsYAMLError: If duplicate variables are found across files
+    """
     template_vars_values = {}
     for vars_path in vars_file:
         with open(vars_path) as f:
@@ -88,6 +97,13 @@ def _load_yaml_with_template(config_files: List[str], vars_file: List[str]) -> d
                         f"Variable '{key}' is defined multiple times in vars files"
                     )
             template_vars_values.update(vars_data)
+    return template_vars_values
+
+
+def _load_yaml_with_template(config_files: List[str], vars_file: List[str]) -> dict:
+    """Load a job YAML file into a Config object"""
+    # Load and merge vars files
+    template_vars_values = _load_vars_files(vars_file)
 
     # Load and combine config files
     combined_config = {}
