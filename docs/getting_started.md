@@ -6,7 +6,7 @@ It calls various endpoints of the dbt Cloud API to create, update and delete job
 
 ### Installing with Python
 
-Install from [pypi.org](https://pypi.org/p/dbt-bouncer) (we recommend using a virtual environment):
+Install from [pypi.org](https://pypi.org/p/dbt-jobs-as-code) (we recommend using a virtual environment):
 
 ```shell
 pip install dbt-jobs-as-code # or via any other package manager

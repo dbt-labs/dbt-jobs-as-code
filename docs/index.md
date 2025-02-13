@@ -4,7 +4,7 @@
 
 `dbt-jobs-as-code` is a tool built to handle [dbt Cloud Jobs](https://docs.getdbt.com/docs/deploy/jobs) as a well-defined YAML files. Being standard YAML, it is possible to use YAML anchors to reduce duplicate configuration across jobs.
 
-There is also a templating capability to use the same YAML file to update different dbt Cloud projects and/or environments (see TODO TEMPLATING).
+There is also a [templating capability](advanced_config/templating/) to use the same YAML file to update different dbt Cloud projects and/or environments.
 
 A given dbt Cloud project can use both `dbt-jobs-as-code` and jobs degined in the UI at the same time, without any conflict.
 
