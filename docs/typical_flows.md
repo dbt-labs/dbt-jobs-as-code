@@ -112,7 +112,7 @@ The relevant GitHub actions would be the following:
 
 ### Manage jobs as code in different environments
 
-A similar approach to the first case, but in that situation, we use [templated YML files](/advanced_config/templating/) so that the same YML file can be used across different environments, and jobs can be configured based on some variables.
+A similar approach to the first case, but in that situation, we use [templated YML files](advanced_config/templating.md) so that the same YML file can be used across different environments, and jobs can be configured based on some variables.
 
 In that case, both promotion to QA and promotion to Prod will trigger a `plan` on PR creation and a `sync` on PR approval.
 
