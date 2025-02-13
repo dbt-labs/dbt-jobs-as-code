@@ -629,6 +629,16 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#cicd-flows-for-most-use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      CI/CD flows for most use cases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CI/CD flows for most use cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#manage-jobs-as-code-only-for-production" class="md-nav__link">
     <span class="md-ellipsis">
       Manage jobs as code only for Production
@@ -636,8 +646,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#manage-jobs-as-code-in-different-environments" class="md-nav__link">
     <span class="md-ellipsis">
       Manage jobs as code in different environments
@@ -645,8 +655,23 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
+  <a href="#flow-for-the-initial-import-of-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Flow for the initial import of jobs
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Flow for the initial import of jobs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#initial-import-of-jobs" class="md-nav__link">
     <span class="md-ellipsis">
       Initial import of jobs
@@ -654,8 +679,23 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
+  <a href="#flows-for-once-off-migrations-of-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Flows for once off migrations of jobs
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Flows for once off migrations of jobs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#replicate-jobs-from-one-environment-to-another-once-off" class="md-nav__link">
     <span class="md-ellipsis">
       Replicate jobs from one environment to another (once off)
@@ -663,8 +703,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#move-all-jobs-from-one-environment-to-another" class="md-nav__link">
     <span class="md-ellipsis">
       Move all jobs from one environment to another
@@ -672,13 +712,33 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
+  <a href="#adanced-flows-for-automation-of-jobs-promotion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adanced flows for automation of jobs promotion
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adanced flows for automation of jobs promotion">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#wip-not-implemented-yet-replicate-all-jobs-from-one-environment-to-another-ongoing-managed-jobs" class="md-nav__link">
     <span class="md-ellipsis">
       WIP -- Not implemented yet // Replicate all jobs from one environment to another (ongoing managed jobs)
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -758,7 +818,8 @@
 
 <h1 id="typical-flows-wip">Typical flows (WIP)</h1>
 <p>This page descibes how <code>dbt-jobs-as-code</code> can be used in different scenarios, what commands to run in what order, what parameters to use, what CI actions to create etc...</p>
-<h2 id="manage-jobs-as-code-only-for-production">Manage jobs as code only for Production</h2>
+<h2 id="cicd-flows-for-most-use-cases">CI/CD flows for most use cases</h2>
+<h3 id="manage-jobs-as-code-only-for-production">Manage jobs as code only for Production</h3>
 <p>In the most basic case, people maintain their jobs YAML files in their git repository and configure some CI action to trigger: </p>
 <ul>
 <li>a <code>plan</code> on PR creation to get a feedback of the planned changes</li>
@@ -777,6 +838,8 @@
     G --&gt;&gt; C: run `sync` on PR approval
     C --&gt;&gt; G: get confirmation that the jobs were updated</code></pre>
 <p>The relevant GitHub actions would be the following:</p>
+<details class="example">
+<summary>Examples of Github actions for <code>plan</code> and <code>sync</code></summary>
 <div class="highlight"><span class="filename">plan_on_pr.yml</span><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Plan for syncing dbt Cloud Jobs from YAML</span>
 <span class="nt">run-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Running dbt-jobs-as-code plan to see what is going to be changed/deleted</span>
 
@@ -788,7 +851,7 @@
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;jobs/**&#39;</span>
 
 <span class="nt">jobs</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">run-python-script</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">run-dbt-jobs-as-code</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
 <span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Check out repository code</span>
@@ -805,12 +868,15 @@
 <span class="w">            </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0.5&quot;</span>
 
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Run dbt-jobs-as-code</span>
-<span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uvx dbt-jobs-as-code plan jobs/my_jobs.yml</span><span class="w"> </span><span class="c1"># we could also force a version with uvx dbt-jobs-as-code@1.2</span>
+<span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uvx dbt-jobs-as-code plan jobs/my_jobs.yml</span><span class="w"> </span><span class="c1"># (1)!</span>
 <span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span>
 <span class="w">          </span><span class="nt">DBT_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${{secrets.DBT_API_KEY}}&quot;</span>
-<span class="w">          </span><span class="c1"># DBT_BASE_URL is optional</span>
-<span class="w">          </span><span class="c1"># DBT_BASE_URL: &quot;${{secrets.DBT_BASE_URL}}&quot;</span>
+<span class="w">          </span><span class="c1"># DBT_BASE_URL is optional (2)</span>
 </code></pre></div>
+<ol>
+<li>We could also force a specific version with <code>uvx dbt-jobs-as-code@1.2</code></li>
+<li>It is set by default to <code>https://cloud.getdbt.com</code>. We could add <code>DBT_BASE_URL: "${{secrets.DBT_BASE_URL}}"</code> if we wanted to use a secret for our base url</li>
+</ol>
 <div class="highlight"><span class="filename">sync_on_pr_closed.yml</span><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Replicate dbt Cloud Jobs from YAML</span>
 <span class="nt">run-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Running dbt-jobs-as-code sync to replicate dbt Cloud jobs from YAML</span>
 
@@ -824,7 +890,7 @@
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;jobs/**&#39;</span>
 
 <span class="nt">jobs</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">run-python-script</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">run-dbt-jobs-as-code</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">github.event.pull_request.merged == true</span>
 <span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
 <span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
@@ -842,14 +908,16 @@
 <span class="w">            </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0.5&quot;</span>
 
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Run dbt-jobs-as-code</span>
-<span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uvx dbt-jobs-as-code sync jobs/my_jobs.yml</span><span class="w"> </span><span class="c1"># we could also force a version with uvx dbt-jobs-as-code@1.2</span>
+<span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uvx dbt-jobs-as-code sync jobs/my_jobs.yml</span><span class="w"> </span><span class="c1"># (1)!</span>
 <span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span>
 <span class="w">          </span><span class="nt">DBT_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${{secrets.DBT_API_KEY}}&quot;</span>
-<span class="w">          </span><span class="c1"># DBT_BASE_URL is optional</span>
-<span class="w">          </span><span class="c1"># DBT_BASE_URL: &quot;${{secrets.DBT_BASE_URL}}&quot;</span>
 </code></pre></div>
+<ol>
+<li>We could also force a specific version with <code>uvx dbt-jobs-as-code@1.2</code></li>
+</ol>
+</details>
 <hr />
-<h2 id="manage-jobs-as-code-in-different-environments">Manage jobs as code in different environments</h2>
+<h3 id="manage-jobs-as-code-in-different-environments">Manage jobs as code in different environments</h3>
 <p>A similar approach to the first case, but in that situation, we use <a href="/advanced_config/templating/">templated YML files</a> so that the same YML file can be used across different environments, and jobs can be configured based on some variables.</p>
 <p>In that case, both promotion to QA and promotion to Prod will trigger a <code>plan</code> on PR creation and a <code>sync</code> on PR approval.</p>
 <pre class="mermaid"><code>sequenceDiagram
@@ -877,6 +945,8 @@
 <p>The GitHub action is now a bit more complex to manage any number of promotion environments.</p>
 <p>By updating <code>BRANCH_FILE_MAP</code>, we can map different branches of our different environments to different variable files.</p>
 <p>The example below is just for <code>plan</code> on PR creation, but the same logic would apply for <code>sync</code> on PR approval.</p>
+<details class="example">
+<summary>Examples of Github actions for <code>plan</code></summary>
 <div class="highlight"><span class="filename">plan_on_pr.yml</span><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Plan for syncing dbt Cloud Jobs from YAML</span>
 <span class="nt">run-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Running dbt-jobs-as-code plan to see what is going to be changed/deleted</span>
 
@@ -895,7 +965,7 @@
 <span class="w">    </span><span class="no">}</span>
 
 <span class="nt">jobs</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">run-python-script</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">run-dbt-jobs-as-code</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
 <span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Check out repository code</span>
@@ -930,8 +1000,10 @@
 <span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span>
 <span class="w">          </span><span class="nt">DBT_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${{secrets.DBT_API_KEY}}&quot;</span>
 </code></pre></div>
+</details>
 <hr />
-<h2 id="initial-import-of-jobs">Initial import of jobs</h2>
+<h2 id="flow-for-the-initial-import-of-jobs">Flow for the initial import of jobs</h2>
+<h3 id="initial-import-of-jobs">Initial import of jobs</h3>
 <p>The <code>import-jobs</code> command can be used to import jobs from dbt Cloud to a YAML file. Once the YAML file has been created it can be pushed to a git repository and jobs can be managed as code as in the previous cases.</p>
 <p>The developer would just run <code>dbt-jobs-as-code import-jobs</code> and decide the parameters for the import:</p>
 <ul>
@@ -952,7 +1024,8 @@
     Note over U: Update YAML if needed
     U -&gt;&gt; G: push YAML file to repo</code></pre>
 <hr />
-<h2 id="replicate-jobs-from-one-environment-to-another-once-off">Replicate jobs from one environment to another (once off)</h2>
+<h2 id="flows-for-once-off-migrations-of-jobs">Flows for once off migrations of jobs</h2>
+<h3 id="replicate-jobs-from-one-environment-to-another-once-off">Replicate jobs from one environment to another (once off)</h3>
 <p>In the case that the requirement is only to replicate some or all jobs as a once off, a developer could run a few different commands without pushing the YAML file to a git repository.</p>
 <pre class="mermaid"><code>sequenceDiagram
     actor U as User
@@ -966,8 +1039,9 @@
     U -&gt;&gt; C: run `unlink` to remove the identifier from the jobs
 </code></pre>
 <hr />
-<h2 id="move-all-jobs-from-one-environment-to-another">Move all jobs from one environment to another</h2>
+<h3 id="move-all-jobs-from-one-environment-to-another">Move all jobs from one environment to another</h3>
 <p>This flow can be useful for people who want to move all jobs from one environment/project to another. This can happen for example when going from a monorepo to a dbt-mesh and wanting to move some/all the jobs to the new dbt Cloud project.</p>
+<p>The initial steps are the same as for replicating jobs as a once off but we run a few extra commands to deactivate the jobs in the original project and envs.</p>
 <pre class="mermaid"><code>sequenceDiagram
     actor U as User
     participant C as dbt Cloud
@@ -978,19 +1052,11 @@
     Note over U: Update YAML if needed to update/remove jobs&lt;br&gt;and update project and env ids
     U -&gt;&gt; C: run `link` to manage jobs in the monorepo environment
     U -&gt;&gt; C: run `deactivate-jobs` on the original project and envs
-    U -&gt;&gt; C: run [optional] `unlink` in the required envs to remove the identifier from the jobs</code></pre>
+    U -&gt;&gt; C: [optional] run `unlink` in the required envs to remove the identifier from the jobs</code></pre>
 <hr />
-<h2 id="wip-not-implemented-yet-replicate-all-jobs-from-one-environment-to-another-ongoing-managed-jobs"><strong>WIP -- Not implemented yet</strong> // Replicate all jobs from one environment to another (ongoing managed jobs)</h2>
-<pre class="mermaid"><code>sequenceDiagram
-    actor U as User
-    participant C as dbt Cloud
-
-    U -&gt;&gt; C: run `import-jobs` with `--include-linked-id` + magic
-    Note over U,C: Can specify the project, env and &lt;br&gt;whether to only import &lt;br&gt;"managed" jobs
-    C -&gt;&gt; U: get yaml file
-    Note over U: Update YAML if needed to remove jobs
-    U -&gt;&gt; C: run `link` to manage existing jobs
-    U -&gt;&gt; C: run `plan` and `sync` to push jobs</code></pre>
+<h2 id="adanced-flows-for-automation-of-jobs-promotion">Adanced flows for automation of jobs promotion</h2>
+<h3 id="wip-not-implemented-yet-replicate-all-jobs-from-one-environment-to-another-ongoing-managed-jobs"><strong>WIP -- Not implemented yet</strong> // Replicate all jobs from one environment to another (ongoing managed jobs)</h3>
+<p>WIP</p>
 
 
 
@@ -1011,7 +1077,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">February 12, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">February 13, 2025</span>
   </span>
 
     
