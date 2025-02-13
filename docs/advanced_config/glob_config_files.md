@@ -1,4 +1,4 @@
-The different commands that require a config file and/or a variables file as parameters (see command details [here](/cli)) can use [glob patterns](https://docs.python.org/3/library/glob.html) instead of just file names to match multiple files.
+The different commands that require a config file and/or a variables file as parameters (see command details [here](../cli.md)) can use [glob patterns](https://docs.python.org/3/library/glob.html) instead of just file names to match multiple files.
 
 Those patterns are also called "Unix style pathname pattern expansion", and in a nutshell:
 
