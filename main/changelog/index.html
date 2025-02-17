@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#14" class="md-skip">
+        <a href="#15" class="md-skip">
           Skip to content
         </a>
       
@@ -669,6 +669,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#15" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.5
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#14" class="md-nav__link">
     <span class="md-ellipsis">
       1.4
@@ -748,6 +757,10 @@
   <h1>Changelog</h1>
 
 <p>To see the details of all changes, head to the GitHub repo</p>
+<h3 id="15">1.5</h3>
+<ul>
+<li>Add <code>--json</code> to <code>plan</code> and <code>sync</code> to output the <code>stdout</code> changes in JSON format. This can be useful for automating some processes and consuming the changes from scripts. We are still printing logs to <code>stderr</code> though, so to remove those logs you can redirect <code>stderr</code> to <code>/dev/null</code> or redirect <code>stdout</code> to a file and then read from the file.</li>
+</ul>
 <h3 id="14">1.4</h3>
 <ul>
 <li>Add <code>--templated-fields</code> to <code>import-jobs</code> to add Jinja variables to the generated YAML file. This can be useful to allow users to maintain jobs in the dbt Cloud UI and set a process to automatically promote those to other environments.</li>
