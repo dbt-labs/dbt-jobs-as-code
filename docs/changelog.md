@@ -1,6 +1,10 @@
 
 To see the details of all changes, head to the GitHub repo
 
+### 1.5
+
+- Add `--json` to `plan` and `sync` to output the `stdout` changes in JSON format. This can be useful for automating some processes and consuming the changes from scripts. We are still printing logs to `stderr` though, so to remove those logs you can redirect `stderr` to `/dev/null` or redirect `stdout` to a file and then read from the file.
+
 ### 1.4
 
 - Add `--templated-fields` to `import-jobs` to add Jinja variables to the generated YAML file. This can be useful to allow users to maintain jobs in the dbt Cloud UI and set a process to automatically promote those to other environments.

@@ -73,7 +73,7 @@ dbt-jobs-as-code import-jobs --account-id 1234 --project-id 3213 --environment-i
 It would then be possible to automate the creation of PRs whenever the `jobs.yml` file is updated, meaning that some jobs would have been updated in the dbt Cloud UI. The GitHub action [Create Pull Request](https://github.com/marketplace/actions/create-pull-request) could be used to implement this flow.
 
 
-Then, the `jobs.yml` file can be used to import the jobs in a different environment with the following command, like described in [YAML templating](templating.md) and in the [typical flows](../typical_flows.md) page :
+Then, the `jobs.yml` file can be used to import the jobs in a different environment with the following command, like described in [YAML templating](templating.md) and in the [typical flows](../typical_flows.md#advanced-flows) page :
 
 ```bash
 dbt-jobs-as-code plan jobs.yml -v qa_vars.yml --limit-projects-envs-to-yml
