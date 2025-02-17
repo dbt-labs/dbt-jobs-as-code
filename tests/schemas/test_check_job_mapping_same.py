@@ -31,4 +31,8 @@ def test_check_job_mapping_same():
         triggers={},
     )
 
-    assert not check_job_mapping_same(mock_job1, mock_job2)
+    # Test that the jobs are different
+    same, diff = check_job_mapping_same(mock_job1, mock_job2)
+    assert not same
+    assert diff is not None
+    assert diff["status"] == "different"
