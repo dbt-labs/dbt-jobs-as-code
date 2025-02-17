@@ -13,7 +13,7 @@ from dbt_jobs_as_code.schemas.custom_environment_variable import (
 from dbt_jobs_as_code.schemas.job import JobDefinition, JobMissingFields
 
 if os.getenv("DBT_JOB_ID", "") == "":
-    VERSION = f'v{version("dbt-jobs-as-code")}'
+    VERSION = f"v{version('dbt-jobs-as-code')}"
 else:
     VERSION = "dev"
 
@@ -147,7 +147,7 @@ class DBTCloud:
         self._check_for_creds()
 
         response = self._session.get(
-            url=(f"{self.base_url}/api/v2/accounts/" f"{self.account_id}/jobs/{job_id}/"),
+            url=(f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job_id}/"),
             headers=self._headers,
             verify=self._verify,
         )
@@ -162,7 +162,7 @@ class DBTCloud:
         self._check_for_creds()
 
         response = self._session.get(
-            url=(f"{self.base_url}/api/v2/accounts/" f"{self.account_id}/jobs/{job_id}/"),
+            url=(f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job_id}/"),
             headers=self._headers,
             verify=self._verify,
         )

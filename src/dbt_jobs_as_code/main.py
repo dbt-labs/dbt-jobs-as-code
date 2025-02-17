@@ -7,6 +7,7 @@ from typing import List
 import click
 from loguru import logger
 from rich.console import Console
+from ruamel.yaml import YAML
 
 from dbt_jobs_as_code.client import DBTCloud
 from dbt_jobs_as_code.cloud_yaml_mapping.change_set import build_change_set
@@ -305,6 +306,11 @@ def validate(config, vars_yml, online, disable_ssl_verification):
     is_flag=True,
     help="Only import jobs that are managed (have an identifier).",
 )
+@click.option(
+    "--templated-fields",
+    type=str,
+    help="Path to a YAML file containing field templates to apply to the exported jobs.",
+)
 def import_jobs(
     config,
     account_id,
@@ -315,6 +321,7 @@ def import_jobs(
     check_missing_fields=False,
     include_linked_id=False,
     managed_only=False,
+    templated_fields=None,
 ):
     """
     Generate YML file for import.
@@ -326,6 +333,15 @@ def import_jobs(
     It is possible to repeat the optional parameters --job-id, --project-id, --environment-id option to import specific jobs.
     """
     try:
+        # Validate templated_fields file if provided
+        if templated_fields:
+            try:
+                yaml = YAML()
+                with open(templated_fields, "r") as f:
+                    yaml.load(f)
+            except Exception as e:
+                raise ValueError(f"Invalid templated fields YAML file: {str(e)}") from e
+
         config_files, _ = resolve_file_paths(config, None)
         cloud_account_id = get_account_id(config_files, account_id)
 
@@ -358,7 +374,7 @@ def import_jobs(
                     cloud_job.custom_environment_variables.append(env_var)
 
         logger.success("YML file for the current dbt Cloud jobs")
-        export_jobs_yml(cloud_jobs, include_linked_id)
+        export_jobs_yml(cloud_jobs, include_linked_id, templated_fields)
     except ValueError as e:
         logger.error(f"Error importing jobs: {e}")
         sys.exit(1)

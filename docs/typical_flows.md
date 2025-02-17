@@ -1,4 +1,4 @@
-# Typical flows (WIP)
+# Typical flows
 
 This page descibes how `dbt-jobs-as-code` can be used in different scenarios, what commands to run in what order, what parameters to use, what CI actions to create etc...
 
@@ -282,8 +282,28 @@ sequenceDiagram
 
 ---
 
-## Adanced flows for automation of jobs promotion
+## Advanced flows
 
-### **WIP -- Not implemented yet** // Replicate all jobs from one environment to another (ongoing managed jobs)
+### Automated promotion of jobs created in the UI to other environments
 
-WIP
+In this mechanism, we use `dbt-jobs-as-code` to create a CI/CD pipeline to automatically promote jobs created in the dbt Cloud UI to other environments. It would synchronize jobs and allow creating new ones, deleting old ones and modifying existing ones.
+
+The key part of the process is [the advanced ability to import jobs](advanced_config/jobs_importing.md) while setting Jinja variables that will be rendered differently for each environment.
+
+```mermaid
+sequenceDiagram
+    actor D as dbt Developer
+    participant C as dbt Cloud
+    participant G as git repo
+    actor U as User
+
+    D -->>C: Maintain dbt Cloud jobs in the UI in dev,<br> adding [[..]] to the jobs that<br> need to be promoted/replicated
+    U -->>G: Create and commit the YAML vars files for each env
+    U -->>G: Create and commit the YAML vars files for the templated values
+    U -->>G: Create a pipeline to automatically run `dbt-jbos-as-code<br>on a schedule or triggered by somone
+    G ->> C: run `import-jobs` with `--templated-fields templ.yml`<br>,`--managed-only` and `-e` to specify the env
+    C ->> G: get yaml file
+    Note over G: Check difference with existing file<br> and auto-create PR if it is different
+    Note right of G: When the PR is created, we follow the<br> typical flow of GH actions<br> with plan/sync on PR creation/merge
+
+```

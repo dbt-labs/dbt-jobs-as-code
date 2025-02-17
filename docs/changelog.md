@@ -1,6 +1,10 @@
 
 To see the details of all changes, head to the GitHub repo
 
+### 1.4
+
+- Add `--templated-fields` to `import-jobs` to add Jinja variables to the generated YAML file. This can be useful to allow users to maintain jobs in the dbt Cloud UI and set a process to automatically promote those to other environments.
+
 ### 1.3
 
 - Add this docs site
