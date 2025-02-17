@@ -71,3 +71,8 @@ markers = [
 
 [tool.ruff]
 line-length = 99
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"] # line-length, need to fix those by hands first
+typing-modules = ["beartype.typing"]

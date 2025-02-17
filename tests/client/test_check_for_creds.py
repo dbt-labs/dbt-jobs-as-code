@@ -1,4 +1,5 @@
 import pytest
+
 from dbt_jobs_as_code.client import DBTCloud
 
 

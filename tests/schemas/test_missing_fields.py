@@ -1,8 +1,9 @@
 import os
 
 import pytest
-from dbt_jobs_as_code.client import DBTCloud
 from pydantic_core import ValidationError
+
+from dbt_jobs_as_code.client import DBTCloud
 
 DBT_ACCOUNT_ID = int(os.getenv("DBT_ACCOUNT_ID", 0))
 DBT_API_KEY = os.getenv("DBT_API_KEY")
@@ -23,7 +24,8 @@ def test_new_job_fields():
         )
     except ValidationError as e:
         pytest.fail(
-            f"ValidationError was raised: {e.errors()}\n\nThis means that a field needs to be explicitly excluded in JobMissingFields or added to the JobDefinition model."
+            f"""ValidationError was raised: {e.errors()}\n\n
+            This means that a field needs to be explicitly excluded in JobMissingFields or added to the JobDefinition model."""
         )
     except Exception as e:
         pytest.fail(f"A generic error was raised: {e}")
