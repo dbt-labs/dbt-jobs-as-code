@@ -1,12 +1,15 @@
 import glob
+import json
 import os
 import string
 from collections import Counter
+from typing import Dict, Optional
 
 from beartype import BeartypeConf, BeartypeStrategy, beartype
 from beartype.typing import Callable, List
 from loguru import logger
 from pydantic import BaseModel
+from rich.console import Console
 from rich.table import Table
 
 from dbt_jobs_as_code.client import DBTCloud, DBTCloudException
@@ -16,6 +19,12 @@ from dbt_jobs_as_code.schemas.job import JobDefinition
 
 # Dynamically create a new @nobeartype decorator disabling type-checking.
 nobeartype = beartype(conf=BeartypeConf(strategy=BeartypeStrategy.O0))
+
+
+def json_serializer_type(obj):
+    if isinstance(obj, type):
+        return obj.__name__
+    raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
 
 
 class Change(BaseModel):
@@ -28,6 +37,7 @@ class Change(BaseModel):
     env_id: int
     sync_function: Callable
     parameters: dict
+    differences: Optional[Dict] = {}
 
     def __str__(self):
         return f"{self.action.upper()} {string.capwords(self.type)} {self.identifier}"
@@ -73,6 +83,32 @@ class ChangeSet(BaseModel):
             )
 
         return table
+
+    def to_json(self) -> dict:
+        """Return a structured JSON representation of the changeset."""
+        job_changes = []
+        env_var_changes = []
+
+        for change in self.root:
+            # Create the base change dictionary for overall changes
+            overall_change_dict = {
+                "action": change.action.upper(),
+                "type": string.capwords(change.type),
+                "identifier": change.identifier,
+                "project_id": change.proj_id,
+                "environment_id": change.env_id,
+                "differences": change.differences,
+            }
+
+            if change.type == "job":
+                job_changes.append(overall_change_dict)
+            elif change.type == "env var overwrite":
+                env_var_changes.append(overall_change_dict)
+
+        return {
+            "job_changes": job_changes,
+            "env_var_overwrite_changes": env_var_changes,
+        }
 
     def __len__(self):
         return len(self.root)
@@ -144,6 +180,7 @@ def build_change_set(
     project_ids: List[int],
     environment_ids: List[int],
     limit_projects_envs_to_yml: bool = False,
+    output_json: bool = False,
 ):
     """Compares the config of YML files versus dbt Cloud.
     Depending on the value of no_update, it will either update the dbt Cloud config or not.
@@ -203,12 +240,15 @@ def build_change_set(
     deleted_jobs = set(tracked_jobs.keys()) - set(defined_jobs.keys())
 
     # Update changed jobs
-    logger.info("Detected {count} existing jobs.", count=len(shared_jobs))
+    if not output_json:
+        logger.info("Detected {count} existing jobs.", count=len(shared_jobs))
     for identifier in shared_jobs:
-        logger.info("Checking for differences in {identifier}", identifier=identifier)
-        if not check_job_mapping_same(
+        if not output_json:
+            logger.info("Checking for differences in {identifier}", identifier=identifier)
+        is_same, diff_data = check_job_mapping_same(
             source_job=defined_jobs[identifier], dest_job=tracked_jobs[identifier]
-        ):
+        )
+        if not is_same:
             dbt_cloud_change = Change(
                 identifier=identifier,
                 type="job",
@@ -217,12 +257,21 @@ def build_change_set(
                 env_id=defined_jobs[identifier].environment_id,
                 sync_function=dbt_cloud.update_job,
                 parameters={"job": defined_jobs[identifier]},
+                differences=diff_data.get("differences", {}) if diff_data else {},
             )
             dbt_cloud_change_set.append(dbt_cloud_change)
             defined_jobs[identifier].id = tracked_jobs[identifier].id
+            if not output_json:
+                console = Console()
+                console.print(
+                    f"❌ Job {identifier} is different - Diff:\n{json.dumps(diff_data, indent=2, default=json_serializer_type)}"
+                )
+        elif not output_json:
+            logger.success(f"✅ Job {identifier} is identical")
 
     # Create new jobs
-    logger.info("Detected {count} new jobs.", count=len(created_jobs))
+    if not output_json:
+        logger.info("Detected {count} new jobs.", count=len(created_jobs))
     for identifier in created_jobs:
         dbt_cloud_change = Change(
             identifier=identifier,
@@ -236,7 +285,8 @@ def build_change_set(
         dbt_cloud_change_set.append(dbt_cloud_change)
 
     # Remove Deleted Jobs
-    logger.info("Detected {count} deleted jobs.", count=len(deleted_jobs))
+    if not output_json:
+        logger.info("Detected {count} deleted jobs.", count=len(deleted_jobs))
     for identifier in deleted_jobs:
         dbt_cloud_change = Change(
             identifier=identifier,
@@ -252,7 +302,8 @@ def build_change_set(
     # -- ENV VARS --
     # Now that we have replicated all jobs we can get their IDs for further API calls
     mapping_job_identifier_job_id = dbt_cloud.build_mapping_job_identifier_job_id(cloud_jobs)
-    logger.debug(f"Mapping of job identifier to id: {mapping_job_identifier_job_id}")
+    if not output_json:
+        logger.debug(f"Mapping of job identifier to id: {mapping_job_identifier_job_id}")
 
     # Replicate the env vars from the YML to dbt Cloud
     for job in defined_jobs.values():
@@ -261,14 +312,21 @@ def build_change_set(
             all_env_vars_for_job = dbt_cloud.get_env_vars(project_id=job.project_id, job_id=job_id)
             for env_var_yml in job.custom_environment_variables:
                 env_var_yml.job_definition_id = job_id
-                same_env_var, env_var_id = check_env_var_same(
+                same_env_var, env_var_id, diff_data = check_env_var_same(
                     source_env_var=env_var_yml, dest_env_vars=all_env_vars_for_job
                 )
-                if not same_env_var:
+                if not same_env_var and diff_data:
+                    action = (
+                        "CREATE"
+                        if diff_data.get("old_value") is None
+                        else "DELETE"
+                        if diff_data.get("new_value") is None
+                        else "UPDATE"
+                    )
                     dbt_cloud_change = Change(
                         identifier=f"{job.identifier}:{env_var_yml.name}",
                         type="env var overwrite",
-                        action="update",
+                        action=action,
                         proj_id=job.project_id,
                         env_id=job.environment_id,
                         sync_function=dbt_cloud.update_env_var,
@@ -278,6 +336,7 @@ def build_change_set(
                             "custom_env_var": env_var_yml,
                             "env_var_id": env_var_id,
                         },
+                        differences=diff_data,
                     )
                     dbt_cloud_change_set.append(dbt_cloud_change)
 
@@ -315,7 +374,8 @@ def build_change_set(
             for env_var, env_var_val in env_var_dbt_cloud.items():
                 # If the env var is not in the YML but is defined at the "job" level in dbt Cloud, we delete it
                 if env_var not in env_vars_for_job and env_var_val.id:
-                    logger.info(f"{env_var} not in the YML file but in the dbt Cloud job")
+                    if not output_json:
+                        logger.info(f"{env_var} not in the YML file but in the dbt Cloud job")
                     dbt_cloud_change = Change(
                         identifier=f"{job.identifier}:{env_var}",
                         type="env var overwrite",
@@ -332,6 +392,5 @@ def build_change_set(
 
     # Filtering out the change set, if project_id(s), environment_id(s) are passed as arguments to function
     # TODO: Confirm if this is the desired functionality, remove otherwise
-    logger.debug(f"dbt cloud change set: {dbt_cloud_change_set}")
 
     return dbt_cloud_change_set

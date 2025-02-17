@@ -315,3 +315,33 @@ schedule:
         result = _load_vars_files([str(vars_file)])
 
         assert result == {"schedule": {"cron": "0 1,5 * * 0,1,2,3,4,5"}}
+
+    def test_load_vars_files_none_values(self, tmp_path):
+        """Test that None values in vars files are correctly replaced with 'null' strings"""
+        vars_file = tmp_path / "vars.yml"
+        vars_file.write_text("""
+string_var: value
+none_var: null
+nested_dict:
+    none_field: null
+list_with_none:
+    - item1
+    - null
+    - item3
+nested_list:
+    - name: item1
+      value: null
+    - name: item2
+      value: not_null
+        """)
+
+        result = _load_vars_files([str(vars_file)])
+
+        assert result["string_var"] == "value"
+        assert result["none_var"] == "null"
+        assert result["nested_dict"]["none_field"] == "null"
+        assert result["list_with_none"] == ["item1", "null", "item3"]
+        assert result["nested_list"] == [
+            {"name": "item1", "value": "null"},
+            {"name": "item2", "value": "not_null"},
+        ]

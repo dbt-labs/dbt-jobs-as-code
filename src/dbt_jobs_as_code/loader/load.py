@@ -73,6 +73,14 @@ def _load_yaml_no_template(config_files: List[str]) -> dict:
     return combined_config
 
 
+def _replace_none_with_null(obj):
+    if isinstance(obj, dict):
+        return {k: _replace_none_with_null(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_replace_none_with_null(item) for item in obj]
+    return "null" if obj is None else obj
+
+
 def _load_vars_files(vars_file: List[str]) -> dict:
     """Load and merge multiple vars files into a single dictionary.
 
@@ -97,7 +105,7 @@ def _load_vars_files(vars_file: List[str]) -> dict:
                         f"Variable '{key}' is defined multiple times in vars files"
                     )
             template_vars_values.update(vars_data)
-    return template_vars_values
+    return _replace_none_with_null(template_vars_values)  # type: ignore
 
 
 def _load_yaml_with_template(config_files: List[str], vars_file: List[str]) -> dict:

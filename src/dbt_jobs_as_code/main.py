@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from importlib.metadata import version
@@ -10,7 +11,7 @@ from rich.console import Console
 from ruamel.yaml import YAML
 
 from dbt_jobs_as_code.client import DBTCloud
-from dbt_jobs_as_code.cloud_yaml_mapping.change_set import build_change_set
+from dbt_jobs_as_code.cloud_yaml_mapping.change_set import build_change_set, json_serializer_type
 from dbt_jobs_as_code.cloud_yaml_mapping.validate_link import can_be_linked
 from dbt_jobs_as_code.exporter.export import export_jobs_yml
 from dbt_jobs_as_code.importer import check_job_fields, fetch_jobs, get_account_id
@@ -58,6 +59,13 @@ option_vars_yml = click.option(
     help="The path to your vars_yml YML file (or pattern for those files) when using a templated job YML file.",
 )
 
+option_json_output = click.option(
+    "--json",
+    "output_json",
+    is_flag=True,
+    help="Output results in JSON format instead of human-readable text.",
+)
+
 
 @click.group(
     help=f"dbt-jobs-as-code {VERSION}\n\nA CLI to allow defining dbt Cloud jobs as code",
@@ -75,6 +83,7 @@ def cli() -> None:
 @option_project_ids
 @option_environment_ids
 @option_limit_projects_envs_to_yml
+@option_json_output
 def sync(
     config: str,
     vars_yml,
@@ -82,6 +91,7 @@ def sync(
     environment_id,
     limit_projects_envs_to_yml,
     disable_ssl_verification,
+    output_json: bool,
 ):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
     This command will update dbt Cloud with the changes in the local YML file. It is recommended to run a `plan` first to see what will be changed.
@@ -111,13 +121,20 @@ def sync(
         cloud_project_ids,
         cloud_environment_ids,
         limit_projects_envs_to_yml,
+        output_json=output_json,
     )
     if len(change_set) == 0:
-        logger.success("-- SYNC -- No changes detected.")
+        if output_json:
+            print(json.dumps({"job_changes": [], "env_var_overwrite_changes": []}))
+        else:
+            logger.success("-- SYNC -- No changes detected.")
     else:
-        logger.info("-- SYNC -- {count} changes detected.", count=len(change_set))
-        console = Console()
-        console.log(change_set.to_table())
+        if output_json:
+            print(json.dumps(change_set.to_json()))
+        else:
+            logger.info("-- SYNC -- {count} changes detected.", count=len(change_set))
+            console = Console()
+            console.log(change_set.to_table())
     change_set.apply()
 
     if not change_set.apply_success:
@@ -132,6 +149,7 @@ def sync(
 @option_project_ids
 @option_environment_ids
 @option_limit_projects_envs_to_yml
+@option_json_output
 def plan(
     config: str,
     vars_yml: str,
@@ -139,6 +157,7 @@ def plan(
     environment_id: List[int],
     limit_projects_envs_to_yml: bool,
     disable_ssl_verification: bool,
+    output_json: bool,
 ):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
     This command will not update dbt Cloud.
@@ -167,13 +186,20 @@ def plan(
         cloud_project_ids,
         cloud_environment_ids,
         limit_projects_envs_to_yml,
+        output_json=output_json,
     )
     if len(change_set) == 0:
-        logger.success("-- PLAN -- No changes detected.")
+        if output_json:
+            print(json.dumps({"job_changes": [], "env_var_overwrite_changes": []}))
+        else:
+            logger.success("-- PLAN -- No changes detected.")
     else:
-        logger.info("-- PLAN -- {count} changes detected.", count=len(change_set))
-        console = Console()
-        console.log(change_set.to_table())
+        if output_json:
+            print(json.dumps(change_set.to_json(), default=json_serializer_type))
+        else:
+            logger.info("-- PLAN -- {count} changes detected.", count=len(change_set))
+            console = Console()
+            console.log(change_set.to_table())
 
 
 @cli.command()
