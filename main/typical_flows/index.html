@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#typical-flows-wip" class="md-skip">
+        <a href="#typical-flows" class="md-skip">
           Skip to content
         </a>
       
@@ -268,6 +268,8 @@
         <a href="../advanced_config/" class="md-tabs__link">
           
   
+    
+  
   Advanced configuration
 
         </a>
@@ -426,6 +428,20 @@
   
     
     
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
     
       
       
@@ -438,8 +454,10 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../advanced_config/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     Advanced configuration
@@ -447,8 +465,14 @@
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
@@ -457,26 +481,6 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../advanced_config/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Index
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
               
             
               
@@ -719,19 +723,19 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#adanced-flows-for-automation-of-jobs-promotion" class="md-nav__link">
+  <a href="#advanced-flows" class="md-nav__link">
     <span class="md-ellipsis">
-      Adanced flows for automation of jobs promotion
+      Advanced flows
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Adanced flows for automation of jobs promotion">
+    <nav class="md-nav" aria-label="Advanced flows">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#wip-not-implemented-yet-replicate-all-jobs-from-one-environment-to-another-ongoing-managed-jobs" class="md-nav__link">
+  <a href="#automated-promotion-of-jobs-created-in-the-ui-to-other-environments" class="md-nav__link">
     <span class="md-ellipsis">
-      WIP -- Not implemented yet // Replicate all jobs from one environment to another (ongoing managed jobs)
+      Automated promotion of jobs created in the UI to other environments
     </span>
   </a>
   
@@ -816,7 +820,7 @@
   
 
 
-<h1 id="typical-flows-wip">Typical flows (WIP)</h1>
+<h1 id="typical-flows">Typical flows</h1>
 <p>This page descibes how <code>dbt-jobs-as-code</code> can be used in different scenarios, what commands to run in what order, what parameters to use, what CI actions to create etc...</p>
 <h2 id="cicd-flows-for-most-use-cases">CI/CD flows for most use cases</h2>
 <h3 id="manage-jobs-as-code-only-for-production">Manage jobs as code only for Production</h3>
@@ -1054,9 +1058,25 @@
     U -&gt;&gt; C: run `deactivate-jobs` on the original project and envs
     U -&gt;&gt; C: [optional] run `unlink` in the required envs to remove the identifier from the jobs</code></pre>
 <hr />
-<h2 id="adanced-flows-for-automation-of-jobs-promotion">Adanced flows for automation of jobs promotion</h2>
-<h3 id="wip-not-implemented-yet-replicate-all-jobs-from-one-environment-to-another-ongoing-managed-jobs"><strong>WIP -- Not implemented yet</strong> // Replicate all jobs from one environment to another (ongoing managed jobs)</h3>
-<p>WIP</p>
+<h2 id="advanced-flows">Advanced flows</h2>
+<h3 id="automated-promotion-of-jobs-created-in-the-ui-to-other-environments">Automated promotion of jobs created in the UI to other environments</h3>
+<p>In this mechanism, we use <code>dbt-jobs-as-code</code> to create a CI/CD pipeline to automatically promote jobs created in the dbt Cloud UI to other environments. It would synchronize jobs and allow creating new ones, deleting old ones and modifying existing ones.</p>
+<p>The key part of the process is <a href="../advanced_config/jobs_importing/">the advanced ability to import jobs</a> while setting Jinja variables that will be rendered differently for each environment.</p>
+<pre class="mermaid"><code>sequenceDiagram
+    actor D as dbt Developer
+    participant C as dbt Cloud
+    participant G as git repo
+    actor U as User
+
+    D --&gt;&gt;C: Maintain dbt Cloud jobs in the UI in dev,&lt;br&gt; adding [[..]] to the jobs that&lt;br&gt; need to be promoted/replicated
+    U --&gt;&gt;G: Create and commit the YAML vars files for each env
+    U --&gt;&gt;G: Create and commit the YAML vars files for the templated values
+    U --&gt;&gt;G: Create a pipeline to automatically run `dbt-jbos-as-code&lt;br&gt;on a schedule or triggered by somone
+    G -&gt;&gt; C: run `import-jobs` with `--templated-fields templ.yml`&lt;br&gt;,`--managed-only` and `-e` to specify the env
+    C -&gt;&gt; G: get yaml file
+    Note over G: Check difference with existing file&lt;br&gt; and auto-create PR if it is different
+    Note right of G: When the PR is created, we follow the&lt;br&gt; typical flow of GH actions&lt;br&gt; with plan/sync on PR creation/merge
+</code></pre>
 
 
 
@@ -1077,7 +1097,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">February 13, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">February 17, 2025</span>
   </span>
 
     
@@ -1124,7 +1144,7 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.action.edit", "navigation.tabs", "toc.integrate", "content.code.copy"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.action.edit", "navigation.tabs", "toc.integrate", "toc.follow", "content.code.copy", "content.code.annotate", "navigation.indexes"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.f1b6f286.min.js"></script>
