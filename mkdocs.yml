@@ -8,7 +8,7 @@ nav:
   - Home: index.md
   - Getting Started: getting_started.md
   - Advanced configuration:
-    - Index: advanced_config/index.md
+    - advanced_config/index.md
     - YAML Templating: advanced_config/templating.md
     - glob config files: advanced_config/glob_config_files.md
     - Using YAML anchors: advanced_config/yaml_anchors.md
@@ -54,7 +54,10 @@ theme:
     - content.action.edit
     - navigation.tabs
     - toc.integrate # not sure, let's see
+    - toc.follow
     - content.code.copy
+    - content.code.annotate
+    - navigation.indexes
 
 markdown_extensions:
   - mkdocs-click

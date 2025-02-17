@@ -9,5 +9,7 @@ Those patterns are also called "Unix style pathname pattern expansion", and in a
 For example, to run the `plan` command on all the files stored in subdirectoris under the `jobs` directory, you can use the following command:
 
 ```bash
-dbt-jobs-as-code validate --config-file jobs/**/*.yml
+dbt-jobs-as-code plan "jobs/**/*.yml" # (1)!
 ```
+
+1. Depending on your shell you might have to quote the pattern or not. For example, for `zsh` quoting is required as otherwise the shell will try to expand the pattern before passing it to the command.

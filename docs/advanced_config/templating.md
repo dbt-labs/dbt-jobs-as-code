@@ -10,7 +10,7 @@ To add templated values to your jobs YAML file:
 
 The file called in `--vars-yml` needs to be a valid YAML file like the following:
 
-```yaml
+```yaml title="vars_qa.yml"
 project_id: 123
 environment_id: 456
 ```
@@ -102,7 +102,7 @@ Templating also allows people to version control those YAML files and to have di
     deferring_environment_id: 789
     ```
     
-    ``` yaml title="vars_prd.yml"
+    ``` yaml title="vars_prod.yml"
     env_type: prod
     project_id: 12
     environment_id: 231231
