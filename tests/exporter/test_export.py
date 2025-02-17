@@ -4,7 +4,7 @@ import pytest
 from jsonschema import validate
 from ruamel.yaml import YAML
 
-from dbt_jobs_as_code.exporter.export import export_jobs_yml
+from dbt_jobs_as_code.exporter.export import apply_templated_fields, export_jobs_yml
 from dbt_jobs_as_code.schemas.common_types import (
     Date,
     Execution,
@@ -171,3 +171,126 @@ def test_export_jobs_yml_with_linked_id(base_job_definition, capsys):
 
     # Verify linked_id is not included
     assert "linked_id" not in exported_jobs["jobs"]["test_identifier"]
+
+
+def test_apply_templated_fields_simple():
+    """Test applying simple templated fields"""
+    job_dict = {"name": "test job", "environment_id": 123, "project_id": 456}
+
+    template_config = {"environment_id": "{{ environment_id }}", "project_id": "{{ project_id }}"}
+
+    result = apply_templated_fields(job_dict, template_config)
+
+    assert result["environment_id"] == "{{ environment_id }}"
+    assert result["project_id"] == "{{ project_id }}"
+    assert result["name"] == "test job"  # Unchanged field
+
+
+def test_apply_templated_fields_nested():
+    """Test applying templated fields to nested structures"""
+    job_dict = {"name": "test job", "triggers": {"schedule": True, "github_webhook": False}}
+
+    template_config = {"triggers.schedule": "{{ env_name == 'prod' }}"}
+
+    result = apply_templated_fields(job_dict, template_config)
+
+    assert result["triggers"]["schedule"] == "{{ env_name == 'prod' }}"
+    assert result["triggers"]["github_webhook"] is False  # Unchanged field
+    assert result["name"] == "test job"  # Unchanged field
+
+
+def test_apply_templated_fields_missing_path():
+    """Test applying templated fields when the path doesn't exist"""
+    job_dict = {"name": "test job"}
+
+    template_config = {"triggers.schedule": "{{ env_name == 'prod' }}"}
+
+    result = apply_templated_fields(job_dict, template_config)
+
+    assert result["triggers"]["schedule"] == "{{ env_name == 'prod' }}"
+    assert result["name"] == "test job"  # Unchanged field
+
+
+def test_apply_templated_fields_empty_config():
+    """Test applying empty template config"""
+    job_dict = {"name": "test job", "environment_id": 123}
+
+    template_config = {}
+
+    result = apply_templated_fields(job_dict, template_config)
+
+    assert result == job_dict  # Should return unchanged dictionary
+
+
+def test_export_jobs_yml_with_templates(base_job_definition, capsys, tmp_path):
+    """Test that export_jobs_yml correctly applies templates from a file"""
+    # Create a temporary template file
+    template_file = tmp_path / "templates.yml"
+    template_config = {
+        "triggers.schedule": "{{ env_name == 'prod' }}",
+        "environment_id": "{{ environment_id }}",
+    }
+
+    yaml = YAML()
+    with open(template_file, "w") as f:
+        yaml.dump(template_config, f)
+
+    # Create a job
+    job = base_job_definition.model_copy()
+    job.identifier = "test_job"
+
+    # Export with templates
+    export_jobs_yml([job], template_file=str(template_file))
+    captured = capsys.readouterr()
+
+    # We don't parse the YAML as it is not valid YAML (it is Jinja YAML and will consider { as the start of a dictionary)
+    assert "schedule: {{ env_name == 'prod' }}" in captured.out
+    assert "environment_id: {{ environment_id }}" in captured.out
+
+
+def test_export_jobs_yml_with_curly_braces(base_job_definition, capsys, tmp_path):
+    """Test that export_jobs_yml correctly handles curly braces in templates"""
+    # Create a template file with curly braces
+    template_file = tmp_path / "templates.yml"
+    template_config = {
+        "triggers.schedule": "{{ env_name == 'prod' }}",
+        "environment_id": "{{ environment_id }}",
+        "project_id": "{{ project_id }}",
+        "deferring_environment_id": "{{ deferring_environment_id }}",
+    }
+
+    yaml = YAML()
+    with open(template_file, "w") as f:
+        yaml.dump(template_config, f)
+
+    # Create a job
+    job = base_job_definition.model_copy()
+    job.identifier = "test_job"
+
+    # Export with templates
+    export_jobs_yml([job], template_file=str(template_file))
+    captured = capsys.readouterr()
+
+    # Verify that curly braces are preserved in the output
+    assert "{{ env_name == 'prod' }}" in captured.out
+    assert "{{ environment_id }}" in captured.out
+    assert "{{ project_id }}" in captured.out
+    assert "{{ deferring_environment_id }}" in captured.out
+
+    # Verify that we haven't added quotes around
+    assert (
+        """'{{ env_name == 'prod' }}'""" not in captured.out
+        and """\"{{ env_name == 'prod' }}\"""" not in captured.out
+    )
+    assert (
+        """'{{ environment_id }}'""" not in captured.out
+        and """\"{{ environment_id }}\"""" not in captured.out
+    )
+    assert (
+        """'{{ project_id }}'""" not in captured.out
+        and """\"{{project_id }}\"""" not in captured.out
+    )
+    assert (
+        """'{{ deferring_environment_id }}'""" not in captured.out
+        and """\"{{ deferring_environment_id }}\"""" not in captured.out
+    )
