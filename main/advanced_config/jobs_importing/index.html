@@ -624,6 +624,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Automatically promote jobs between environments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#generating-jobs-yml-file-as-part-of-a-cicd-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      Generating jobs YML file as part of a CI/CD process
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defining-some-jobs-to-be-imported-to-only-specific-environments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Defining some jobs to be imported to only specific environments
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -779,6 +803,7 @@
 <span class="w">    </span><span class="nt">custom_environment_variables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
 </code></pre></div>
 <h2 id="automatically-promote-jobs-between-environments">Automatically promote jobs between environments</h2>
+<h3 id="generating-jobs-yml-file-as-part-of-a-cicd-process">Generating jobs YML file as part of a CI/CD process</h3>
 <p>The import command from above can also be used to automatically promote jobs between environments. In that case, as part of a CI/CD process, or on a schedule, the following command can be used to generate the YAML content and save it to a file:</p>
 <div class="highlight"><pre><span></span><code>dbt-jobs-as-code<span class="w"> </span>import-jobs<span class="w"> </span>--account-id<span class="w"> </span><span class="m">1234</span><span class="w"> </span>--project-id<span class="w"> </span><span class="m">3213</span><span class="w"> </span>--environment-id<span class="w"> </span><span class="m">423432</span><span class="w"> </span>--templated-fields<span class="w"> </span>templ.yml<span class="w"> </span>--managed-only<span class="w"> </span>&gt;<span class="w"> </span>jobs.yml
 </code></pre></div>
@@ -799,6 +824,32 @@
 <span class="nt">environment_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">789</span>
 <span class="nt">deferring_environment_id</span><span class="p">:</span><span class="w"> </span>
 </code></pre></div>
+<h3 id="defining-some-jobs-to-be-imported-to-only-specific-environments">Defining some jobs to be imported to only specific environments</h3>
+<p>It is possible to define some jobs to be imported to only specific environments by using the <code>--filter</code> parameter for <code>dbt-jobs-as-code import-jobs</code> and by using the correct identifier for the job.</p>
+<p>To do, so the identifier of the job should be in the format <code>[[envs_filter:identifier]]</code>. The rules are the following:</p>
+<ul>
+<li>when <code>--filter</code> is not provided, all jobs are imported</li>
+<li>when <code>--filter</code> is provided, the following jobs are imported<ul>
+<li>the jobs with an <code>envs_filter</code> that contains the filter are imported</li>
+<li>the jobs with an <code>envs_filter</code> that is empty are imported</li>
+<li>the jobs with an <code>envs_filter</code> equal to <code>*</code> are imported</li>
+</ul>
+</li>
+</ul>
+<p>As an example, if a job is named <code>My daily job [[uat:my-daily-job]]</code> :</p>
+<ul>
+<li><code>dbt-jobs-as-code import-jobs ... --filter uat</code> will import the job ✅</li>
+<li><code>dbt-jobs-as-code import-jobs ...</code> without a filter will import the job ✅</li>
+<li><code>dbt-jobs-as-code import-jobs ... --filter prod</code> will not import the job ❌</li>
+</ul>
+<p>This feature allows developers to define up to which environment jobs should be imported. If a job needs to be tested in UAT before moving to Prod, the developper can add the filter <code>uat</code> to the identifier of the job and the automated import script would use the <code>--filter uat</code> parameter.</p>
+<p>The automated promotion process would then create different jobs YML file for each environment.</p>
+<p>Finally, when the job can be moved to Prod, the developer can remove the filter from the identifier of the job (or replace it with <code>*</code>) and the automated import script will not use the <code>--filter</code> parameter.</p>
+<div class="admonition warning">
+<p class="admonition-title">When to use this feature</p>
+<p>This feature should be used only when wanting to let people create jobs in the dbt Cloud UI in an environment and get those promoted to higher environments.</p>
+<p>When possible, it is advised to maintian the jobs YAML file manually and to include both the dbt code and the job definition in the same PR.</p>
+</div>
 
 
 
@@ -819,7 +870,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">February 17, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">February 21, 2025</span>
   </span>
 
     
