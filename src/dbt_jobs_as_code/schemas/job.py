@@ -1,4 +1,5 @@
 import re
+from dataclasses import dataclass
 
 from beartype.typing import Any, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
@@ -15,6 +16,42 @@ from dbt_jobs_as_code.schemas.common_types import (
 from dbt_jobs_as_code.schemas.custom_environment_variable import CustomEnvironmentVariable
 
 
+@dataclass
+class IdentifierInfo:
+    """Information extracted from a job identifier."""
+
+    identifier: Optional[str]
+    import_filter: Optional[str]
+    raw_identifier: str
+
+
+def filter_jobs_by_import_filter(
+    jobs: List["JobDefinition"], filter_value: Optional[str]
+) -> List["JobDefinition"]:
+    """Filter jobs based on their identifier prefix.
+
+    Args:
+        jobs: List of jobs to filter
+        filter_value: The filter value to match against. If None or empty, returns all jobs.
+
+    Returns:
+        List of jobs that match the filter criteria:
+        - Jobs where filter_value is contained in _filter_import
+        - Jobs with empty _filter_import
+        - Jobs with _filter_import = "*"
+    """
+    if not filter_value:
+        return jobs
+
+    return [
+        job
+        for job in jobs
+        if not job._filter_import  # empty filter
+        or job._filter_import == "*"  # wildcard filter
+        or filter_value in job._filter_import  # filter matches
+    ]
+
+
 # Main model for loader
 class JobDefinition(BaseModel):
     """A definition for a dbt Cloud job."""
@@ -28,6 +65,7 @@ class JobDefinition(BaseModel):
         default=None,
         description="The internal job identifier for the job for dbt-jobs-as-code. Will be added at the end of the job name.",
     )
+    _filter_import: Optional[str] = None
     account_id: int = field_mandatory_int_allowed_as_string_in_schema
     project_id: int = field_mandatory_int_allowed_as_string_in_schema
     environment_id: int = field_mandatory_int_allowed_as_string_in_schema
@@ -76,10 +114,11 @@ class JobDefinition(BaseModel):
     def __init__(self, **data: Any):
         # Check if `name` includes an identifier. If yes, set the identifier in the object. Remove the identifier from
         # the name.
-        matches = re.search(r"\[\[([a-zA-Z0-9_-]+)\]\]", data["name"])
-        if matches is not None:
-            data["identifier"] = matches.groups()[0]
-            data["name"] = data["name"].replace(f" [[{data['identifier']}]]", "")
+        identifier_info = self._extract_identifier_from_name(data["name"])
+        _filter_import = identifier_info.import_filter
+        if identifier_info.identifier:
+            data["identifier"] = identifier_info.identifier
+            data["name"] = data["name"].replace(f" [[{identifier_info.raw_identifier}]]", "")
 
         # Rewrite custom environment variables to include account and project id
         environment_variables = data.get("custom_environment_variables", None)
@@ -97,6 +136,39 @@ class JobDefinition(BaseModel):
             data["custom_environment_variables"] = []
 
         super().__init__(**data)
+        self._filter_import = _filter_import
+
+    @staticmethod
+    def _extract_identifier_from_name(name: str) -> IdentifierInfo:
+        """Extract identifier and import filter from job name.
+
+        Args:
+            name: Job name that may contain an identifier in [[identifier]] format
+
+        Returns:
+            IdentifierInfo containing identifier details
+
+        Raises:
+            ValueError: If identifier format is invalid
+        """
+        matches = re.search(r"\[\[([*:a-zA-Z0-9_-]+)\]\]", name)
+        if matches is None:
+            return IdentifierInfo(identifier=None, import_filter="", raw_identifier="")
+
+        raw_identifier = matches.groups()[0]
+        num_colons = raw_identifier.count(":")
+
+        if num_colons == 0:
+            return IdentifierInfo(
+                identifier=raw_identifier, import_filter="", raw_identifier=raw_identifier
+            )
+        elif num_colons == 1:
+            import_filter, identifier = raw_identifier.split(":")
+            return IdentifierInfo(
+                identifier=identifier, import_filter=import_filter, raw_identifier=raw_identifier
+            )
+        else:
+            raise ValueError(f"Invalid job identifier - More than 1 colon: '{raw_identifier}'")
 
     def to_payload(self):
         """Create a dbt Cloud API payload for a JobDefinition."""
