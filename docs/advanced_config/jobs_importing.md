@@ -64,6 +64,8 @@ jobs:
 
 ## Automatically promote jobs between environments
 
+### Generating jobs YML file as part of a CI/CD process
+
 The import command from above can also be used to automatically promote jobs between environments. In that case, as part of a CI/CD process, or on a schedule, the following command can be used to generate the YAML content and save it to a file:
 
 ```bash
@@ -96,3 +98,35 @@ env_name: "prod"
 environment_id: 789
 deferring_environment_id: 
 ``` 
+
+
+### Defining some jobs to be imported to only specific environments
+
+It is possible to define some jobs to be imported to only specific environments by using the `--filter` parameter for `dbt-jobs-as-code import-jobs` and by using the correct identifier for the job.
+
+To do, so the identifier of the job should be in the format `[[envs_filter:identifier]]`. The rules are the following:
+
+- when `--filter` is not provided, all jobs are imported
+- when `--filter` is provided, the following jobs are imported
+    - the jobs with an `envs_filter` that contains the filter are imported
+    - the jobs with an `envs_filter` that is empty are imported
+    - the jobs with an `envs_filter` equal to `*` are imported
+
+As an example, if a job is named `My daily job [[uat:my-daily-job]]` :
+
+- `dbt-jobs-as-code import-jobs ... --filter uat` will import the job ✅
+- `dbt-jobs-as-code import-jobs ...` without a filter will import the job ✅
+- `dbt-jobs-as-code import-jobs ... --filter prod` will not import the job ❌
+
+This feature allows developers to define up to which environment jobs should be imported. If a job needs to be tested in UAT before moving to Prod, the developper can add the filter `uat` to the identifier of the job and the automated import script would use the `--filter uat` parameter.
+
+The automated promotion process would then create different jobs YML file for each environment.
+
+Finally, when the job can be moved to Prod, the developer can remove the filter from the identifier of the job (or replace it with `*`) and the automated import script will not use the `--filter` parameter.
+
+
+!!! warning "When to use this feature"
+
+    This feature should be used only when wanting to let people create jobs in the dbt Cloud UI in an environment and get those promoted to higher environments.
+    
+    When possible, it is advised to maintian the jobs YAML file manually and to include both the dbt code and the job definition in the same PR.

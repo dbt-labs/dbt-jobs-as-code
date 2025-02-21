@@ -17,6 +17,7 @@ from dbt_jobs_as_code.exporter.export import export_jobs_yml
 from dbt_jobs_as_code.importer import check_job_fields, fetch_jobs, get_account_id
 from dbt_jobs_as_code.loader.load import load_job_configuration, resolve_file_paths
 from dbt_jobs_as_code.schemas.config import generate_config_schema
+from dbt_jobs_as_code.schemas.job import filter_jobs_by_import_filter
 
 VERSION = version("dbt-jobs-as-code")
 
@@ -337,6 +338,11 @@ def validate(config, vars_yml, online, disable_ssl_verification):
     type=str,
     help="Path to a YAML file containing field templates to apply to the exported jobs.",
 )
+@click.option(
+    "--filter",
+    type=str,
+    help="Only import jobs where the identifier prefix, before `:` contains this value, is empty or is '*'.",
+)
 def import_jobs(
     config,
     account_id,
@@ -348,6 +354,7 @@ def import_jobs(
     include_linked_id=False,
     managed_only=False,
     templated_fields=None,
+    filter=None,
 ):
     """
     Generate YML file for import.
@@ -387,6 +394,8 @@ def import_jobs(
         # Filter for managed jobs if requested
         if managed_only:
             cloud_jobs = [job for job in cloud_jobs if job.identifier is not None]
+
+        cloud_jobs = filter_jobs_by_import_filter(cloud_jobs, filter)
 
         # Handle env vars
         for cloud_job in cloud_jobs:
