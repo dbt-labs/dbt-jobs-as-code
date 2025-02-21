@@ -50,7 +50,82 @@ The following environment variables are used to run the code:
 
 The list of the different commands and the parameters they accept is available in the [CLI documentation](cli.md).
 
+### Main commands
+
+The main commands are `plan` and `sync`. Both commands require a YML jobs definition file as an input and will replicate the jobs defined in the file to dbt Cloud.
+
+??? example "Examples of input YML file for `plan` and `sync`"
+
+    The YAML file can be created by hand or automatically by using the `import-jobs` command.
+
+    ```yaml title="jobs.yml"
+    # yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/dbt_jobs_as_code/schemas/load_job_schema.json
+
+    jobs:
+      job1:
+        account_id: 43791
+        dbt_version: null
+        deferring_job_definition_id: null
+        environment_id: 134459
+        execute_steps:
+          - "dbt run --select model1+"
+          - "dbt run --select model2+"
+        execution:
+          timeout_seconds: 0
+        generate_docs: false
+        name: "My Job 1"
+        project_id: 176941
+        run_generate_sources: true
+        schedule:
+          cron: "0 */2 * * *"
+        settings:
+          target_name: production
+          threads: 4
+        state: 1
+        triggers:
+          git_provider_webhook: false
+          github_webhook: false
+          schedule: true
+
+      job2:
+        account_id: 43791
+        dbt_version: null
+        deferring_job_definition_id: null
+        deferring_environment_id: 43791
+        environment_id: 134459
+        execute_steps:
+          - dbt run-operation clone_all_production_schemas
+          - dbt compile
+        execution:
+          timeout_seconds: 0
+        generate_docs: false
+        name: CI/CD run
+        project_id: 176941
+        run_generate_sources: false
+        schedule:
+          cron: "0 * * * *"
+        settings:
+          target_name: TEST
+          threads: 4
+        state: 1
+        triggers:
+          git_provider_webhook: false
+          github_webhook: true # this job runs from webhooks
+          schedule: false # this doesn't run on a schedule
+        custom_environment_variables:
+          - DBT_ENV1: My val
+          - DBT_ENV2: My val2
+    ```
+
+### Typical flows
+
 There is also a list of typical flows leveraging `dbt-jobs-as-code` in the [typical flows](typical_flows.md) page.
+
+This includes how to leverage the tool to import jobs to different environments, how to set up a CI pipeline to plan and sync jobs, etc...
+
+### Advanced features
+
+For more complex use cases, please refer to the [advanced features](advanced_config/index.md) page.
 
 ## How to contribute to `dbt-jobs-as-code`
 
