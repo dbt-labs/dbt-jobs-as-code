@@ -29,6 +29,13 @@ With this package's approach, people don't need to learn another tool and can co
 - **YAML**: dbt users are familiar with YAML and we created a JSON schema allowing people to verify that their YAML files are correct
 - by using filters like `--project-id`, `--environment-id` or `--limit-projects-envs-to-yml` people can limit the projects and environments checked by the tool, which can be used to "promote" jobs between different dbt Cloud environments
 
+### But why not both `dbt-jobs-as-code` and Terraform?
+
+But more than being exclusive from each other, dbt-jobs-as-code and Terraform can be used together:
+
+- with `dbt-jobs-as-code` being used to manage the day to day jobs (handled by the data team)
+- and Terraform being used to manage the rest of the dbt Cloud configuration and even CI and merge jobs (handled by the platform or central team)
+
 ## Usage
 
 ### Installation

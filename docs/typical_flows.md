@@ -61,6 +61,8 @@ The relevant GitHub actions would be the following:
 
           - name: Run dbt-jobs-as-code
             run: uvx dbt-jobs-as-code plan jobs/my_jobs.yml # (1)!
+            # or to limit the code to the envs/projects in the YML file
+            # run: uvx dbt-jobs-as-code plan jobs/my_jobs.yml --limit-projects-envs-to-yml
             env: 
               DBT_API_KEY: "${{secrets.DBT_API_KEY}}"
               # DBT_BASE_URL is optional (2)
@@ -102,6 +104,8 @@ The relevant GitHub actions would be the following:
 
           - name: Run dbt-jobs-as-code
             run: uvx dbt-jobs-as-code sync jobs/my_jobs.yml # (1)!
+            # or to limit the code to the envs/projects in the YML file
+            # run: uvx dbt-jobs-as-code sync jobs/my_jobs.yml --limit-projects-envs-to-yml
             env: 
               DBT_API_KEY: "${{secrets.DBT_API_KEY}}"
     ```
