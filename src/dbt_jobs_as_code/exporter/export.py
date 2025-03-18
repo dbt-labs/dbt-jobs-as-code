@@ -68,7 +68,7 @@ def export_jobs_yml(
     )
     print("")
 
-    yaml.width = 300
+    yaml.width = 4096
     yaml.block_seq_indent = 2
     # Convert back to standard template syntax before output
     stream = StringIO()
