@@ -429,7 +429,8 @@ def link(config, project_id, environment_id, dry_run, disable_ssl_verification):
     The YAML file will need to contain a `linked_id` for each job that needs to be linked.
     """
 
-    yaml_jobs = load_job_configuration(config, None).jobs
+    config_files, _ = resolve_file_paths(config, None)
+    yaml_jobs = load_job_configuration(config_files, None).jobs
     account_id = list(yaml_jobs.values())[0].account_id
 
     dbt_cloud = DBTCloud(
