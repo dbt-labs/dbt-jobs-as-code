@@ -187,9 +187,11 @@ def build_change_set(
 
     CONFIG is the path to your jobs.yml config file.
     """
-    # Get list of files matching the glob pattern
+
+    # If the config is a directory, we automatically search for all the `*.yml` files in this directory
     if os.path.isdir(config):
         config = os.path.join(config, "*.yml")
+    # Get list of files matching the glob pattern
     config_files = glob.glob(config)
     if not config_files:
         logger.error(f"No files found matching pattern: {config}")

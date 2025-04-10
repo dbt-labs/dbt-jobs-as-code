@@ -97,7 +97,7 @@ def sync(
     """Synchronize a dbt Cloud job config file against dbt Cloud.
     This command will update dbt Cloud with the changes in the local YML file. It is recommended to run a `plan` first to see what will be changed.
 
-    CONFIG is the path to your jobs.yml config file or a glob pattern for those files.
+    CONFIG is the path to your YML jobs config file (also supports glob patterns for those files or a directory).
     """
     cloud_project_ids = []
     cloud_environment_ids = []
@@ -163,7 +163,7 @@ def plan(
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
     This command will not update dbt Cloud.
 
-    CONFIG is the path to your jobs.yml config file or a glob pattern for those files.
+    CONFIG is the path to your YML jobs config file (also supports glob patterns for those files or a directory).
     """
     cloud_project_ids = []
     cloud_environment_ids = []
@@ -211,7 +211,7 @@ def plan(
 def validate(config, vars_yml, online, disable_ssl_verification):
     """Check that the config file is valid
 
-    CONFIG is the path to your jobs.yml config file or a glob pattern for those files.
+    CONFIG is the path to your YML jobs config file (also supports glob patterns for those files or a directory).
     """
     try:
         config_files, vars_files = resolve_file_paths(config, vars_yml)
@@ -305,7 +305,7 @@ def validate(config, vars_yml, online, disable_ssl_verification):
 @click.option(
     "--config",
     type=str,
-    help="The path to your YML jobs config file (or pattern for those files).",
+    help="The path to your YML jobs config file (also supports glob patterns for those files or a directory).",
 )
 @click.option("--account-id", type=int, help="The ID of your dbt Cloud account.")
 @option_project_ids
