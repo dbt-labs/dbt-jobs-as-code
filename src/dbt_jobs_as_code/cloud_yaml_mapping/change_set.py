@@ -189,7 +189,7 @@ def build_change_set(
     """
     # Get list of files matching the glob pattern
     if os.path.isdir(config):
-        config = os.path.join(config, "**/*.yml")
+        config = os.path.join(config, "*.yml")
     config_files = glob.glob(config)
     if not config_files:
         logger.error(f"No files found matching pattern: {config}")
