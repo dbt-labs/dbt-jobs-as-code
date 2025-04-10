@@ -13,3 +13,5 @@ dbt-jobs-as-code plan "jobs/**/*.yml" # (1)!
 ```
 
 1. Depending on your shell you might have to quote the pattern or not. For example, for `zsh` quoting is required as otherwise the shell will try to expand the pattern before passing it to the command.
+
+If the provided config is a directory, we automatically search for all the `*.yml` files in this directory. This is particularly relevant for users with a shell not supporting the `*` character.
