@@ -787,7 +787,7 @@
 <h1 id="cli-reference">CLI reference</h1>
 <p>This page provides documentation for our command line tools.</p>
 <h2 id="dbt-jobs-as-code">dbt-jobs-as-code</h2>
-<p>dbt-jobs-as-code 1.6.2.dev2+gaf742ef</p>
+<p>dbt-jobs-as-code 1.6.3.dev4+g3924013</p>
 <p>A CLI to allow defining dbt Cloud jobs as code</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code>dbt-jobs-as-code [OPTIONS] COMMAND [ARGS]...
@@ -907,7 +907,7 @@ When the new jobs have been created, this command can be used to deactivate the 
 <tr>
 <td><code>--config</code></td>
 <td>text</td>
-<td>The path to your YML jobs config file (or pattern for those files).</td>
+<td>The path to your YML jobs config file (also supports glob patterns for those files or a directory).</td>
 <td>None</td>
 </tr>
 <tr>
@@ -1019,7 +1019,7 @@ All relevant jobs get the part [[...]] added to their name</p>
 <h3 id="plan">plan</h3>
 <p>Check the difference between a local file and dbt Cloud without updating dbt Cloud.
 This command will not update dbt Cloud.</p>
-<p>CONFIG is the path to your jobs.yml config file or a glob pattern for those files.</p>
+<p>CONFIG is the path to your YML jobs config file (also supports glob patterns for those files or a directory).</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code>dbt-jobs-as-code plan [OPTIONS] CONFIG
 </code></pre></div>
@@ -1081,7 +1081,7 @@ This command will not update dbt Cloud.</p>
 <h3 id="sync">sync</h3>
 <p>Synchronize a dbt Cloud job config file against dbt Cloud.
 This command will update dbt Cloud with the changes in the local YML file. It is recommended to run a <code>plan</code> first to see what will be changed.</p>
-<p>CONFIG is the path to your jobs.yml config file or a glob pattern for those files.</p>
+<p>CONFIG is the path to your YML jobs config file (also supports glob patterns for those files or a directory).</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code>dbt-jobs-as-code sync [OPTIONS] CONFIG
 </code></pre></div>
@@ -1209,7 +1209,7 @@ All relevant jobs get the part [[...]] removed from their name</p>
 </table>
 <h3 id="validate">validate</h3>
 <p>Check that the config file is valid</p>
-<p>CONFIG is the path to your jobs.yml config file or a glob pattern for those files.</p>
+<p>CONFIG is the path to your YML jobs config file (also supports glob patterns for those files or a directory).</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code>dbt-jobs-as-code validate [OPTIONS] CONFIG
 </code></pre></div>
