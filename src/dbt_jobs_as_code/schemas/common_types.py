@@ -70,7 +70,7 @@ class Time(BaseModel):
 
 
 class Schedule(BaseModel):
-    cron: str
+    cron: str = "0 0 1 1 *"  # default to once a year
     date: Optional[Date] = None
     time: Optional[Time] = None
 

@@ -339,6 +339,7 @@
     "Schedule": {
       "properties": {
         "cron": {
+          "default": "0 0 1 1 *",
           "title": "Cron",
           "type": "string"
         },
@@ -365,9 +366,6 @@
           "default": null
         }
       },
-      "required": [
-        "cron"
-      ],
       "title": "Schedule",
       "type": "object"
     },
