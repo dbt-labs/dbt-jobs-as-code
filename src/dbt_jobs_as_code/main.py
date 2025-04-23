@@ -507,13 +507,15 @@ def unlink(
     All relevant jobs get the part [[...]] removed from their name
     """
 
+    defined_jobs = None
     # we get the account id either from a parameter (e.g if the config file doesn't exist) or from the config file
     if account_id:
         cloud_account_id = account_id
     elif config:
         # we get the account id from the config file
-        defined_jobs = load_job_configuration(config, None).jobs.values()
-        cloud_account_id = list(defined_jobs)[0].account_id
+        config_files, _ = resolve_file_paths(config, None)
+        defined_jobs = load_job_configuration(config_files, None).jobs
+        cloud_account_id = list(defined_jobs.values())[0].account_id
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
 
@@ -534,6 +536,8 @@ def unlink(
         selected_jobs = [job for job in selected_jobs if job.environment_id in environment_id]
     if identifier:
         selected_jobs = [job for job in selected_jobs if job.identifier in identifier]
+    if defined_jobs:
+        selected_jobs = [job for job in selected_jobs if job.identifier in defined_jobs]
 
     for cloud_job in selected_jobs:
         current_identifier = cloud_job.identifier
