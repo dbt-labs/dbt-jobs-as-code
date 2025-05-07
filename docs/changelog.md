@@ -1,7 +1,7 @@
 
 To see the details of all changes, head to the GitHub repo
 
-### 1.5
+### 1.6
 
 - Add `--filter` to `import-jobs` to allow importing jobs to specific environments. In the case where people maintain jobs in the dbt Cloud UI and want to promote them, they can mention what environments they want to import the jobs to using the identifier of the job: `[[envs_filter:identifier]]`.
 
