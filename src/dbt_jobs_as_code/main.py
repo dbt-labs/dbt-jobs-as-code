@@ -519,13 +519,22 @@ def unlink(
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
 
+    if project_id:
+        project_ids = list(project_id)
+    else:
+        project_ids = None
+    if environment_id:
+        environment_ids = list(environment_id)
+    else:
+        environment_ids = None
+
     dbt_cloud = DBTCloud(
         account_id=cloud_account_id,
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
     )
-    cloud_jobs = dbt_cloud.get_jobs()
+    cloud_jobs = dbt_cloud.get_jobs(project_ids=project_ids, environment_ids=environment_ids)
     selected_jobs = [job for job in cloud_jobs if job.identifier is not None]
     logger.info("Getting the jobs definition from dbt Cloud")
 
