@@ -2,7 +2,12 @@ import re
 from dataclasses import dataclass
 
 from beartype.typing import Any, List, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    model_validator,
+)
 
 from dbt_jobs_as_code.schemas.common_types import (
     Execution,
@@ -209,6 +214,24 @@ class JobDefinition(BaseModel):
     def to_url(self, account_url: str) -> str:
         """Generate a URL for the job in dbt Cloud."""
         return f"{account_url}/deploy/{self.account_id}/projects/{self.project_id}/jobs/{self.id}"
+
+    @model_validator(mode="after")
+    def validate_cron_expression(self):
+        """Validate the cron expression and include job ID in error message if invalid."""
+        if not Schedule.validate_cron(self.schedule.cron):
+            job_id_str = f" (Job ID: {self.id})" if self.id is not None else ""
+            project_id_str = (
+                f" (Project ID: {self.project_id})" if self.project_id is not None else ""
+            )
+            environment_id_str = (
+                f" (Environment ID: {self.environment_id})"
+                if self.environment_id is not None
+                else ""
+            )
+            raise ValueError(
+                f"The cron expression is not valid{job_id_str}{project_id_str}{environment_id_str}"
+            )
+        return self
 
 
 class JobMissingFields(JobDefinition):

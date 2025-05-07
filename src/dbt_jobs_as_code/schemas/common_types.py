@@ -1,6 +1,6 @@
 from beartype.typing import Any, Dict, List, Literal, Optional
 from croniter import croniter
-from pydantic import BaseModel, Field, field_serializer, field_validator
+from pydantic import BaseModel, Field, field_serializer
 
 
 def set_one_of_string_integer(schema: Dict[str, Any]):
@@ -80,11 +80,10 @@ class Schedule(BaseModel):
         data["time"] = Time(type="every_hour", interval=1)
         super().__init__(**data)
 
-    @field_validator("cron")
-    def valid_cron(cls, v):
-        if not croniter.is_valid(v):
-            raise ValueError("The cron expression is not valid")
-        return v
+    @staticmethod
+    def validate_cron(cron: str) -> bool:
+        """Validate if a cron expression is valid."""
+        return croniter.is_valid(cron)
 
     @field_serializer("time", when_used="json")
     def serialize_field(time: Optional[Time]):  # type: ignore
