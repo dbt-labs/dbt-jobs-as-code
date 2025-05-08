@@ -1,10 +1,10 @@
 import glob
 
-import yaml
 from beartype.typing import List, Optional, Set
 from jinja2 import Environment, StrictUndefined, meta
 from jinja2.exceptions import UndefinedError
 from loguru import logger
+from ruamel.yaml import YAML
 
 from dbt_jobs_as_code.schemas.config import Config
 
@@ -58,7 +58,8 @@ def _load_yaml_no_template(config_files: List[str]) -> dict:
                     f"{config_file} is a templated YAML file. Please remove the variables {jinja_vars} or provide the variables values."
                 )
 
-            config = yaml.safe_load(config_string)
+            yaml = YAML(typ="safe")
+            config = yaml.load(config_string)
             if config:
                 # Merge the jobs from each file into combined_config
                 if config.get("jobs", {}) != {}:
@@ -97,7 +98,8 @@ def _load_vars_files(vars_file: List[str]) -> dict:
     for vars_path in vars_file:
         with open(vars_path) as f:
             # we load the vars. if there is no data in them we set it to an empty dict
-            vars_data = yaml.safe_load(f) or {}
+            yaml = YAML(typ="safe")
+            vars_data = yaml.load(f) or {}
             # Check for duplicate variables
             for key in vars_data:
                 if key in template_vars_values:
@@ -129,7 +131,8 @@ def _load_yaml_with_template(config_files: List[str], vars_file: List[str]) -> d
                     f"Some variables didn't have a value: {e.message}."
                 ) from e
 
-            config = yaml.safe_load(config_string_rendered)
+            yaml = YAML(typ="safe")
+            config = yaml.load(config_string_rendered)
             if config:
                 # Merge the jobs from each file
                 if "jobs" in config:
