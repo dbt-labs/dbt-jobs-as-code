@@ -8,7 +8,7 @@ plan_dbt_jobs:
   stage: plan
   image: python:3.12 
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
       changes:
         - jobs/**/*
   script:
@@ -29,7 +29,7 @@ sync_dbt_jobs:
   stage: sync
   image: python:3.12 
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_MESSAGE =~ /^Merge/
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_MESSAGE =~ /^Merge.*/
       changes:
         - jobs/**/*
 

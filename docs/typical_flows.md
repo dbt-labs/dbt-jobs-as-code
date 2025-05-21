@@ -129,7 +129,7 @@ The relevant GitLab pipelines would be the following:
       stage: plan
       image: python:3.12 
       rules:
-        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_COMMIT_BRANCH == "main"
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
           changes:
             - jobs/**/*
       script:
@@ -150,7 +150,7 @@ The relevant GitLab pipelines would be the following:
       stage: sync
       image: python:3.12 
       rules:
-        - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_MESSAGE =~ /^Merge/
+        - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_MESSAGE =~ /^Merge.*/
           changes:
             - jobs/**/*
 
@@ -314,32 +314,32 @@ The relevant GitLab pipelines would be the following:
         - export DBT_API_KEY=$DBT_API_KEY  # Ensure this variable is set in GitLab CI/CD project settings
 
 
-      sync_dbt_jobs:
-        stage: sync
-        image: python:3.12 
-        rules:
-          - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_MESSAGE =~ /^Merge/
-            changes:
-              - jobs/**/*
+    sync_dbt_jobs:
+      stage: sync
+      image: python:3.12 
+      rules:
+        - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_MESSAGE =~ /^Merge.*/
+          changes:
+            - jobs/**/*
 
-        script:
-          - apt-get update && apt-get install -y jq git
-          - pip install dbt-jobs-as-code
-          - |
-            echo "Checking out branch..."
-            git fetch origin $CI_COMMIT_BRANCH      
-            git checkout $CI_COMMIT_BRANCH
-          - |
-            echo "Determining vars file for target branch: $CI_COMMIT_BRANCH"
-            VARS_FILE=$(echo "$BRANCH_FILE_MAP" | jq -r --arg branch "$CI_COMMIT_BRANCH" '.[$branch] // empty')
-            if [ -z "$VARS_FILE" ]; then
-              echo "Branch $CI_COMMIT_BRANCH not found in BRANCH_FILE_MAP. Skipping job."
-              exit 0
-            fi
-            echo "Using vars file: $VARS_FILE"
-          - dbt-jobs-as-code sync jobs/my_jobs.yml --vars-yml "$VARS_FILE" --limit-projects-envs-to-yml
-        before_script:
-          - export DBT_API_KEY=$DBT_API_KEY  # Ensure this variable is set in GitLab CI/CD project settings
+      script:
+        - apt-get update && apt-get install -y jq git
+        - pip install dbt-jobs-as-code
+        - |
+          echo "Checking out branch..."
+          git fetch origin $CI_COMMIT_BRANCH      
+          git checkout $CI_COMMIT_BRANCH
+        - |
+          echo "Determining vars file for target branch: $CI_COMMIT_BRANCH"
+          VARS_FILE=$(echo "$BRANCH_FILE_MAP" | jq -r --arg branch "$CI_COMMIT_BRANCH" '.[$branch] // empty')
+          if [ -z "$VARS_FILE" ]; then
+            echo "Branch $CI_COMMIT_BRANCH not found in BRANCH_FILE_MAP. Skipping job."
+            exit 0
+          fi
+          echo "Using vars file: $VARS_FILE"
+        - dbt-jobs-as-code sync jobs/my_jobs.yml --vars-yml "$VARS_FILE" --limit-projects-envs-to-yml
+      before_script:
+        - export DBT_API_KEY=$DBT_API_KEY  # Ensure this variable is set in GitLab CI/CD project settings
     ```
 
 
