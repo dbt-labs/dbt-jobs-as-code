@@ -1,0 +1,46 @@
+stages:
+      - plan
+      - sync
+
+
+# This job only runs on merge requests and when files in jobs/ change
+plan_dbt_jobs:
+  stage: plan
+  image: python:3.12 
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+      changes:
+        - jobs/**/*
+  script:
+    - apt-get update && apt-get install -y jq git
+    - pip install dbt-jobs-as-code
+    - |
+      echo "Checking out branch..."
+      git fetch origin $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+      git fetch origin $CI_COMMIT_REF_NAME
+      git checkout $CI_COMMIT_REF_NAME 
+    - dbt-jobs-as-code plan jobs/jobs_config.yml
+
+  before_script:
+    - export DBT_API_KEY=$DBT_API_KEY  # Ensure this variable is set in GitLab CI/CD project settings
+
+
+sync_dbt_jobs:
+  stage: sync
+  image: python:3.12 
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_MESSAGE =~ /^Merge.*/
+      changes:
+        - jobs/**/*
+
+  script:
+    - apt-get update && apt-get install -y jq git
+    - pip install dbt-jobs-as-code
+    - |
+      echo "Checking out branch..."
+      git fetch origin $CI_COMMIT_BRANCH      
+      git checkout $CI_COMMIT_BRANCH    
+    - dbt-jobs-as-code sync jobs/jobs_config.yml 
+    
+  before_script:
+    - export DBT_API_KEY=$DBT_API_KEY  # Ensure this variable is set in GitLab CI/CD project settings
