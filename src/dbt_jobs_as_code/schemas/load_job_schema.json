@@ -232,14 +232,28 @@
           "type": "boolean"
         },
         "run_lint": {
-          "title": "Run Lint",
-          "type": "boolean",
-          "default": false
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Run Lint"
         },
         "errors_on_lint_failure": {
-          "title": "Errors on Lint Failure",
-          "type": "boolean",
-          "default": false
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Errors On Lint Failure"
         },
         "execute_steps": {
           "items": {
