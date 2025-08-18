@@ -231,6 +231,30 @@
           "title": "Run Generate Sources",
           "type": "boolean"
         },
+        "run_lint": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Run Lint"
+        },
+        "errors_on_lint_failure": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Errors On Lint Failure"
+        },
         "execute_steps": {
           "items": {
             "type": "string"

@@ -53,6 +53,8 @@ jobs:
     deferring_job_definition_id:
     deferring_environment_id:
     run_generate_sources: true
+    run_lint: false
+    errors_on_lint_failure: false
     execute_steps:
       - dbt source freshness
       - dbt build

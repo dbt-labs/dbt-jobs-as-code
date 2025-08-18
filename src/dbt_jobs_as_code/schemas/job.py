@@ -81,6 +81,8 @@ class JobDefinition(BaseModel):
     deferring_job_definition_id: Optional[int] = field_optional_int_allowed_as_string_in_schema
     deferring_environment_id: Optional[int] = field_optional_int_allowed_as_string_in_schema
     run_generate_sources: bool
+    run_lint: Optional[bool] = False
+    errors_on_lint_failure: Optional[bool] = False
     execute_steps: List[str]
     generate_docs: bool
     schedule: Schedule
@@ -245,8 +247,7 @@ class JobMissingFields(JobDefinition):
 
     # TODO: Add to JobDefinition model when the feature is out
     integration_id: Optional[int] = None
-    run_lint: Optional[bool] = None
-    errors_on_lint_failure: Optional[bool] = None
+    force_node_selection: Optional[bool] = True
 
     # Unneeded read-only fields
     raw_dbt_version: Optional[str] = None

@@ -92,6 +92,8 @@ def expected_config_dict():
                 "name": "My Job 1 with a new name",
                 "project_id": 176941,
                 "run_generate_sources": True,
+                "run_lint": False,
+                "errors_on_lint_failure": False,
                 "schedule": {
                     "cron": "0 */2 * * *",
                     "date": {"cron": "0 */2 * * *", "type": "custom_cron"},
@@ -145,6 +147,8 @@ def expected_config_dict():
                 "name": "CI/CD run",
                 "project_id": 176941,
                 "run_generate_sources": True,
+                "run_lint": False,
+                "errors_on_lint_failure": False,
                 "schedule": {
                     "cron": "0 * * * *",
                     "date": {"cron": "0 * * * *", "type": "custom_cron"},
