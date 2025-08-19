@@ -113,12 +113,15 @@ class ChangeSet(BaseModel):
     def __len__(self):
         return len(self.root)
 
-    def apply(self):
+    def apply(self, fail_fast: bool = False):
         for change in self.root:
             try:
                 change.apply()
             except DBTCloudException:
                 self.apply_success = False
+                if fail_fast:
+                    logger.error(f"Operation failed for {change}, stopping due to --fail-fast")
+                    break
 
 
 # Don't bear type this function as we do some odd things in tests

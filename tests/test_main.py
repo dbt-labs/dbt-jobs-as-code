@@ -291,3 +291,35 @@ def test_sync_command_regular_output(mock_build_change_set, mock_change_set):
     # Verify this is not JSON
     with pytest.raises(json.JSONDecodeError):
         json.loads(result.output)
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_sync_command_with_fail_fast(mock_build_change_set):
+    """Test that sync command passes fail_fast parameter to change_set.apply()"""
+    mock_change_set = Mock()
+    mock_change_set.__len__ = Mock(return_value=2)  # Non-empty change set
+    mock_build_change_set.return_value = mock_change_set
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["sync", "--fail-fast", "config.yml"])
+
+    assert result.exit_code == 0
+
+    # Verify that apply was called with fail_fast=True
+    mock_change_set.apply.assert_called_once_with(fail_fast=True)
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_sync_command_without_fail_fast(mock_build_change_set):
+    """Test that sync command passes fail_fast=False by default to change_set.apply()"""
+    mock_change_set = Mock()
+    mock_change_set.__len__ = Mock(return_value=2)  # Non-empty change set
+    mock_build_change_set.return_value = mock_change_set
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["sync", "config.yml"])
+
+    assert result.exit_code == 0
+
+    # Verify that apply was called with fail_fast=False (default)
+    mock_change_set.apply.assert_called_once_with(fail_fast=False)

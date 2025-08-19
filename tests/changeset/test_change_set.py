@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+from dbt_jobs_as_code.client import DBTCloudException
 from dbt_jobs_as_code.cloud_yaml_mapping.change_set import Change, ChangeSet
 
 
@@ -207,3 +208,163 @@ def test_change_set_to_json_mixed_changes():
     env_var_change = json_output["env_var_overwrite_changes"][0]
     assert env_var_change["identifier"] == "job1:DBT_VAR1"
     assert "differences" in env_var_change
+
+
+def test_change_set_apply_fail_fast():
+    """Test that ChangeSet.apply() stops on first failure when fail_fast=True"""
+    change_set = ChangeSet()
+
+    # Mock functions to simulate different behaviors
+    successful_mock = Mock()
+    failing_mock = Mock(side_effect=DBTCloudException("Test error"))
+    should_not_be_called_mock = Mock()
+
+    # Add three changes
+    change_set.append(
+        Change(
+            identifier="job1",
+            type="job",
+            action="create",
+            proj_id=123,
+            env_id=456,
+            sync_function=successful_mock,
+            parameters={},
+        )
+    )
+
+    change_set.append(
+        Change(
+            identifier="job2",
+            type="job",
+            action="create",
+            proj_id=123,
+            env_id=456,
+            sync_function=failing_mock,
+            parameters={},
+        )
+    )
+
+    change_set.append(
+        Change(
+            identifier="job3",
+            type="job",
+            action="create",
+            proj_id=123,
+            env_id=456,
+            sync_function=should_not_be_called_mock,
+            parameters={},
+        )
+    )
+
+    # Apply with fail_fast=True
+    change_set.apply(fail_fast=True)
+
+    # Verify first function was called, second failed, third was not called
+    successful_mock.assert_called_once()
+    failing_mock.assert_called_once()
+    should_not_be_called_mock.assert_not_called()
+
+    # Verify apply_success is False
+    assert change_set.apply_success is False
+
+
+def test_change_set_apply_no_fail_fast():
+    """Test that ChangeSet.apply() continues on failure when fail_fast=False"""
+    change_set = ChangeSet()
+
+    # Mock functions to simulate different behaviors
+    successful_mock = Mock()
+    failing_mock = Mock(side_effect=DBTCloudException("Test error"))
+    should_be_called_mock = Mock()
+
+    # Add three changes
+    change_set.append(
+        Change(
+            identifier="job1",
+            type="job",
+            action="create",
+            proj_id=123,
+            env_id=456,
+            sync_function=successful_mock,
+            parameters={},
+        )
+    )
+
+    change_set.append(
+        Change(
+            identifier="job2",
+            type="job",
+            action="create",
+            proj_id=123,
+            env_id=456,
+            sync_function=failing_mock,
+            parameters={},
+        )
+    )
+
+    change_set.append(
+        Change(
+            identifier="job3",
+            type="job",
+            action="create",
+            proj_id=123,
+            env_id=456,
+            sync_function=should_be_called_mock,
+            parameters={},
+        )
+    )
+
+    # Apply with fail_fast=False (default)
+    change_set.apply(fail_fast=False)
+
+    # Verify all functions were called
+    successful_mock.assert_called_once()
+    failing_mock.assert_called_once()
+    should_be_called_mock.assert_called_once()
+
+    # Verify apply_success is False due to the failure
+    assert change_set.apply_success is False
+
+
+def test_change_set_apply_all_success():
+    """Test that ChangeSet.apply() works correctly when all changes succeed"""
+    change_set = ChangeSet()
+
+    # Mock functions that succeed
+    successful_mock1 = Mock()
+    successful_mock2 = Mock()
+
+    # Add two changes
+    change_set.append(
+        Change(
+            identifier="job1",
+            type="job",
+            action="create",
+            proj_id=123,
+            env_id=456,
+            sync_function=successful_mock1,
+            parameters={},
+        )
+    )
+
+    change_set.append(
+        Change(
+            identifier="job2",
+            type="job",
+            action="create",
+            proj_id=123,
+            env_id=456,
+            sync_function=successful_mock2,
+            parameters={},
+        )
+    )
+
+    # Apply with fail_fast=True
+    change_set.apply(fail_fast=True)
+
+    # Verify all functions were called
+    successful_mock1.assert_called_once()
+    successful_mock2.assert_called_once()
+
+    # Verify apply_success is True
+    assert change_set.apply_success is True
