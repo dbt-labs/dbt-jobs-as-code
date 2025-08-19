@@ -85,6 +85,11 @@ def cli() -> None:
 @option_environment_ids
 @option_limit_projects_envs_to_yml
 @option_json_output
+@click.option(
+    "--fail-fast",
+    is_flag=True,
+    help="Stop subsequent operations if any step fails during sync.",
+)
 def sync(
     config: str,
     vars_yml,
@@ -93,6 +98,7 @@ def sync(
     limit_projects_envs_to_yml,
     disable_ssl_verification,
     output_json: bool,
+    fail_fast: bool,
 ):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
     This command will update dbt Cloud with the changes in the local YML file. It is recommended to run a `plan` first to see what will be changed.
@@ -136,7 +142,7 @@ def sync(
             logger.info("-- SYNC -- {count} changes detected.", count=len(change_set))
             console = Console()
             console.log(change_set.to_table())
-    change_set.apply()
+    change_set.apply(fail_fast=fail_fast)
 
     if not change_set.apply_success:
         logger.error("-- SYNC -- There were some errors during the sync. Check the logs.")
