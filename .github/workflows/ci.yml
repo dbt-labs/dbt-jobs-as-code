@@ -15,6 +15,8 @@ env:
   DBT_PROJECT_ID: ${{ secrets.DBT_PROJECT_ID }}
   DBT_ENV_ID: ${{ secrets.DBT_ENV_ID }}
 
+permissions: write-all
+
 jobs:
   test:
     if: |

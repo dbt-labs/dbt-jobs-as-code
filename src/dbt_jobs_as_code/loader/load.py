@@ -26,6 +26,9 @@ def load_job_configuration(config_files: List[str], vars_file: Optional[List[str
     if config.get("jobs", {}) == {}:
         return Config(jobs={})
 
+    # Validate job identifiers don't contain spaces
+    _validate_job_identifiers(config.get("jobs", {}))
+
     date_config = [job.get("schedule", {}).get("date", None) for job in config["jobs"].values()]
     time_config = [job.get("schedule", {}).get("time", None) for job in config["jobs"].values()]
 
@@ -42,6 +45,26 @@ def load_job_configuration(config_files: List[str], vars_file: Optional[List[str
         job["identifier"] = identifier
 
     return Config(**config)
+
+
+def _validate_job_identifiers(jobs: dict) -> None:
+    """Validate that job identifiers don't contain spaces.
+
+    Args:
+        jobs: Dictionary of jobs with identifiers as keys
+
+    Raises:
+        LoadingJobsYAMLError: If any job identifier contains spaces
+    """
+    invalid_identifiers = []
+    for identifier in jobs.keys():
+        if " " in identifier:
+            invalid_identifiers.append(identifier)
+
+    if invalid_identifiers:
+        raise LoadingJobsYAMLError(
+            f"Job identifiers cannot contain spaces. Invalid identifiers: {', '.join(invalid_identifiers)}"
+        )
 
 
 def _load_yaml_no_template(config_files: List[str]) -> dict:
