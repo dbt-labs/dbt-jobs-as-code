@@ -15,11 +15,7 @@ env:
   DBT_PROJECT_ID: ${{ secrets.DBT_PROJECT_ID }}
   DBT_ENV_ID: ${{ secrets.DBT_ENV_ID }}
 
-permissions:
-  contents: write
-  checks: write
-  pull-requests: write
-  repository-projects: write
+permissions: write-all
 
 jobs:
   test:
