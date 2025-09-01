@@ -5,6 +5,7 @@ from dbt_jobs_as_code.loader.load import (
     _load_vars_files,
     _load_yaml_no_template,
     _load_yaml_with_template,
+    _validate_job_identifiers,
     load_job_configuration,
     resolve_file_paths,
 )
@@ -59,6 +60,199 @@ class TestLoaderLoadJobConfiguration:
 
         result = load_job_configuration([str(config_file)], None)
         assert result.jobs == {}
+
+    def test_load_job_configuration_identifier_with_spaces_error(self, tmp_path):
+        """Test that loading configuration with job identifiers containing spaces raises an error."""
+        config_file = tmp_path / "invalid_jobs.yml"
+        config_file.write_text("""
+jobs:
+  "job with spaces":
+    account_id: 43791
+    project_id: 176941
+    environment_id: 134459
+    name: My Job 1
+    settings:
+      threads: 4
+      target_name: production
+    execution:
+      timeout_seconds: 0
+    run_generate_sources: true
+    execute_steps:
+      - dbt run --select model1+
+    generate_docs: false
+    schedule:
+      cron: 0 */2 * * *
+    triggers:
+      github_webhook: false
+      git_provider_webhook: false
+      schedule: true
+      on_merge: false
+""")
+
+        with pytest.raises(LoadingJobsYAMLError) as exc_info:
+            load_job_configuration([str(config_file)], None)
+
+        assert "Job identifiers cannot contain spaces" in str(exc_info.value)
+        assert "job with spaces" in str(exc_info.value)
+
+    def test_load_job_configuration_multiple_identifiers_with_spaces_error(self, tmp_path):
+        """Test that loading configuration with multiple job identifiers containing spaces raises an error."""
+        config_file = tmp_path / "invalid_jobs.yml"
+        config_file.write_text("""
+jobs:
+  "job with spaces":
+    account_id: 43791
+    project_id: 176941
+    environment_id: 134459
+    name: My Job 1
+    settings:
+      threads: 4
+      target_name: production
+    execution:
+      timeout_seconds: 0
+    run_generate_sources: true
+    execute_steps:
+      - dbt run --select model1+
+    generate_docs: false
+    schedule:
+      cron: 0 */2 * * *
+    triggers:
+      github_webhook: false
+      git_provider_webhook: false
+      schedule: true
+      on_merge: false
+  "another invalid job":
+    account_id: 43791
+    project_id: 176941
+    environment_id: 134459
+    name: My Job 2
+    settings:
+      threads: 4
+      target_name: production
+    execution:
+      timeout_seconds: 0
+    run_generate_sources: true
+    execute_steps:
+      - dbt run --select model2+
+    generate_docs: false
+    schedule:
+      cron: 0 */2 * * *
+    triggers:
+      github_webhook: false
+      git_provider_webhook: false
+      schedule: true
+      on_merge: false
+""")
+
+        with pytest.raises(LoadingJobsYAMLError) as exc_info:
+            load_job_configuration([str(config_file)], None)
+
+        assert "Job identifiers cannot contain spaces" in str(exc_info.value)
+        assert "job with spaces" in str(exc_info.value)
+        assert "another invalid job" in str(exc_info.value)
+
+    def test_load_job_configuration_valid_identifiers(self, tmp_path):
+        """Test that loading configuration with valid job identifiers (no spaces) works correctly."""
+        config_file = tmp_path / "valid_jobs.yml"
+        config_file.write_text("""
+jobs:
+  job1:
+    account_id: 43791
+    project_id: 176941
+    environment_id: 134459
+    name: My Job 1
+    settings:
+      threads: 4
+      target_name: production
+    execution:
+      timeout_seconds: 0
+    run_generate_sources: true
+    execute_steps:
+      - dbt run --select model1+
+    generate_docs: false
+    schedule:
+      cron: 0 */2 * * *
+    triggers:
+      github_webhook: false
+      git_provider_webhook: false
+      schedule: true
+      on_merge: false
+  job_with_underscores:
+    account_id: 43791
+    project_id: 176941
+    environment_id: 134459
+    name: My Job 2
+    settings:
+      threads: 4
+      target_name: production
+    execution:
+      timeout_seconds: 0
+    run_generate_sources: true
+    execute_steps:
+      - dbt run --select model2+
+    generate_docs: false
+    schedule:
+      cron: 0 */2 * * *
+    triggers:
+      github_webhook: false
+      git_provider_webhook: false
+      schedule: true
+      on_merge: false
+""")
+
+        result = load_job_configuration([str(config_file)], None)
+        assert "job1" in result.jobs
+        assert "job_with_underscores" in result.jobs
+        assert len(result.jobs) == 2
+
+
+class TestValidateJobIdentifiers:
+    def test_validate_job_identifiers_no_spaces(self):
+        """Test that validation passes for job identifiers without spaces."""
+        jobs = {
+            "job1": {},
+            "job_with_underscores": {},
+            "job-with-dashes": {},
+            "job123": {},
+        }
+
+        # Should not raise any exception
+        _validate_job_identifiers(jobs)
+
+    def test_validate_job_identifiers_with_spaces(self):
+        """Test that validation raises error for job identifiers with spaces."""
+        jobs = {
+            "job with spaces": {},
+            "another job": {},
+        }
+
+        with pytest.raises(LoadingJobsYAMLError) as exc_info:
+            _validate_job_identifiers(jobs)
+
+        assert "Job identifiers cannot contain spaces" in str(exc_info.value)
+        assert "job with spaces" in str(exc_info.value)
+        assert "another job" in str(exc_info.value)
+
+    def test_validate_job_identifiers_mixed_valid_invalid(self):
+        """Test that validation raises error when some identifiers have spaces."""
+        jobs = {
+            "valid_job": {},
+            "job with spaces": {},
+            "another_valid_job": {},
+        }
+
+        with pytest.raises(LoadingJobsYAMLError) as exc_info:
+            _validate_job_identifiers(jobs)
+
+        assert "Job identifiers cannot contain spaces" in str(exc_info.value)
+        assert "job with spaces" in str(exc_info.value)
+
+    def test_validate_job_identifiers_empty_dict(self):
+        """Test that validation passes for empty jobs dictionary."""
+        jobs = {}
+
+        # Should not raise any exception
+        _validate_job_identifiers(jobs)
 
 
 class TestLoaderLoadYamlWithTemplate:
