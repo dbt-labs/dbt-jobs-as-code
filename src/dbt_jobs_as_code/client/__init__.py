@@ -244,6 +244,12 @@ class DBTCloud:
         if response.status_code >= 400:
             error_data = response.json()
             logger.error(error_data)
+
+            if response.status_code == 401:
+                raise DBTCloudException(
+                    "401 Unauthorized -- Check your API key and dbt Cloud parameters"
+                )
+
             return None
 
         return response.json()
