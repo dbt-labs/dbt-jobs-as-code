@@ -787,7 +787,7 @@
 <h1 id="cli-reference">CLI reference</h1>
 <p>This page provides documentation for our command line tools.</p>
 <h2 id="dbt-jobs-as-code">dbt-jobs-as-code</h2>
-<p>dbt-jobs-as-code 1.11.3.dev2+g30a00f9</p>
+<p>dbt-jobs-as-code 1.11.4.dev2+ge43d90f</p>
 <p>A CLI to allow defining dbt Cloud jobs as code</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code>dbt-jobs-as-code [OPTIONS] COMMAND [ARGS]...
@@ -1071,6 +1071,12 @@ This command will not update dbt Cloud.</p>
 <td><code>False</code></td>
 </tr>
 <tr>
+<td><code>--exclude-identifiers-matching</code></td>
+<td>text</td>
+<td>Exclude jobs from dbt Cloud if their identifiers match this regex pattern.</td>
+<td>None</td>
+</tr>
+<tr>
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>
@@ -1131,6 +1137,12 @@ This command will update dbt Cloud with the changes in the local YML file. It is
 <td>boolean</td>
 <td>Output results in JSON format instead of human-readable text.</td>
 <td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--exclude-identifiers-matching</code></td>
+<td>text</td>
+<td>Exclude jobs from dbt Cloud if their identifiers match this regex pattern.</td>
+<td>None</td>
 </tr>
 <tr>
 <td><code>--fail-fast</code></td>
