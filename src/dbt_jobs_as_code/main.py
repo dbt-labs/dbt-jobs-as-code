@@ -67,6 +67,12 @@ option_json_output = click.option(
     help="Output results in JSON format instead of human-readable text.",
 )
 
+option_exclude_identifiers_matching = click.option(
+    "--exclude-identifiers-matching",
+    type=str,
+    help="Exclude jobs from dbt Cloud if their identifiers match this regex pattern.",
+)
+
 
 @click.group(
     help=f"dbt-jobs-as-code {VERSION}\n\nA CLI to allow defining dbt Cloud jobs as code",
@@ -85,6 +91,7 @@ def cli() -> None:
 @option_environment_ids
 @option_limit_projects_envs_to_yml
 @option_json_output
+@option_exclude_identifiers_matching
 @click.option(
     "--fail-fast",
     is_flag=True,
@@ -98,6 +105,7 @@ def sync(
     limit_projects_envs_to_yml,
     disable_ssl_verification,
     output_json: bool,
+    exclude_identifiers_matching: str,
     fail_fast: bool,
 ):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
@@ -128,6 +136,7 @@ def sync(
         cloud_project_ids,
         cloud_environment_ids,
         limit_projects_envs_to_yml,
+        exclude_identifiers_matching,
         output_json=output_json,
     )
     if len(change_set) == 0:
@@ -157,6 +166,7 @@ def sync(
 @option_environment_ids
 @option_limit_projects_envs_to_yml
 @option_json_output
+@option_exclude_identifiers_matching
 def plan(
     config: str,
     vars_yml: str,
@@ -165,6 +175,7 @@ def plan(
     limit_projects_envs_to_yml: bool,
     disable_ssl_verification: bool,
     output_json: bool,
+    exclude_identifiers_matching: str,
 ):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
     This command will not update dbt Cloud.
@@ -193,6 +204,7 @@ def plan(
         cloud_project_ids,
         cloud_environment_ids,
         limit_projects_envs_to_yml,
+        exclude_identifiers_matching,
         output_json=output_json,
     )
     if len(change_set) == 0:
