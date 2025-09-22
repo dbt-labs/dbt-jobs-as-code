@@ -1,6 +1,7 @@
 import glob
 import json
 import os
+import re
 import string
 from collections import Counter
 from typing import Dict, Optional
@@ -178,11 +179,12 @@ def _check_single_account_id(defined_jobs: List[JobDefinition]):
 
 def build_change_set(
     config: str,
-    yml_vars: str,
+    yml_vars: Optional[str],
     disable_ssl_verification: bool,
     project_ids: List[int],
     environment_ids: List[int],
     limit_projects_envs_to_yml: bool = False,
+    exclude_identifiers_matching: Optional[str] = None,
     output_json: bool = False,
 ):
     """Compares the config of YML files versus dbt Cloud.
@@ -238,6 +240,30 @@ def build_change_set(
     cloud_jobs = dbt_cloud.get_jobs(project_ids=project_ids, environment_ids=environment_ids)
     _check_no_duplicate_job_identifier(cloud_jobs)
     tracked_jobs = {job.identifier: job for job in cloud_jobs if job.identifier is not None}
+
+    # Filter out jobs based on exclude_identifiers_matching regex if provided
+    if exclude_identifiers_matching:
+        try:
+            exclude_pattern = re.compile(exclude_identifiers_matching)
+            filtered_tracked_jobs = {}
+            excluded_count = 0
+            for identifier, job in tracked_jobs.items():
+                if exclude_pattern.search(identifier):
+                    excluded_count += 1
+                    if not output_json:
+                        logger.debug(
+                            f"Excluding job with identifier '{identifier}' (matches pattern)"
+                        )
+                else:
+                    filtered_tracked_jobs[identifier] = job
+            tracked_jobs = filtered_tracked_jobs
+            if not output_json and excluded_count > 0:
+                logger.info(
+                    f"Excluded {excluded_count} jobs matching pattern '{exclude_identifiers_matching}'"
+                )
+        except re.error as e:
+            logger.error(f"Invalid regex pattern '{exclude_identifiers_matching}': {e}")
+            return ChangeSet()
 
     dbt_cloud_change_set = ChangeSet()
 

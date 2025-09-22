@@ -323,3 +323,139 @@ def test_sync_command_without_fail_fast(mock_build_change_set):
 
     # Verify that apply was called with fail_fast=False (default)
     mock_change_set.apply.assert_called_once_with(fail_fast=False)
+
+
+# ============= Exclude Identifiers Matching Tests =============
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_plan_command_with_exclude_identifiers_matching(
+    mock_build_change_set, mock_empty_change_set
+):
+    """Test that plan command passes exclude_identifiers_matching parameter correctly"""
+    mock_build_change_set.return_value = mock_empty_change_set
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli, ["plan", "config.yml", "--exclude-identifiers-matching", "staging:.*"]
+    )
+
+    assert result.exit_code == 0
+
+    # Verify that build_change_set was called with the correct exclude_identifiers_matching parameter
+    mock_build_change_set.assert_called_once()
+    call_args = mock_build_change_set.call_args
+
+    # Check positional arguments
+    assert call_args[0][0] == "config.yml"  # config
+    assert call_args[0][1] is None  # vars_yml
+    assert call_args[0][2] is False  # disable_ssl_verification
+    assert call_args[0][3] == []  # project_ids
+    assert call_args[0][4] == []  # environment_ids
+    assert call_args[0][5] is False  # limit_projects_envs_to_yml
+    assert call_args[0][6] == "staging:.*"  # exclude_identifiers_matching
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_sync_command_with_exclude_identifiers_matching(
+    mock_build_change_set, mock_empty_change_set
+):
+    """Test that sync command passes exclude_identifiers_matching parameter correctly"""
+    mock_build_change_set.return_value = mock_empty_change_set
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli, ["sync", "config.yml", "--exclude-identifiers-matching", "legacy:.*"]
+    )
+
+    assert result.exit_code == 0
+
+    # Verify that build_change_set was called with the correct exclude_identifiers_matching parameter
+    mock_build_change_set.assert_called_once()
+    call_args = mock_build_change_set.call_args
+
+    # Check that exclude_identifiers_matching parameter is passed correctly
+    assert call_args[0][6] == "legacy:.*"  # exclude_identifiers_matching
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_plan_command_without_exclude_identifiers_matching(
+    mock_build_change_set, mock_empty_change_set
+):
+    """Test that plan command works when exclude_identifiers_matching is not provided"""
+    mock_build_change_set.return_value = mock_empty_change_set
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["plan", "config.yml"])
+
+    assert result.exit_code == 0
+
+    # Verify that build_change_set was called with None for exclude_identifiers_matching
+    mock_build_change_set.assert_called_once()
+    call_args = mock_build_change_set.call_args
+
+    # Check that exclude_identifiers_matching parameter is None
+    assert call_args[0][6] is None  # exclude_identifiers_matching
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_sync_command_without_exclude_identifiers_matching(
+    mock_build_change_set, mock_empty_change_set
+):
+    """Test that sync command works when exclude_identifiers_matching is not provided"""
+    mock_build_change_set.return_value = mock_empty_change_set
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["sync", "config.yml"])
+
+    assert result.exit_code == 0
+
+    # Verify that build_change_set was called with None for exclude_identifiers_matching
+    mock_build_change_set.assert_called_once()
+    call_args = mock_build_change_set.call_args
+
+    # Check that exclude_identifiers_matching parameter is None
+    assert call_args[0][6] is None  # exclude_identifiers_matching
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_plan_command_with_complex_regex_pattern(mock_build_change_set, mock_empty_change_set):
+    """Test that plan command handles complex regex patterns correctly"""
+    mock_build_change_set.return_value = mock_empty_change_set
+
+    runner = CliRunner()
+    complex_pattern = "(staging|temp|legacy):.*test.*"
+    result = runner.invoke(
+        cli, ["plan", "config.yml", "--exclude-identifiers-matching", complex_pattern]
+    )
+
+    assert result.exit_code == 0
+
+    # Verify that build_change_set was called with the correct complex pattern
+    mock_build_change_set.assert_called_once()
+    call_args = mock_build_change_set.call_args
+
+    # Check that the complex pattern is passed correctly
+    assert call_args[0][6] == complex_pattern  # exclude_identifiers_matching
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_sync_command_with_json_and_exclude_pattern(mock_build_change_set, mock_empty_change_set):
+    """Test that sync command works with both --json and --exclude-identifiers-matching flags"""
+    mock_build_change_set.return_value = mock_empty_change_set
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli, ["sync", "config.yml", "--json", "--exclude-identifiers-matching", "temp:.*"]
+    )
+
+    assert result.exit_code == 0
+
+    # Verify that build_change_set was called with both parameters
+    mock_build_change_set.assert_called_once()
+    call_args = mock_build_change_set.call_args
+
+    # Check that exclude_identifiers_matching parameter is passed
+    assert call_args[0][6] == "temp:.*"  # exclude_identifiers_matching
+    # Check that output_json is True
+    assert call_args.kwargs.get("output_json") is True
