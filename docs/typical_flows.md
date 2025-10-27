@@ -112,6 +112,58 @@ The relevant GitHub actions would be the following:
 
     1.    We could also force a specific version with `uvx dbt-jobs-as-code@1.2`
 
+??? example "Enhanced GitHub example: Posting plan results as pull request comments"
+
+    This example shows how to capture the plan output and post it as a comment on the pull request, making it easier for reviewers to see what changes will be made.
+
+    ```yaml title="plan_on_pr_with_comment.yml"
+    name: Plan for syncing dbt Cloud Jobs from YAML
+    run-name: Running dbt-jobs-as-code plan to see what is going to be changed/deleted
+
+    on:
+      pull_request:
+        branches:
+          - main
+        paths:
+          - 'jobs/**'
+
+    jobs:
+      run-python-script:
+        runs-on: ubuntu-latest
+        permissions:
+          pull-requests: write
+          contents: read
+        steps:
+          - name: Check out repository code
+            uses: actions/checkout@v4
+
+          - name: Set up Python
+            uses: actions/setup-python@v4
+            with:
+              python-version: "3.12.x"
+          - name: Install dbt-jobs-as-code
+            run: pip install dbt-jobs-as-code
+
+          - name: Run dbt-jobs-as-code
+            id: jobs-as-code-plan
+            run: |
+              printf "Changes from dbt-jobs-as-code (full details are available in the actions logs):\n\`\`\`\n" > plan_output.txt
+              dbt-jobs-as-code plan jobs/my_jobs.yml --vars-yml jobs/prod_vars.yml --limit-projects-envs-to-yml >> plan_output.txt
+              printf "\n\`\`\`\n" >> plan_output.txt
+            env:
+              DBT_API_KEY: "${{secrets.DBT_API_KEY}}"
+              # DBT_BASE_URL is optional
+              # DBT_BASE_URL: "${{secrets.DBT_BASE_URL}}"
+
+          - name: Comment PR
+            uses: mshick/add-pr-comment@v2
+            with:
+              message-path: plan_output.txt
+    ```
+
+    !!! note
+        This example uses the [mshick/add-pr-comment](https://github.com/mshick/add-pr-comment) GitHub Action to post the plan output as a comment. The `pull-requests: write` permission is required for the action to post comments.
+
 
 The relevant GitLab pipelines would be the following:
 
@@ -148,7 +200,7 @@ The relevant GitLab pipelines would be the following:
 
     sync_dbt_jobs:
       stage: sync
-      image: python:3.12 
+      image: python:3.12
       rules:
         - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_MESSAGE =~ /^Merge.*/
           changes:
@@ -159,15 +211,48 @@ The relevant GitLab pipelines would be the following:
         - pip install dbt-jobs-as-code
         - |
           echo "Checking out branch..."
-          git fetch origin $CI_COMMIT_BRANCH      
-          git checkout $CI_COMMIT_BRANCH    
-        - dbt-jobs-as-code sync jobs/jobs_config.yml 
-        
+          git fetch origin $CI_COMMIT_BRANCH
+          git checkout $CI_COMMIT_BRANCH
+        - dbt-jobs-as-code sync jobs/jobs_config.yml
+
       before_script:
         - export DBT_API_KEY=$DBT_API_KEY  # Ensure this variable is set in GitLab CI/CD project settings
     ```
 
+??? example "Enhanced GitLab example: Posting plan results as merge request comments"
 
+    This example shows how to capture the plan output and post it as a comment on the merge request, making it easier for reviewers to see what changes will be made.
+
+    ```yaml title=".gitlab-ci.yml"
+    stages:
+      - plan
+
+    plan_dbt_jobs:
+      stage: plan
+      image: python:3.12
+      rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+          changes:
+            - jobs/**/*
+      script:
+        - apt-get update && apt-get install -y jq git
+        - pip install dbt-jobs-as-code
+        - |
+          echo "Checking out branch..."
+          git fetch origin $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+          git fetch origin $CI_COMMIT_REF_NAME
+          git checkout $CI_COMMIT_REF_NAME
+          printf "Changes from dbt-jobs-as-code (full details are available in the actions logs):\n\`\`\`\n" > plan_output.txt
+          dbt-jobs-as-code plan --limit-projects-envs-to-yml --vars-yml jobs/environments/vars_prod.yml jobs/jobs/**/*.yml >> plan_output.txt 2>&1
+          printf "\`\`\`\n" >> plan_output.txt
+          cat plan_output.txt
+        - 'curl --request POST --header "PRIVATE-TOKEN: $CI_AUTOCOMMENTER_API_KEY" --data-urlencode "body@plan_output.txt" "https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes"'
+      before_script:
+        - export DBT_API_KEY=$DBT_API_KEY  # Ensure this variable is set in GitLab CI/CD project settings
+    ```
+
+    !!! note
+        This example requires setting up a `CI_AUTOCOMMENTER_API_KEY` variable in your GitLab CI/CD settings with a personal access token that has `api` scope to post comments to merge requests.
 
 
 ---
