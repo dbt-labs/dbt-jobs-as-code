@@ -82,7 +82,7 @@ class JobDefinition(BaseModel):
     deferring_environment_id: Optional[int] = field_optional_int_allowed_as_string_in_schema
     run_generate_sources: bool
     run_lint: Optional[bool] = False
-    errors_on_lint_failure: Optional[bool] = False
+    errors_on_lint_failure: Optional[bool] = True
     execute_steps: List[str]
     generate_docs: bool
     schedule: Schedule
