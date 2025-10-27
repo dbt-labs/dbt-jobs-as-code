@@ -38,6 +38,7 @@ dbt-jobs-as-code = "dbt_jobs_as_code.main:cli"
 dev = [
     "coverage<8.0.0,>=7.6.3",
     "jsonschema<5.0.0,>=4.17.3",
+    "rpds-py>=0.27.0",  # Required for Python 3.14 support
     "pytest-mock>=3.14.0",
     "pytest<8.0.0,>=7.2.0",
     "pytest-beartype<1.0.0,>=0.0.2",
