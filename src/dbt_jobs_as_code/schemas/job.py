@@ -248,6 +248,7 @@ class JobMissingFields(JobDefinition):
     # TODO: Add to JobDefinition model when the feature is out
     integration_id: Optional[int] = None
     force_node_selection: Optional[bool] = True
+    cost_optimization_features: list[str]
 
     # Unneeded read-only fields
     raw_dbt_version: Optional[str] = None
