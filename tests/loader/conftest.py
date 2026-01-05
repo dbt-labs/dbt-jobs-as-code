@@ -1,22 +1,24 @@
+import textwrap
+
 import pytest
 
 
 @pytest.fixture
 def single_config_content():
-    return """
-jobs:
-  job1:
-    project_id: {{ project_id }}
-    environment_id: {{ env_id }}
-"""
+    return textwrap.dedent("""
+        jobs:
+          job1:
+            project_id: {{ project_id }}
+            environment_id: {{ env_id }}
+        """)
 
 
 @pytest.fixture
 def single_vars_content():
-    return """
-project_id: 123
-env_id: 456
-"""
+    return textwrap.dedent("""
+        project_id: 123
+        env_id: 456
+        """)
 
 
 @pytest.fixture
@@ -38,17 +40,21 @@ def multiple_config_files(tmp_path):
     config1 = tmp_path / "config1.yml"
     config2 = tmp_path / "config2.yml"
 
-    config1.write_text("""
-jobs:
-  job1:
-    project_id: {{ project_id }}
-""")
+    config1.write_text(
+        textwrap.dedent("""
+        jobs:
+          job1:
+            project_id: {{ project_id }}
+        """)
+    )
 
-    config2.write_text("""
-jobs:
-  job2:
-    environment_id: {{ env_id }}
-""")
+    config2.write_text(
+        textwrap.dedent("""
+        jobs:
+          job2:
+            environment_id: {{ env_id }}
+        """)
+    )
 
     return [str(config1), str(config2)]
 
@@ -62,6 +68,135 @@ def multiple_vars_files(tmp_path):
     vars2.write_text("env_id: 456")
 
     return [str(vars1), str(vars2)]
+
+
+@pytest.fixture
+def job_config_with_space_in_identifier():
+    """YAML config with a job identifier containing spaces"""
+    return textwrap.dedent("""
+        jobs:
+          "job with spaces":
+            account_id: 43791
+            project_id: 176941
+            environment_id: 134459
+            name: My Job 1
+            settings:
+              threads: 4
+              target_name: production
+            execution:
+              timeout_seconds: 0
+            run_generate_sources: true
+            execute_steps:
+              - dbt run --select model1+
+            generate_docs: false
+            schedule:
+              cron: 0 */2 * * *
+            triggers:
+              github_webhook: false
+              git_provider_webhook: false
+              schedule: true
+              on_merge: false
+        """)
+
+
+@pytest.fixture
+def job_config_with_multiple_space_identifiers():
+    """YAML config with multiple job identifiers containing spaces"""
+    return textwrap.dedent("""
+        jobs:
+          "job with spaces":
+            account_id: 43791
+            project_id: 176941
+            environment_id: 134459
+            name: My Job 1
+            settings:
+              threads: 4
+              target_name: production
+            execution:
+              timeout_seconds: 0
+            run_generate_sources: true
+            execute_steps:
+              - dbt run --select model1+
+            generate_docs: false
+            schedule:
+              cron: 0 */2 * * *
+            triggers:
+              github_webhook: false
+              git_provider_webhook: false
+              schedule: true
+              on_merge: false
+          "another invalid job":
+            account_id: 43791
+            project_id: 176941
+            environment_id: 134459
+            name: My Job 2
+            settings:
+              threads: 4
+              target_name: production
+            execution:
+              timeout_seconds: 0
+            run_generate_sources: true
+            execute_steps:
+              - dbt run --select model2+
+            generate_docs: false
+            schedule:
+              cron: 0 */2 * * *
+            triggers:
+              github_webhook: false
+              git_provider_webhook: false
+              schedule: true
+              on_merge: false
+        """)
+
+
+@pytest.fixture
+def valid_job_config():
+    """YAML config with valid job identifiers (no spaces)"""
+    return textwrap.dedent("""
+        jobs:
+          job1:
+            account_id: 43791
+            project_id: 176941
+            environment_id: 134459
+            name: My Job 1
+            settings:
+              threads: 4
+              target_name: production
+            execution:
+              timeout_seconds: 0
+            run_generate_sources: true
+            execute_steps:
+              - dbt run --select model1+
+            generate_docs: false
+            schedule:
+              cron: 0 */2 * * *
+            triggers:
+              github_webhook: false
+              git_provider_webhook: false
+              schedule: true
+              on_merge: false
+          job_with_underscores:
+            account_id: 43791
+            project_id: 176941
+            environment_id: 134459
+            name: My Job 2
+            settings:
+              threads: 4
+              target_name: production
+            execution:
+              timeout_seconds: 0
+            run_generate_sources: true
+            execute_steps:
+              - dbt run --select model2+
+            generate_docs: false
+            schedule:
+              cron: 0 */2 * * *
+            triggers:
+              github_webhook: false
+              git_provider_webhook: false
+              schedule: true
+              on_merge: false
+        """)
 
 
 @pytest.fixture
