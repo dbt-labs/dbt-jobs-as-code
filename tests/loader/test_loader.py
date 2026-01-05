@@ -1,3 +1,5 @@
+import textwrap
+
 import pytest
 
 from dbt_jobs_as_code.loader.load import (
@@ -61,33 +63,12 @@ class TestLoaderLoadJobConfiguration:
         result = load_job_configuration([str(config_file)], None)
         assert result.jobs == {}
 
-    def test_load_job_configuration_identifier_with_spaces_error(self, tmp_path):
+    def test_load_job_configuration_identifier_with_spaces_error(
+        self, tmp_path, job_config_with_space_in_identifier
+    ):
         """Test that loading configuration with job identifiers containing spaces raises an error."""
         config_file = tmp_path / "invalid_jobs.yml"
-        config_file.write_text("""
-jobs:
-  "job with spaces":
-    account_id: 43791
-    project_id: 176941
-    environment_id: 134459
-    name: My Job 1
-    settings:
-      threads: 4
-      target_name: production
-    execution:
-      timeout_seconds: 0
-    run_generate_sources: true
-    execute_steps:
-      - dbt run --select model1+
-    generate_docs: false
-    schedule:
-      cron: 0 */2 * * *
-    triggers:
-      github_webhook: false
-      git_provider_webhook: false
-      schedule: true
-      on_merge: false
-""")
+        config_file.write_text(job_config_with_space_in_identifier)
 
         with pytest.raises(LoadingJobsYAMLError) as exc_info:
             load_job_configuration([str(config_file)], None)
@@ -95,54 +76,12 @@ jobs:
         assert "Job identifiers cannot contain spaces" in str(exc_info.value)
         assert "job with spaces" in str(exc_info.value)
 
-    def test_load_job_configuration_multiple_identifiers_with_spaces_error(self, tmp_path):
+    def test_load_job_configuration_multiple_identifiers_with_spaces_error(
+        self, tmp_path, job_config_with_multiple_space_identifiers
+    ):
         """Test that loading configuration with multiple job identifiers containing spaces raises an error."""
         config_file = tmp_path / "invalid_jobs.yml"
-        config_file.write_text("""
-jobs:
-  "job with spaces":
-    account_id: 43791
-    project_id: 176941
-    environment_id: 134459
-    name: My Job 1
-    settings:
-      threads: 4
-      target_name: production
-    execution:
-      timeout_seconds: 0
-    run_generate_sources: true
-    execute_steps:
-      - dbt run --select model1+
-    generate_docs: false
-    schedule:
-      cron: 0 */2 * * *
-    triggers:
-      github_webhook: false
-      git_provider_webhook: false
-      schedule: true
-      on_merge: false
-  "another invalid job":
-    account_id: 43791
-    project_id: 176941
-    environment_id: 134459
-    name: My Job 2
-    settings:
-      threads: 4
-      target_name: production
-    execution:
-      timeout_seconds: 0
-    run_generate_sources: true
-    execute_steps:
-      - dbt run --select model2+
-    generate_docs: false
-    schedule:
-      cron: 0 */2 * * *
-    triggers:
-      github_webhook: false
-      git_provider_webhook: false
-      schedule: true
-      on_merge: false
-""")
+        config_file.write_text(job_config_with_multiple_space_identifiers)
 
         with pytest.raises(LoadingJobsYAMLError) as exc_info:
             load_job_configuration([str(config_file)], None)
@@ -151,54 +90,10 @@ jobs:
         assert "job with spaces" in str(exc_info.value)
         assert "another invalid job" in str(exc_info.value)
 
-    def test_load_job_configuration_valid_identifiers(self, tmp_path):
+    def test_load_job_configuration_valid_identifiers(self, tmp_path, valid_job_config):
         """Test that loading configuration with valid job identifiers (no spaces) works correctly."""
         config_file = tmp_path / "valid_jobs.yml"
-        config_file.write_text("""
-jobs:
-  job1:
-    account_id: 43791
-    project_id: 176941
-    environment_id: 134459
-    name: My Job 1
-    settings:
-      threads: 4
-      target_name: production
-    execution:
-      timeout_seconds: 0
-    run_generate_sources: true
-    execute_steps:
-      - dbt run --select model1+
-    generate_docs: false
-    schedule:
-      cron: 0 */2 * * *
-    triggers:
-      github_webhook: false
-      git_provider_webhook: false
-      schedule: true
-      on_merge: false
-  job_with_underscores:
-    account_id: 43791
-    project_id: 176941
-    environment_id: 134459
-    name: My Job 2
-    settings:
-      threads: 4
-      target_name: production
-    execution:
-      timeout_seconds: 0
-    run_generate_sources: true
-    execute_steps:
-      - dbt run --select model2+
-    generate_docs: false
-    schedule:
-      cron: 0 */2 * * *
-    triggers:
-      github_webhook: false
-      git_provider_webhook: false
-      schedule: true
-      on_merge: false
-""")
+        config_file.write_text(valid_job_config)
 
         result = load_job_configuration([str(config_file)], None)
         assert "job1" in result.jobs
@@ -288,11 +183,13 @@ class TestLoaderLoadYamlWithTemplate:
         config = tmp_path / "config.yml"
         vars_file = tmp_path / "vars.yml"
 
-        config.write_text("""
-jobs:
-    job1:
-        project_id: {{ undefined_var }}
-    """)
+        config.write_text(
+            textwrap.dedent("""
+            jobs:
+                job1:
+                    project_id: {{ undefined_var }}
+            """)
+        )
         vars_file.write_text("project_id: 123")
 
         with pytest.raises(LoadingJobsYAMLError, match="Some variables didn't have a value"):
@@ -315,22 +212,28 @@ jobs:
         config2 = tmp_path / "config2.yml"
         vars_file = tmp_path / "vars.yml"
 
-        config1.write_text("""
-jobs:
-    job1:
-        value: {{ val1 }}
-    """)
+        config1.write_text(
+            textwrap.dedent("""
+            jobs:
+                job1:
+                    value: {{ val1 }}
+            """)
+        )
 
-        config2.write_text("""
-jobs:
-    job2:
-        value: {{ val2 }}
-    """)
+        config2.write_text(
+            textwrap.dedent("""
+            jobs:
+                job2:
+                    value: {{ val2 }}
+            """)
+        )
 
-        vars_file.write_text("""
-val1: 123
-val2: 456
-    """)
+        vars_file.write_text(
+            textwrap.dedent("""
+            val1: 123
+            val2: 456
+            """)
+        )
 
         result = _load_yaml_with_template([str(config1), str(config2)], [str(vars_file)])
 
@@ -341,17 +244,125 @@ val2: 456
         config = tmp_path / "config.yml"
         vars_file = tmp_path / "vars.yml"
 
-        config.write_text("""
-jobs:
-    job1:
-        schedule: {{ schedule }}
-    """)
-        vars_file.write_text("""
-schedule:
-  cron: 0 1,5 * * 0,1,2,3,4,5""")
+        config.write_text(
+            textwrap.dedent("""
+            jobs:
+                job1:
+                    schedule: {{ schedule }}
+            """)
+        )
+        vars_file.write_text(
+            textwrap.dedent("""
+            schedule:
+              cron: 0 1,5 * * 0,1,2,3,4,5""")
+        )
 
         result = _load_yaml_with_template([str(config)], [str(vars_file)])
         assert result == {"jobs": {"job1": {"schedule": {"cron": "0 1,5 * * 0,1,2,3,4,5"}}}}
+
+    def test_load_yaml_with_template_jobs_none(self, tmp_path):
+        """Test handling of jobs: None when merging multiple config files.
+
+        This tests the fix for issue #175: when one config file has jobs: None
+        (due to conditional rendering), it should be skipped and not cause an error
+        when merging with other config files that have actual jobs.
+        """
+        config1 = tmp_path / "config1.yml"
+        config2 = tmp_path / "config2.yml"
+        vars_file = tmp_path / "vars.yml"
+
+        # Config file 1 with conditional that results in jobs: None
+        config1.write_text(
+            textwrap.dedent("""
+            anchors:
+              &default_settings
+              project_id: {{ project_id }}
+
+            jobs:
+              {% if env_name == "dev" %}
+              dev_job:
+                <<: *default_settings
+                name: Dev Job
+              {% endif %}
+            """)
+        )
+
+        # Config file 2 with actual jobs
+        config2.write_text(
+            textwrap.dedent("""
+            jobs:
+              prod_job:
+                project_id: {{ project_id }}
+                name: Production Job
+            """)
+        )
+
+        # Vars with env_name set to "prod" so config1 renders jobs: None
+        vars_file.write_text(
+            textwrap.dedent("""
+            project_id: 123
+            env_name: prod
+            """)
+        )
+
+        result = _load_yaml_with_template([str(config1), str(config2)], [str(vars_file)])
+
+        # Should only contain the prod_job from config2
+        assert "prod_job" in result["jobs"]
+        assert len(result["jobs"]) == 1
+        assert result["jobs"]["prod_job"]["name"] == "Production Job"
+
+    def test_load_yaml_with_template_multiple_files_some_with_none_jobs(self, tmp_path):
+        """Test merging multiple config files where some have jobs: None"""
+        config1 = tmp_path / "config1.yml"
+        config2 = tmp_path / "config2.yml"
+        config3 = tmp_path / "config3.yml"
+        vars_file = tmp_path / "vars.yml"
+
+        # First config with real jobs
+        config1.write_text(
+            textwrap.dedent("""
+            jobs:
+              job1:
+                value: {{ val1 }}
+            """)
+        )
+
+        # Second config that will result in jobs: None
+        config2.write_text(
+            textwrap.dedent("""
+            jobs:
+              {% if include_job2 %}
+              job2:
+                value: {{ val2 }}
+              {% endif %}
+            """)
+        )
+
+        # Third config with real jobs
+        config3.write_text(
+            textwrap.dedent("""
+            jobs:
+              job3:
+                value: {{ val3 }}
+            """)
+        )
+
+        vars_file.write_text(
+            textwrap.dedent("""
+            val1: 111
+            val2: 222
+            val3: 333
+            include_job2: false
+            """)
+        )
+
+        result = _load_yaml_with_template(
+            [str(config1), str(config2), str(config3)], [str(vars_file)]
+        )
+
+        # Should contain job1 and job3, but not job2
+        assert result == {"jobs": {"job1": {"value": 111}, "job3": {"value": 333}}}
 
 
 class TestLoaderResolveFilePaths:
@@ -428,31 +439,93 @@ class TestLoaderLoadYamlNoTemplate:
         config1 = tmp_path / "config1.yml"
         config2 = tmp_path / "config2.yml"
 
-        config1.write_text("""
-jobs:
-    job1:
-        name: Job 1
-        """)
+        config1.write_text(
+            textwrap.dedent("""
+            jobs:
+                job1:
+                    name: Job 1
+            """)
+        )
 
-        config2.write_text("""
-jobs:
-    job2:
-        name: Job 2
-        """)
+        config2.write_text(
+            textwrap.dedent("""
+            jobs:
+                job2:
+                    name: Job 2
+            """)
+        )
 
         result = _load_yaml_no_template([str(config1), str(config2)])
         assert "job1" in result["jobs"]
         assert "job2" in result["jobs"]
+
+    def test_load_yaml_no_template_jobs_none(self, tmp_path):
+        """Test handling of jobs: None when merging multiple non-templated config files"""
+        config1 = tmp_path / "config1.yml"
+        config2 = tmp_path / "config2.yml"
+
+        # Config with jobs: None (explicitly set to null in YAML)
+        config1.write_text(
+            textwrap.dedent("""
+            anchors:
+              &default_settings
+              project_id: 123
+
+            jobs: null
+            """)
+        )
+
+        # Config with actual jobs
+        config2.write_text(
+            textwrap.dedent("""
+            jobs:
+                job2:
+                    name: Job 2
+            """)
+        )
+
+        result = _load_yaml_no_template([str(config1), str(config2)])
+        # Should only contain job2
+        assert "job2" in result["jobs"]
+        assert len(result["jobs"]) == 1
+
+    def test_load_yaml_no_template_empty_jobs(self, tmp_path):
+        """Test handling of empty jobs dict when merging multiple config files"""
+        config1 = tmp_path / "config1.yml"
+        config2 = tmp_path / "config2.yml"
+
+        # Config with empty jobs dict
+        config1.write_text(
+            textwrap.dedent("""
+            jobs: {}
+            """)
+        )
+
+        # Config with actual jobs
+        config2.write_text(
+            textwrap.dedent("""
+            jobs:
+                job2:
+                    name: Job 2
+            """)
+        )
+
+        result = _load_yaml_no_template([str(config1), str(config2)])
+        # Should only contain job2
+        assert "job2" in result["jobs"]
+        assert len(result["jobs"]) == 1
 
 
 class TestLoaderLoadVarsFiles:
     def test_load_vars_files_single_file(self, tmp_path):
         """Test loading a single vars file"""
         vars_file = tmp_path / "vars.yml"
-        vars_file.write_text("""
-project_id: 123
-environment_id: 456
-        """)
+        vars_file.write_text(
+            textwrap.dedent("""
+            project_id: 123
+            environment_id: 456
+            """)
+        )
 
         result = _load_vars_files([str(vars_file)])
 
@@ -501,10 +574,12 @@ environment_id: 456
     def test_load_vars_files_nested_vars(self, tmp_path):
         """Test loading a single vars file"""
         vars_file = tmp_path / "vars.yml"
-        vars_file.write_text("""
-schedule:
-  cron: 0 1,5 * * 0,1,2,3,4,5
-        """)
+        vars_file.write_text(
+            textwrap.dedent("""
+            schedule:
+              cron: 0 1,5 * * 0,1,2,3,4,5
+            """)
+        )
 
         result = _load_vars_files([str(vars_file)])
 
@@ -513,21 +588,23 @@ schedule:
     def test_load_vars_files_none_values(self, tmp_path):
         """Test that None values in vars files are correctly replaced with 'null' strings"""
         vars_file = tmp_path / "vars.yml"
-        vars_file.write_text("""
-string_var: value
-none_var: null
-nested_dict:
-    none_field: null
-list_with_none:
-    - item1
-    - null
-    - item3
-nested_list:
-    - name: item1
-      value: null
-    - name: item2
-      value: not_null
-        """)
+        vars_file.write_text(
+            textwrap.dedent("""
+            string_var: value
+            none_var: null
+            nested_dict:
+                none_field: null
+            list_with_none:
+                - item1
+                - null
+                - item3
+            nested_list:
+                - name: item1
+                  value: null
+                - name: item2
+                  value: not_null
+            """)
+        )
 
         result = _load_vars_files([str(vars_file)])
 
