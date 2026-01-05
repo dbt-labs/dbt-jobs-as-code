@@ -353,6 +353,96 @@ schedule:
         result = _load_yaml_with_template([str(config)], [str(vars_file)])
         assert result == {"jobs": {"job1": {"schedule": {"cron": "0 1,5 * * 0,1,2,3,4,5"}}}}
 
+    def test_load_yaml_with_template_jobs_none(self, tmp_path):
+        """Test handling of jobs: None when merging multiple config files.
+        
+        This tests the fix for issue #175: when one config file has jobs: None
+        (due to conditional rendering), it should be skipped and not cause an error
+        when merging with other config files that have actual jobs.
+        """
+        config1 = tmp_path / "config1.yml"
+        config2 = tmp_path / "config2.yml"
+        vars_file = tmp_path / "vars.yml"
+
+        # Config file 1 with conditional that results in jobs: None
+        config1.write_text("""
+anchors:
+  &default_settings
+  project_id: {{ project_id }}
+  
+jobs:
+  {% if env_name == "dev" %}
+  dev_job:
+    <<: *default_settings
+    name: Dev Job
+  {% endif %}
+    """)
+
+        # Config file 2 with actual jobs
+        config2.write_text("""
+jobs:
+  prod_job:
+    project_id: {{ project_id }}
+    name: Production Job
+    """)
+
+        # Vars with env_name set to "prod" so config1 renders jobs: None
+        vars_file.write_text("""
+project_id: 123
+env_name: prod
+    """)
+
+        result = _load_yaml_with_template([str(config1), str(config2)], [str(vars_file)])
+
+        # Should only contain the prod_job from config2
+        assert "prod_job" in result["jobs"]
+        assert len(result["jobs"]) == 1
+        assert result["jobs"]["prod_job"]["name"] == "Production Job"
+
+    def test_load_yaml_with_template_multiple_files_some_with_none_jobs(self, tmp_path):
+        """Test merging multiple config files where some have jobs: None"""
+        config1 = tmp_path / "config1.yml"
+        config2 = tmp_path / "config2.yml"
+        config3 = tmp_path / "config3.yml"
+        vars_file = tmp_path / "vars.yml"
+
+        # First config with real jobs
+        config1.write_text("""
+jobs:
+  job1:
+    value: {{ val1 }}
+    """)
+
+        # Second config that will result in jobs: None
+        config2.write_text("""
+jobs:
+  {% if include_job2 %}
+  job2:
+    value: {{ val2 }}
+  {% endif %}
+    """)
+
+        # Third config with real jobs
+        config3.write_text("""
+jobs:
+  job3:
+    value: {{ val3 }}
+    """)
+
+        vars_file.write_text("""
+val1: 111
+val2: 222
+val3: 333
+include_job2: false
+    """)
+
+        result = _load_yaml_with_template(
+            [str(config1), str(config2), str(config3)], [str(vars_file)]
+        )
+
+        # Should contain job1 and job3, but not job2
+        assert result == {"jobs": {"job1": {"value": 111}, "job3": {"value": 333}}}
+
 
 class TestLoaderResolveFilePaths:
     def test_resolve_file_paths_no_config(self):
@@ -443,6 +533,54 @@ jobs:
         result = _load_yaml_no_template([str(config1), str(config2)])
         assert "job1" in result["jobs"]
         assert "job2" in result["jobs"]
+
+    def test_load_yaml_no_template_jobs_none(self, tmp_path):
+        """Test handling of jobs: None when merging multiple non-templated config files"""
+        config1 = tmp_path / "config1.yml"
+        config2 = tmp_path / "config2.yml"
+
+        # Config with jobs: None (explicitly set to null in YAML)
+        config1.write_text("""
+anchors:
+  &default_settings
+  project_id: 123
+
+jobs: null
+        """)
+
+        # Config with actual jobs
+        config2.write_text("""
+jobs:
+    job2:
+        name: Job 2
+        """)
+
+        result = _load_yaml_no_template([str(config1), str(config2)])
+        # Should only contain job2
+        assert "job2" in result["jobs"]
+        assert len(result["jobs"]) == 1
+
+    def test_load_yaml_no_template_empty_jobs(self, tmp_path):
+        """Test handling of empty jobs dict when merging multiple config files"""
+        config1 = tmp_path / "config1.yml"
+        config2 = tmp_path / "config2.yml"
+
+        # Config with empty jobs dict
+        config1.write_text("""
+jobs: {}
+        """)
+
+        # Config with actual jobs
+        config2.write_text("""
+jobs:
+    job2:
+        name: Job 2
+        """)
+
+        result = _load_yaml_no_template([str(config1), str(config2)])
+        # Should only contain job2
+        assert "job2" in result["jobs"]
+        assert len(result["jobs"]) == 1
 
 
 class TestLoaderLoadVarsFiles:

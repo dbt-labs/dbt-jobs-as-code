@@ -85,7 +85,7 @@ def _load_yaml_no_template(config_files: List[str]) -> dict:
             config = yaml.load(config_string)
             if config:
                 # Merge the jobs from each file into combined_config
-                if config.get("jobs", {}) != {}:
+                if "jobs" in config and config["jobs"] is not None and config["jobs"] != {}:
                     if "jobs" not in combined_config:
                         combined_config["jobs"] = {}
                     combined_config["jobs"].update(config["jobs"])
@@ -158,7 +158,7 @@ def _load_yaml_with_template(config_files: List[str], vars_file: List[str]) -> d
             config = yaml.load(config_string_rendered)
             if config:
                 # Merge the jobs from each file
-                if "jobs" in config:
+                if "jobs" in config and config["jobs"] is not None:
                     if "jobs" not in combined_config:
                         combined_config["jobs"] = {}
                     combined_config["jobs"].update(config["jobs"])
