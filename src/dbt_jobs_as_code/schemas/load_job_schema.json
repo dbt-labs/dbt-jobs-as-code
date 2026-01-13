@@ -252,7 +252,7 @@
               "type": "null"
             }
           ],
-          "default": false,
+          "default": true,
           "title": "Errors On Lint Failure"
         },
         "execute_steps": {
