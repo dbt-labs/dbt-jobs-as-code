@@ -40,10 +40,19 @@ But more than being exclusive from each other, dbt-jobs-as-code and Terraform ca
 
 ### Installation
 
-- Create a Python virtual environment and activate it
-- Run `pip install dbt-jobs-as-code` (or `pip install dbt-jobs-as-code~=0.9` to install a specific release and its patches)
+#### With uv (recommended)
 
-The CLI is now available as `dbt-jobs-as-code`
+We recommend using `uv`/`uvx` to run the package.
+If you don't have `uv` installed, you can install `uv` and `uvx`, [following the instructions on the official website](https://docs.astral.sh/uv/getting-started/installation/).
+
+- to run the latest version of the tool: `uvx dbt-jobs-as-code`
+- to run a specific version of the tool: `uvx dbt-jobs-as-code@0.9.0`
+- to install the tool as a dedicated CLI: `uv tool install dbt-jobs-as-code`
+- to upgrade the tool installed as a dedicated CLI: `uv tool upgrade dbt-jobs-as-code`
+
+#### With pip
+
+You can also use `pip` if you prefer, but we then recommend installing the tool in its own Python virtual environment. Once in a venv, install the tool with `pip install dbt-jobs-as-code` and then run `dbt-jobs-as-code ...`
 
 ### Pre-requisites
 
