@@ -153,3 +153,122 @@ class TestJobFiltering:
         assert len(result) == 1
         assert jobs[0] in result
         assert jobs[1] not in result
+
+
+class TestSAOFields:
+    """Tests for State-Aware Orchestration (SAO) field handling."""
+
+    @pytest.fixture
+    def base_job_data(self):
+        """Base job data for creating test jobs."""
+        return {
+            "name": "Test Job",
+            "account_id": 1,
+            "project_id": 1,
+            "environment_id": 1,
+            "settings": {},
+            "schedule": {"cron": "0 0 * * *"},
+            "triggers": {"github_webhook": False, "git_provider_webhook": False, "schedule": True},
+            "execute_steps": ["dbt build"],
+            "run_generate_sources": False,
+            "generate_docs": False,
+        }
+
+    def test_default_sao_fields(self, base_job_data):
+        """Test that SAO fields have correct default values."""
+        job = JobDefinition(**base_job_data)
+        assert job.force_node_selection is None
+        assert job.cost_optimization_features == []
+
+    def test_explicit_sao_fields(self, base_job_data):
+        """Test that SAO fields can be set explicitly."""
+        base_job_data["force_node_selection"] = False
+        base_job_data["cost_optimization_features"] = ["state_aware_orchestration"]
+        job = JobDefinition(**base_job_data)
+        assert job.force_node_selection is False
+        assert job.cost_optimization_features == ["state_aware_orchestration"]
+
+    def test_is_ci_job_github_webhook(self, base_job_data):
+        """Test CI job detection via github_webhook trigger."""
+        base_job_data["triggers"]["github_webhook"] = True
+        job = JobDefinition(**base_job_data)
+        assert job._is_ci_or_merge_job() is True
+
+    def test_is_ci_job_git_provider_webhook(self, base_job_data):
+        """Test CI job detection via git_provider_webhook trigger."""
+        base_job_data["triggers"]["git_provider_webhook"] = True
+        job = JobDefinition(**base_job_data)
+        assert job._is_ci_or_merge_job() is True
+
+    def test_is_merge_job_on_merge(self, base_job_data):
+        """Test merge job detection via on_merge trigger."""
+        base_job_data["triggers"]["on_merge"] = True
+        job = JobDefinition(**base_job_data)
+        assert job._is_ci_or_merge_job() is True
+
+    def test_is_ci_job_by_type(self, base_job_data):
+        """Test CI job detection via job_type."""
+        base_job_data["job_type"] = "ci"
+        job = JobDefinition(**base_job_data)
+        assert job._is_ci_or_merge_job() is True
+
+    def test_is_merge_job_by_type(self, base_job_data):
+        """Test merge job detection via job_type."""
+        base_job_data["job_type"] = "merge"
+        job = JobDefinition(**base_job_data)
+        assert job._is_ci_or_merge_job() is True
+
+    def test_scheduled_job_not_ci_or_merge(self, base_job_data):
+        """Test that scheduled jobs are not detected as CI/merge."""
+        job = JobDefinition(**base_job_data)
+        assert job._is_ci_or_merge_job() is False
+
+    def test_to_payload_excludes_force_node_selection_for_ci_jobs(self, base_job_data):
+        """Test that force_node_selection is excluded from payload for CI jobs."""
+        import json
+
+        base_job_data["triggers"]["github_webhook"] = True
+        base_job_data["force_node_selection"] = True  # Set explicitly
+        job = JobDefinition(**base_job_data)
+
+        payload = json.loads(job.to_payload())
+        assert "force_node_selection" not in payload
+
+    def test_to_payload_includes_force_node_selection_for_scheduled_jobs(self, base_job_data):
+        """Test that force_node_selection is included in payload for scheduled jobs."""
+        import json
+
+        base_job_data["force_node_selection"] = True
+        job = JobDefinition(**base_job_data)
+
+        payload = json.loads(job.to_payload())
+        assert payload.get("force_node_selection") is True
+
+    def test_to_payload_includes_cost_optimization_features(self, base_job_data):
+        """Test that cost_optimization_features is included in payload."""
+        import json
+
+        base_job_data["cost_optimization_features"] = ["state_aware_orchestration"]
+        job = JobDefinition(**base_job_data)
+
+        payload = json.loads(job.to_payload())
+        assert payload.get("cost_optimization_features") == ["state_aware_orchestration"]
+
+    def test_to_load_format_excludes_default_sao_fields(self, base_job_data):
+        """Test that default SAO field values are not included in export."""
+        job = JobDefinition(**base_job_data)
+        load_format = job.to_load_format()
+
+        # Default values should be excluded for cleaner YAML
+        assert "force_node_selection" not in load_format
+        assert "cost_optimization_features" not in load_format
+
+    def test_to_load_format_includes_non_default_sao_fields(self, base_job_data):
+        """Test that non-default SAO field values are included in export."""
+        base_job_data["force_node_selection"] = False
+        base_job_data["cost_optimization_features"] = ["state_aware_orchestration"]
+        job = JobDefinition(**base_job_data)
+        load_format = job.to_load_format()
+
+        assert load_format.get("force_node_selection") is False
+        assert load_format.get("cost_optimization_features") == ["state_aware_orchestration"]

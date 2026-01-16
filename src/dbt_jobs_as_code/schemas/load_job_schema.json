@@ -308,6 +308,31 @@
           "title": "Triggers On Draft Pr",
           "type": "boolean"
         },
+        "force_node_selection": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "(Deprecated) Controls SAO. true=disabled, false/null=enabled. Use cost_optimization_features instead. Note: Must be omitted for CI/Merge jobs.",
+          "title": "Force Node Selection"
+        },
+        "cost_optimization_features": {
+          "default": [],
+          "description": "Cost optimization features. Include 'state_aware_orchestration' to enable SAO. Requires dbt_version='latest-fusion'.",
+          "items": {
+            "enum": [
+              "state_aware_orchestration"
+            ],
+            "type": "string"
+          },
+          "title": "Cost Optimization Features",
+          "type": "array"
+        },
         "job_completion_trigger_condition": {
           "anyOf": [
             {

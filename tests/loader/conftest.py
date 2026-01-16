@@ -206,6 +206,7 @@ def expected_config_dict():
             "job1": {
                 "account_id": 43791,
                 "compare_changes_flags": "--select state:modified",
+                "cost_optimization_features": [],
                 "custom_environment_variables": [],
                 "dbt_version": None,
                 "deferring_environment_id": None,
@@ -218,6 +219,7 @@ def expected_config_dict():
                     "dbt compile",
                 ],
                 "execution": {"timeout_seconds": 0},
+                "force_node_selection": None,
                 "generate_docs": False,
                 "id": None,
                 "identifier": "job1",
@@ -248,6 +250,7 @@ def expected_config_dict():
             "job2": {
                 "account_id": 43791,
                 "compare_changes_flags": "--select state:modified",
+                "cost_optimization_features": [],
                 "custom_environment_variables": [
                     {
                         "display_value": None,
@@ -271,6 +274,7 @@ def expected_config_dict():
                 "environment_id": 134459,
                 "execute_steps": ["dbt run-operation clone_all_production_schemas", "dbt compile"],
                 "execution": {"timeout_seconds": 0},
+                "force_node_selection": None,
                 "generate_docs": True,
                 "id": None,
                 "identifier": "job2",

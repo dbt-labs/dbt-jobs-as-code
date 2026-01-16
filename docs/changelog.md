@@ -1,6 +1,15 @@
 
 To see the details of all changes, head to the GitHub repo
 
+### 1.7
+
+- Add support for State-Aware Orchestration (SAO) fields:
+  - `cost_optimization_features` - New preferred method to enable SAO. Set to `["state_aware_orchestration"]` to enable.
+  - `force_node_selection` - Legacy method (deprecated). Set to `false` or `null` to enable SAO.
+- Automatic handling of CI/Merge jobs: `force_node_selection` is automatically omitted from API payloads for CI and Merge jobs, as the dbt Cloud API rejects this field for these job types.
+- SAO fields are only exported when they have non-default values, keeping exported YAML clean.
+- Added comprehensive [SAO documentation](advanced_config/sao.md).
+
 ### 1.6
 
 - Add `--filter` to `import-jobs` to allow importing jobs to specific environments. In the case where people maintain jobs in the dbt Cloud UI and want to promote them, they can mention what environments they want to import the jobs to using the identifier of the job: `[[envs_filter:identifier]]`.

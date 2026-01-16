@@ -97,6 +97,16 @@ class JobDefinition(BaseModel):
         default="scheduled",
     )
     triggers_on_draft_pr: bool = False
+    # SAO (State-Aware Orchestration) fields
+    force_node_selection: Optional[bool] = Field(
+        default=None,
+        description="(Deprecated) Controls SAO. true=disabled, false/null=enabled. Use cost_optimization_features instead. Note: Must be omitted for CI/Merge jobs.",
+    )
+    cost_optimization_features: List[str] = Field(
+        default=[],
+        description="Cost optimization features. Include 'state_aware_orchestration' to enable SAO. Requires dbt_version='latest-fusion'.",
+        json_schema_extra={"items": {"enum": ["state_aware_orchestration"]}},
+    )
     job_completion_trigger_condition: Optional[JobCompletionTriggerCondition] = None
     custom_environment_variables: List[CustomEnvironmentVariable] = Field(
         default=[],
@@ -177,6 +187,15 @@ class JobDefinition(BaseModel):
         else:
             raise ValueError(f"Invalid job identifier - More than 1 colon: '{raw_identifier}'")
 
+    def _is_ci_or_merge_job(self) -> bool:
+        """Check if this job is a CI or Merge job based on triggers or job_type."""
+        return (
+            self.triggers.github_webhook
+            or self.triggers.git_provider_webhook
+            or self.triggers.on_merge
+            or self.job_type in ("ci", "merge")
+        )
+
     def to_payload(self):
         """Create a dbt Cloud API payload for a JobDefinition."""
 
@@ -186,9 +205,16 @@ class JobDefinition(BaseModel):
         # otherwise, it means that we are "unlinking" the job from the job.yml
         if self.identifier:
             payload.name = f"{self.name} [[{self.identifier}]]"
-        return payload.model_dump_json(
-            exclude={"linked_id", "identifier", "custom_environment_variables"}
-        )
+
+        # Build exclude set - always exclude these fields
+        exclude_fields = {"linked_id", "identifier", "custom_environment_variables"}
+
+        # For CI/Merge jobs, force_node_selection must be omitted entirely
+        # The API rejects explicit values for these job types
+        if self._is_ci_or_merge_job():
+            exclude_fields.add("force_node_selection")
+
+        return payload.model_dump_json(exclude=exclude_fields)
 
     def to_load_format(self, include_linked_id: bool = False):
         """Generate a dict following our YML format to dump as YML later."""
@@ -211,6 +237,14 @@ class JobDefinition(BaseModel):
         data["custom_environment_variables"] = []
         for env_var in self.custom_environment_variables:
             data["custom_environment_variables"].append({env_var.name: env_var.value})
+
+        # Clean up SAO fields - only include if they have non-default values
+        # This keeps the exported YAML clean and readable
+        if data.get("force_node_selection") is None:
+            data.pop("force_node_selection", None)
+        if not data.get("cost_optimization_features"):
+            data.pop("cost_optimization_features", None)
+
         return data
 
     def to_url(self, account_url: str) -> str:
@@ -245,10 +279,8 @@ class JobMissingFields(JobDefinition):
 
     # when adding fields we also need to update the test for pytest
 
-    # TODO: Add to JobDefinition model when the feature is out
+    # Fields not yet added to JobDefinition
     integration_id: Optional[int] = None
-    force_node_selection: Optional[bool] = True
-    cost_optimization_features: list[str]
 
     # Unneeded read-only fields
     raw_dbt_version: Optional[str] = None

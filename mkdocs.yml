@@ -13,6 +13,7 @@ nav:
     - glob config files: advanced_config/glob_config_files.md
     - Using YAML anchors: advanced_config/yaml_anchors.md
     - Advanced jobs importing: advanced_config/jobs_importing.md
+    - State-Aware Orchestration: advanced_config/sao.md
   - Typical Flows: typical_flows.md
   - CLI: cli.md
   - Changelog: changelog.md

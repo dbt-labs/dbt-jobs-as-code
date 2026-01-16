@@ -55,3 +55,32 @@ jobs:
     custom_environment_variables:
       - DBT_ENV1: My val
       - DBT_ENV2: My val2
+
+  # Example job with SAO (State-Aware Orchestration) enabled
+  # SAO optimizes job execution by intelligently selecting which nodes to run
+  job_with_sao:
+    account_id: 43791
+    dbt_version: "latest-fusion"  # Required for SAO
+    environment_id: 134459
+    execute_steps:
+      - dbt build
+    execution:
+      timeout_seconds: 3600
+    generate_docs: true
+    name: "Production Build with SAO"
+    project_id: 176941
+    run_generate_sources: true
+    schedule:
+      cron: "0 6 * * *"  # Daily at 6 AM
+    settings:
+      target_name: production
+      threads: 8
+    triggers:
+      git_provider_webhook: false
+      github_webhook: false
+      schedule: true
+      on_merge: false
+    # Enable SAO using cost_optimization_features (recommended)
+    cost_optimization_features:
+      - state_aware_orchestration
+    # Note: You can also use force_node_selection: false, but this is deprecated
