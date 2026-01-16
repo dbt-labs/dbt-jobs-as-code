@@ -64,6 +64,77 @@ dbt-jobs-as-code automatically handles this by omitting `force_node_selection` f
 - `triggers.on_merge` is `true`
 - `job_type` is `"ci"` or `"merge"`
 
+## Adjusting Existing Configurations
+
+### Upgrading from dbt-jobs-as-code < 1.7
+
+**No action required!** Existing job configurations continue to work without modification. The new SAO fields have sensible defaults:
+
+- `force_node_selection`: `null` (SAO behavior determined by dbt Cloud defaults)
+- `cost_optimization_features`: `[]` (no optimizations explicitly enabled)
+
+### Enabling SAO on Existing Jobs
+
+To enable SAO on an existing scheduled job:
+
+1. **Ensure the job uses Fusion runtime:**
+   ```yaml
+   dbt_version: "latest-fusion"
+   ```
+
+2. **Add the SAO configuration (choose one):**
+
+   **Option A - Recommended:**
+   ```yaml
+   cost_optimization_features:
+     - state_aware_orchestration
+   ```
+
+   **Option B - Legacy (deprecated):**
+   ```yaml
+   force_node_selection: false
+   ```
+
+### Example: Before and After
+
+**Before (no SAO):**
+```yaml
+jobs:
+  daily_build:
+    account_id: 12345
+    project_id: 67890
+    environment_id: 11111
+    dbt_version: "1.8.0"
+    name: "Daily Build"
+    execute_steps:
+      - dbt build
+    schedule:
+      cron: "0 6 * * *"
+    triggers:
+      schedule: true
+    # ... other fields
+```
+
+**After (SAO enabled):**
+```yaml
+jobs:
+  daily_build:
+    account_id: 12345
+    project_id: 67890
+    environment_id: 11111
+    dbt_version: "latest-fusion"  # Changed from "1.8.0"
+    name: "Daily Build"
+    execute_steps:
+      - dbt build
+    schedule:
+      cron: "0 6 * * *"
+    triggers:
+      schedule: true
+    cost_optimization_features:   # Added
+      - state_aware_orchestration
+    # ... other fields
+```
+
 ## Migration Guide
 
 If you're migrating from `force_node_selection` to `cost_optimization_features`:
