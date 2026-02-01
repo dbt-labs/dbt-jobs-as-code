@@ -393,6 +393,69 @@ class TestLoaderResolveFilePaths:
         assert all(f.endswith(".yml") for f in config_files)
         assert vars_files == []
 
+    def test_resolve_file_paths_directory_with_yml_files(self, tmp_path):
+        """Test resolving a directory containing .yml files (issue #180)"""
+        jobs_dir = tmp_path / "jobs"
+        jobs_dir.mkdir()
+        (jobs_dir / "job1.yml").write_text("content1")
+        (jobs_dir / "job2.yml").write_text("content2")
+        (jobs_dir / "other.txt").write_text("should be ignored")
+
+        config_files, vars_files = resolve_file_paths(str(jobs_dir))
+        assert len(config_files) == 2
+        assert all(f.endswith(".yml") for f in config_files)
+        assert vars_files == []
+
+    def test_resolve_file_paths_directory_with_yaml_files(self, tmp_path):
+        """Test resolving a directory containing .yaml files (issue #180)"""
+        jobs_dir = tmp_path / "jobs"
+        jobs_dir.mkdir()
+        (jobs_dir / "job1.yaml").write_text("content1")
+        (jobs_dir / "job2.yaml").write_text("content2")
+
+        config_files, vars_files = resolve_file_paths(str(jobs_dir))
+        assert len(config_files) == 2
+        assert all(f.endswith(".yaml") for f in config_files)
+        assert vars_files == []
+
+    def test_resolve_file_paths_directory_with_mixed_yml_yaml(self, tmp_path):
+        """Test resolving a directory containing both .yml and .yaml files (issue #180)"""
+        jobs_dir = tmp_path / "jobs"
+        jobs_dir.mkdir()
+        (jobs_dir / "job1.yml").write_text("content1")
+        (jobs_dir / "job2.yaml").write_text("content2")
+        (jobs_dir / "job3.yml").write_text("content3")
+
+        config_files, vars_files = resolve_file_paths(str(jobs_dir))
+        assert len(config_files) == 3
+        yml_count = sum(1 for f in config_files if f.endswith(".yml"))
+        yaml_count = sum(1 for f in config_files if f.endswith(".yaml"))
+        assert yml_count == 2
+        assert yaml_count == 1
+
+    def test_resolve_file_paths_empty_directory(self, tmp_path):
+        """Test error when directory contains no yml/yaml files (issue #180)"""
+        empty_dir = tmp_path / "empty"
+        empty_dir.mkdir()
+        (empty_dir / "other.txt").write_text("not a yaml file")
+
+        with pytest.raises(LoadingJobsYAMLError, match="No files found matching pattern"):
+            resolve_file_paths(str(empty_dir))
+
+    def test_resolve_file_paths_directory_for_vars(self, tmp_path):
+        """Test resolving a directory for vars files (issue #180)"""
+        config_file = tmp_path / "config.yml"
+        config_file.write_text("content")
+
+        vars_dir = tmp_path / "vars"
+        vars_dir.mkdir()
+        (vars_dir / "vars1.yml").write_text("var1: value1")
+        (vars_dir / "vars2.yaml").write_text("var2: value2")
+
+        config_files, vars_files = resolve_file_paths(str(config_file), str(vars_dir))
+        assert config_files == [str(config_file)]
+        assert len(vars_files) == 2
+
     def test_resolve_file_paths_with_vars(self, tmp_path):
         """Test resolving both config and vars files"""
         config_file = tmp_path / "config.yml"

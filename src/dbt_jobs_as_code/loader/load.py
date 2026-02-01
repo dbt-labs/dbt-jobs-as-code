@@ -1,4 +1,5 @@
 import glob
+import os
 
 from beartype.typing import List, Optional, Set
 from jinja2 import Environment, StrictUndefined, meta
@@ -177,6 +178,28 @@ def _get_jinja_variables(input: str) -> Set[str]:
     return meta.find_undeclared_variables(parsed_input)
 
 
+def _resolve_pattern(pattern: str) -> List[str]:
+    """
+    Resolve a file pattern to a list of file paths.
+
+    If the pattern is a directory, it will be expanded to match all .yml and .yaml files
+    within that directory.
+
+    Args:
+        pattern: File path, directory path, or glob pattern
+
+    Returns:
+        List of matching file paths
+    """
+    if os.path.isdir(pattern):
+        # If a directory is provided, match all .yml and .yaml files in it
+        yml_files = glob.glob(os.path.join(pattern, "*.yml"))
+        yaml_files = glob.glob(os.path.join(pattern, "*.yaml"))
+        return yml_files + yaml_files
+    else:
+        return glob.glob(pattern)
+
+
 def resolve_file_paths(
     config_pattern: Optional[str], vars_pattern: Optional[str] = None
 ) -> tuple[List[str], List[str]]:
@@ -184,7 +207,8 @@ def resolve_file_paths(
     Resolve glob patterns to lists of file paths.
 
     Args:
-        config_pattern: Glob pattern for config files
+        config_pattern: Glob pattern, file path, or directory path for config files.
+            If a directory is provided, all .yml and .yaml files in it will be matched.
         vars_pattern: Optional glob pattern for vars files
 
     Returns:
@@ -196,13 +220,13 @@ def resolve_file_paths(
     if not config_pattern:
         return [], []
 
-    config_files = glob.glob(config_pattern)
+    config_files = _resolve_pattern(config_pattern)
     if not config_files:
         raise LoadingJobsYAMLError(f"No files found matching pattern: {config_pattern}")
 
     vars_files = []
     if vars_pattern:
-        vars_files = glob.glob(vars_pattern)
+        vars_files = _resolve_pattern(vars_pattern)
         if not vars_files:
             raise LoadingJobsYAMLError(f"No files found matching pattern: {vars_pattern}")
 
