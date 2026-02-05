@@ -39,12 +39,34 @@ class Change(BaseModel):
     sync_function: Callable
     parameters: dict
     differences: Optional[Dict] = {}
+    result_job_id: Optional[int] = None
 
     def __str__(self):
         return f"{self.action.upper()} {string.capwords(self.type)} {self.identifier}"
 
     def apply(self):
-        self.sync_function(**self.parameters)
+        result = self.sync_function(**self.parameters)
+        
+        # Capture job ID for job operations
+        if self.type == "job":
+            if self.action in ["create", "update"]:
+                # create_job and update_job return JobDefinition objects with an id field
+                if result and hasattr(result, 'id'):
+                    self.result_job_id = result.id
+            elif self.action == "delete":
+                # For delete operations, get the job ID from the parameters
+                if "job" in self.parameters and hasattr(self.parameters["job"], 'id'):
+                    self.result_job_id = self.parameters["job"].id
+        elif self.type == "env var overwrite":
+            # For env var operations, capture the job_definition_id
+            if self.action in ["create", "update"]:
+                # update_env_var returns CustomEnvironmentVariablePayload with job_definition_id
+                if result and hasattr(result, 'job_definition_id'):
+                    self.result_job_id = result.job_definition_id
+            elif self.action == "delete":
+                # For delete, get job_id from parameters if available
+                if "job_id" in self.parameters:
+                    self.result_job_id = self.parameters["job_id"]
 
 
 class ChangeSet(BaseModel):
@@ -109,6 +131,27 @@ class ChangeSet(BaseModel):
         return {
             "job_changes": job_changes,
             "env_var_overwrite_changes": env_var_changes,
+        }
+
+    def to_completed_operations_json(self) -> dict:
+        """Return a structured JSON representation of completed operations with job IDs."""
+        completed_operations = []
+
+        for change in self.root:
+            # Include operations that have a result_job_id (successfully completed)
+            if change.result_job_id is not None:
+                operation_dict = {
+                    "action": change.action.upper(),
+                    "type": string.capwords(change.type),
+                    "identifier": change.identifier,
+                    "job_id": change.result_job_id,
+                    "project_id": change.proj_id,
+                    "environment_id": change.env_id,
+                }
+                completed_operations.append(operation_dict)
+
+        return {
+            "completed_operations": completed_operations,
         }
 
     def __len__(self):
@@ -419,6 +462,7 @@ def build_change_set(
                         parameters={
                             "project_id": job.project_id,
                             "env_var_id": env_var_val.id,
+                            "job_id": job_id,  # Include job_id for result capture
                         },
                     )
                     dbt_cloud_change_set.append(dbt_cloud_change)

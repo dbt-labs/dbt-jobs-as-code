@@ -64,7 +64,7 @@ def mock_change_set():
     """Create a mock change set with both job and env var changes"""
     change_set = ChangeSet()
 
-    # Add a job change
+    # Add a job change (sync_function returns None so no result_job_id is captured)
     change_set.append(
         Change(
             identifier="job1",
@@ -72,7 +72,7 @@ def mock_change_set():
             action="update",
             proj_id=123,
             env_id=456,
-            sync_function=Mock(),
+            sync_function=Mock(return_value=None),
             parameters={},
             differences={
                 "values_changed": {
@@ -82,7 +82,7 @@ def mock_change_set():
         )
     )
 
-    # Add an env var change
+    # Add an env var change (sync_function returns None so no result_job_id is captured)
     change_set.append(
         Change(
             identifier="job1:DBT_VAR1",
@@ -90,7 +90,7 @@ def mock_change_set():
             action="update",
             proj_id=123,
             env_id=456,
-            sync_function=Mock(),
+            sync_function=Mock(return_value=None),
             parameters={},
             differences={"old_value": "old_val", "new_value": "new_val"},
         )
@@ -236,8 +236,12 @@ def test_sync_command_json_output(mock_build_change_set, mock_change_set):
 
     assert result.exit_code == 0
 
-    # Verify the output is valid JSON
-    json_output = json.loads(result.output)
+    # Parse output - will have 2 JSON lines (planned changes and completed operations)
+    # But completed operations will be empty since mocks return None
+    output_lines = [line for line in result.output.strip().split("\n") if line]
+    
+    # First JSON output is the planned changes
+    json_output = json.loads(output_lines[0])
 
     # Verify structure
     assert "job_changes" in json_output
@@ -256,6 +260,11 @@ def test_sync_command_json_output(mock_build_change_set, mock_change_set):
     assert env_var_change["identifier"] == "job1:DBT_VAR1"
     assert env_var_change["action"] == "UPDATE"
     assert "differences" in env_var_change
+    
+    # Second JSON output is completed operations (will be empty since mocks return None)
+    second_json = json.loads(output_lines[1])
+    assert "completed_operations" in second_json
+    assert len(second_json["completed_operations"]) == 0
 
 
 @patch("dbt_jobs_as_code.main.build_change_set")
@@ -459,3 +468,72 @@ def test_sync_command_with_json_and_exclude_pattern(mock_build_change_set, mock_
     assert call_args[0][6] == "temp:.*"  # exclude_identifiers_matching
     # Check that output_json is True
     assert call_args.kwargs.get("output_json") is True
+
+
+# ============= Sync Command Completed Operations Tests =============
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_sync_command_outputs_completed_operations_json(mock_build_change_set):
+    """Test that sync command outputs completed operations JSON after apply"""
+    # Create a change set with operations that will have result_job_id
+    change_set = ChangeSet()
+
+    # Mock job creation
+    job_mock = Mock()
+    job_mock.id = 12345
+    job_sync = Mock(return_value=job_mock)
+
+    # Add a job change
+    job_change = Change(
+        identifier="test_job",
+        type="job",
+        action="create",
+        proj_id=123,
+        env_id=456,
+        sync_function=job_sync,
+        parameters={},
+    )
+    change_set.append(job_change)
+
+    mock_build_change_set.return_value = change_set
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["sync", "--json", "config.yml"])
+
+    assert result.exit_code == 0
+
+    # Parse the output - should have two JSON objects (one before apply, one after)
+    output_lines = [line for line in result.output.strip().split("\n") if line]
+    assert len(output_lines) == 2
+
+    # First JSON output is the planned changes
+    first_json = json.loads(output_lines[0])
+    assert "job_changes" in first_json
+    assert len(first_json["job_changes"]) == 1
+
+    # Second JSON output is the completed operations
+    second_json = json.loads(output_lines[1])
+    assert "completed_operations" in second_json
+    assert len(second_json["completed_operations"]) == 1
+    assert second_json["completed_operations"][0]["job_id"] == 12345
+    assert second_json["completed_operations"][0]["identifier"] == "test_job"
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_sync_command_no_completed_operations_on_empty_changeset(mock_build_change_set):
+    """Test that no completed operations JSON is output when changeset is empty"""
+    mock_build_change_set.return_value = ChangeSet()
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["sync", "--json", "config.yml"])
+
+    assert result.exit_code == 0
+
+    # Should only have one JSON output (the empty changeset)
+    output_lines = [line for line in result.output.strip().split("\n") if line]
+    assert len(output_lines) == 1
+
+    # Verify it's the empty changeset JSON
+    json_output = json.loads(output_lines[0])
+    assert json_output == {"job_changes": [], "env_var_overwrite_changes": []}

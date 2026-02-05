@@ -354,7 +354,7 @@ class DBTCloud:
         logger.success(f"Updated the env_var {custom_env_var.name} for job {job_id}")
         return CustomEnvironmentVariablePayload(**(response.json()["data"]))
 
-    def delete_env_var(self, project_id: int, env_var_id: int) -> None:
+    def delete_env_var(self, project_id: int, env_var_id: int, job_id: Optional[int] = None) -> None:
         """Delete env_var job overwrite in dbt Cloud."""
 
         logger.debug(f"Deleting env var id {env_var_id}")

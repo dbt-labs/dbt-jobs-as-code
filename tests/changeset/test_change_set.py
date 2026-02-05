@@ -368,3 +368,125 @@ def test_change_set_apply_all_success():
 
     # Verify apply_success is True
     assert change_set.apply_success is True
+
+
+def test_change_apply_captures_job_id_on_create():
+    """Test that Change.apply() captures job_id when creating a job"""
+    # Mock JobDefinition return value
+    mock_job = Mock()
+    mock_job.id = 12345
+
+    mock_sync_function = Mock(return_value=mock_job)
+
+    change = Change(
+        identifier="test_job",
+        type="job",
+        action="create",
+        proj_id=123,
+        env_id=456,
+        sync_function=mock_sync_function,
+        parameters={},
+    )
+
+    # Apply the change
+    change.apply()
+
+    # Verify the job ID was captured
+    assert change.result_job_id == 12345
+    mock_sync_function.assert_called_once()
+
+
+def test_change_set_to_completed_operations_json_empty():
+    """Test that an empty change set produces correct completed operations JSON"""
+    change_set = ChangeSet()
+    json_output = change_set.to_completed_operations_json()
+
+    assert json_output == {
+        "completed_operations": [],
+    }
+
+
+def test_change_set_to_completed_operations_json_job_operations():
+    """Test that completed job operations are correctly represented in JSON"""
+    change_set = ChangeSet()
+
+    # Mock return values for job operations
+    create_job_mock = Mock()
+    create_job_mock.id = 111
+    create_sync = Mock(return_value=create_job_mock)
+
+    update_job_mock = Mock()
+    update_job_mock.id = 222
+    update_sync = Mock(return_value=update_job_mock)
+
+    delete_job_mock = Mock()
+    delete_job_mock.id = 333
+    delete_sync = Mock(return_value=None)
+
+    # Add CREATE job change
+    create_change = Change(
+        identifier="job1",
+        type="job",
+        action="create",
+        proj_id=123,
+        env_id=456,
+        sync_function=create_sync,
+        parameters={},
+    )
+    change_set.append(create_change)
+
+    # Add UPDATE job change
+    update_change = Change(
+        identifier="job2",
+        type="job",
+        action="update",
+        proj_id=789,
+        env_id=101,
+        sync_function=update_sync,
+        parameters={},
+    )
+    change_set.append(update_change)
+
+    # Add DELETE job change
+    delete_change = Change(
+        identifier="job3",
+        type="job",
+        action="delete",
+        proj_id=111,
+        env_id=222,
+        sync_function=delete_sync,
+        parameters={"job": delete_job_mock},
+    )
+    change_set.append(delete_change)
+
+    # Apply the changes to capture job IDs
+    change_set.apply()
+
+    # Get completed operations JSON
+    json_output = change_set.to_completed_operations_json()
+
+    assert len(json_output["completed_operations"]) == 3
+
+    # Verify CREATE job
+    create_op = next(op for op in json_output["completed_operations"] if op["action"] == "CREATE")
+    assert create_op["identifier"] == "job1"
+    assert create_op["job_id"] == 111
+    assert create_op["project_id"] == 123
+    assert create_op["environment_id"] == 456
+    assert create_op["type"] == "Job"
+
+    # Verify UPDATE job
+    update_op = next(op for op in json_output["completed_operations"] if op["action"] == "UPDATE")
+    assert update_op["identifier"] == "job2"
+    assert update_op["job_id"] == 222
+    assert update_op["project_id"] == 789
+    assert update_op["environment_id"] == 101
+
+    # Verify DELETE job
+    delete_op = next(op for op in json_output["completed_operations"] if op["action"] == "DELETE")
+    assert delete_op["identifier"] == "job3"
+    assert delete_op["job_id"] == 333
+    assert delete_op["project_id"] == 111
+    assert delete_op["environment_id"] == 222
+
+

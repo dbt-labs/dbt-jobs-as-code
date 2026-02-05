@@ -153,6 +153,10 @@ def sync(
             console.log(change_set.to_table())
     change_set.apply(fail_fast=fail_fast)
 
+    # Output completed operations with job IDs (only for JSON output)
+    if output_json and len(change_set) > 0:
+        print(json.dumps(change_set.to_completed_operations_json()))
+
     if not change_set.apply_success:
         logger.error("-- SYNC -- There were some errors during the sync. Check the logs.")
         sys.exit(1)
