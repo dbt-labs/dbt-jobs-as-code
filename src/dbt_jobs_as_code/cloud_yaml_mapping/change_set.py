@@ -9,13 +9,14 @@ from typing import Dict, Optional
 from beartype import BeartypeConf, BeartypeStrategy, beartype
 from beartype.typing import Callable, List
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from rich.console import Console
 from rich.table import Table
 
 from dbt_jobs_as_code.client import DBTCloud, DBTCloudException
 from dbt_jobs_as_code.loader.load import LoadingJobsYAMLError, load_job_configuration
 from dbt_jobs_as_code.schemas import check_env_var_same, check_job_mapping_same
+from dbt_jobs_as_code.schemas.custom_environment_variable import CustomEnvironmentVariablePayload
 from dbt_jobs_as_code.schemas.job import JobDefinition
 
 # Dynamically create a new @nobeartype decorator disabling type-checking.
@@ -44,7 +45,7 @@ class Change(BaseModel):
         return f"{self.action.upper()} {string.capwords(self.type)} {self.identifier}"
 
     def apply(self):
-        self.sync_function(**self.parameters)
+        return self.sync_function(**self.parameters)
 
 
 class ChangeSet(BaseModel):
@@ -52,6 +53,7 @@ class ChangeSet(BaseModel):
 
     root: List[Change] = []
     apply_success: bool = True
+    applied_changes: list[dict] = Field(default_factory=list)
 
     def __iter__(self):
         return iter(self.root)
@@ -114,10 +116,57 @@ class ChangeSet(BaseModel):
     def __len__(self):
         return len(self.root)
 
+    def to_applied_json(self) -> dict:
+        job_changes = []
+        env_var_changes = []
+
+        for change in self.applied_changes:
+            if change["type"] == "job":
+                job_changes.append(change)
+            elif change["type"] == "env var overwrite":
+                env_var_changes.append(change)
+
+        return {
+            "job_changes": job_changes,
+            "env_var_overwrite_changes": env_var_changes,
+        }
+
     def apply(self, fail_fast: bool = False):
+        self.apply_success = True
+        self.applied_changes = []
         for change in self.root:
             try:
-                change.apply()
+                result = change.apply()
+                applied_change = {
+                    "action": change.action.upper(),
+                    "type": change.type,
+                    "identifier": change.identifier,
+                    "project_id": change.proj_id,
+                    "environment_id": change.env_id,
+                }
+
+                if change.type == "job":
+                    job_id = None
+                    if isinstance(result, JobDefinition):
+                        job_id = result.id
+                    else:
+                        job_param = change.parameters.get("job")
+                        if isinstance(job_param, JobDefinition):
+                            job_id = job_param.id
+                    applied_change["job_id"] = job_id
+                elif change.type == "env var overwrite":
+                    env_var_id = None
+                    job_definition_id = None
+                    if isinstance(result, CustomEnvironmentVariablePayload):
+                        env_var_id = result.id
+                        job_definition_id = result.job_definition_id
+                    else:
+                        env_var_id = change.parameters.get("env_var_id")
+                        job_definition_id = change.parameters.get("job_id")
+                    applied_change["env_var_id"] = env_var_id
+                    applied_change["job_id"] = job_definition_id
+
+                self.applied_changes.append(applied_change)
             except DBTCloudException:
                 self.apply_success = False
                 if fail_fast:
