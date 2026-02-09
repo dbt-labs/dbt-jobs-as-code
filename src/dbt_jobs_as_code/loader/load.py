@@ -196,13 +196,13 @@ def resolve_file_paths(
     if not config_pattern:
         return [], []
 
-    config_files = glob.glob(config_pattern)
+    config_files = glob.glob(config_pattern, recursive=True)
     if not config_files:
         raise LoadingJobsYAMLError(f"No files found matching pattern: {config_pattern}")
 
     vars_files = []
     if vars_pattern:
-        vars_files = glob.glob(vars_pattern)
+        vars_files = glob.glob(vars_pattern, recursive=True)
         if not vars_files:
             raise LoadingJobsYAMLError(f"No files found matching pattern: {vars_pattern}")
 

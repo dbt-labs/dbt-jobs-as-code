@@ -393,6 +393,22 @@ class TestLoaderResolveFilePaths:
         assert all(f.endswith(".yml") for f in config_files)
         assert vars_files == []
 
+    def test_resolve_file_paths_recursive_glob(self, tmp_path):
+        """Test resolving files with recursive ** glob pattern (issue #185)"""
+        jobs_dir = tmp_path / "jobs"
+        # Create nested directory structure
+        (jobs_dir / "category1" / "subcategory1").mkdir(parents=True)
+        (jobs_dir / "category2").mkdir(parents=True)
+
+        (jobs_dir / "top_level.yml").write_text("content")
+        (jobs_dir / "category1" / "job1.yml").write_text("content1")
+        (jobs_dir / "category1" / "subcategory1" / "job2.yml").write_text("content2")
+        (jobs_dir / "category2" / "job3.yml").write_text("content3")
+
+        config_files, vars_files = resolve_file_paths(str(jobs_dir / "**" / "*.yml"))
+        assert len(config_files) == 4
+        assert all(f.endswith(".yml") for f in config_files)
+
     def test_resolve_file_paths_with_vars(self, tmp_path):
         """Test resolving both config and vars files"""
         config_file = tmp_path / "config.yml"
