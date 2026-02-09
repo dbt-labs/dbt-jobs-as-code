@@ -197,12 +197,12 @@ def build_change_set(
     if os.path.isdir(config):
         config = os.path.join(config, "*.yml")
     # Get list of files matching the glob pattern
-    config_files = glob.glob(config)
+    config_files = glob.glob(config, recursive=True)
     if not config_files:
         logger.error(f"No files found matching pattern: {config}")
         return ChangeSet()
 
-    yml_vars_files = glob.glob(yml_vars) if yml_vars else None
+    yml_vars_files = glob.glob(yml_vars, recursive=True) if yml_vars else None
 
     try:
         configuration = load_job_configuration(config_files, yml_vars_files)
