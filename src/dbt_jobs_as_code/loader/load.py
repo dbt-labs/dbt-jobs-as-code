@@ -197,7 +197,7 @@ def _resolve_pattern(pattern: str) -> List[str]:
         yaml_files = glob.glob(os.path.join(pattern, "*.yaml"))
         return yml_files + yaml_files
     else:
-        return glob.glob(pattern)
+        return glob.glob(pattern, recursive=True)
 
 
 def resolve_file_paths(
