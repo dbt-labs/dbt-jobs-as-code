@@ -139,19 +139,30 @@ def sync(
         exclude_identifiers_matching,
         output_json=output_json,
     )
+    plan_json = (
+        change_set.to_json()
+        if len(change_set) > 0
+        else {"job_changes": [], "env_var_overwrite_changes": []}
+    )
+
     if len(change_set) == 0:
-        if output_json:
-            print(json.dumps({"job_changes": [], "env_var_overwrite_changes": []}))
-        else:
+        if not output_json:
             logger.success("-- SYNC -- No changes detected.")
     else:
-        if output_json:
-            print(json.dumps(change_set.to_json()))
-        else:
+        if not output_json:
             logger.info("-- SYNC -- {count} changes detected.", count=len(change_set))
             console = Console()
             console.log(change_set.to_table())
+
     change_set.apply(fail_fast=fail_fast)
+
+    if output_json:
+        output = {
+            **plan_json,
+            "applied": change_set.to_applied_json(),
+            "apply_success": change_set.apply_success,
+        }
+        print(json.dumps(output, default=json_serializer_type))
 
     if not change_set.apply_success:
         logger.error("-- SYNC -- There were some errors during the sync. Check the logs.")

@@ -64,6 +64,21 @@ def mock_change_set():
     """Create a mock change set with both job and env var changes"""
     change_set = ChangeSet()
 
+    base_job = JobDefinition(
+        project_id=123,
+        environment_id=456,
+        account_id=789,
+        name="job1",
+        settings=Settings(threads=4),
+        run_generate_sources=False,
+        execute_steps=["dbt run"],
+        generate_docs=False,
+        schedule={"cron": "0 * * * *"},
+        triggers=Triggers(schedule=True),
+        identifier="job1",
+        id=42,
+    )
+
     # Add a job change
     change_set.append(
         Change(
@@ -72,7 +87,7 @@ def mock_change_set():
             action="update",
             proj_id=123,
             env_id=456,
-            sync_function=Mock(),
+            sync_function=Mock(return_value=base_job),
             parameters={},
             differences={
                 "values_changed": {
@@ -242,6 +257,8 @@ def test_sync_command_json_output(mock_build_change_set, mock_change_set):
     # Verify structure
     assert "job_changes" in json_output
     assert "env_var_overwrite_changes" in json_output
+    assert "applied" in json_output
+    assert "apply_success" in json_output
 
     # Verify job changes
     assert len(json_output["job_changes"]) == 1
@@ -256,6 +273,16 @@ def test_sync_command_json_output(mock_build_change_set, mock_change_set):
     assert env_var_change["identifier"] == "job1:DBT_VAR1"
     assert env_var_change["action"] == "UPDATE"
     assert "differences" in env_var_change
+
+    # Verify applied results
+    assert json_output["apply_success"] is True
+    assert "job_changes" in json_output["applied"]
+    assert "env_var_overwrite_changes" in json_output["applied"]
+
+    applied_job = json_output["applied"]["job_changes"][0]
+    assert applied_job["identifier"] == "job1"
+    assert applied_job["action"] == "UPDATE"
+    assert applied_job["job_id"] == 42
 
 
 @patch("dbt_jobs_as_code.main.build_change_set")
@@ -272,10 +299,10 @@ def test_sync_command_json_output_no_changes(mock_build_change_set, mock_empty_c
     json_output = json.loads(result.output)
 
     # Verify structure
-    assert json_output == {
-        "job_changes": [],
-        "env_var_overwrite_changes": [],
-    }
+    assert json_output["job_changes"] == []
+    assert json_output["env_var_overwrite_changes"] == []
+    assert json_output["applied"] == {"job_changes": [], "env_var_overwrite_changes": []}
+    assert json_output["apply_success"] is True
 
 
 @patch("dbt_jobs_as_code.main.build_change_set")

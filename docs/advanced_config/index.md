@@ -6,3 +6,4 @@ More advanced features of `dbt-jobs-as-code` can be combined to match complex re
 - [glob config files](glob_config_files.md) - for using glob patterns to match config files at once
 - [YAML anchors](yaml_anchors.md) - to reuse the same parameters in different jobs
 - [Advanced jobs importing](jobs_importing.md) - for importing jobs from dbt Cloud to a YAML file
+- [JSON output](json_output.md) - for consuming `plan` and `sync` results in automation scripts
