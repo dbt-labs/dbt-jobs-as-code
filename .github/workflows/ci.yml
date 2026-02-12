@@ -4,6 +4,7 @@ on:
   pull_request_target:
     branches:
       - '**'
+    types: [opened, synchronize, reopened, labeled]
   schedule:
     - cron: '0 2 * * 0'
 
