@@ -1,6 +1,10 @@
 
 To see the details of all changes, head to the GitHub repo
 
+### 1.7
+
+- Add applied job IDs to `sync --json` output. The JSON now includes an `applied` section with `job_id` for each operation and an `apply_success` flag. See [JSON output](advanced_config/json_output.md) for details.
+
 ### 1.6
 
 - Add `--filter` to `import-jobs` to allow importing jobs to specific environments. In the case where people maintain jobs in the dbt Cloud UI and want to promote them, they can mention what environments they want to import the jobs to using the identifier of the job: `[[envs_filter:identifier]]`.
