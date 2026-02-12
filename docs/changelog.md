@@ -1,7 +1,7 @@
 
 To see the details of all changes, head to the GitHub repo
 
-### 1.7
+### 1.14
 
 - Add applied job IDs to `sync --json` output. The JSON now includes an `applied` section with `job_id` for each operation and an `apply_success` flag. See [JSON output](advanced_config/json_output.md) for details.
 
