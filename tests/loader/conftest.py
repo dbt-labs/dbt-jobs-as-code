@@ -243,6 +243,7 @@ def expected_config_dict():
                     "schedule": True,
                 },
                 "triggers_on_draft_pr": False,
+                "ui_job_name_override": None,
                 "run_compare_changes": False,
             },
             "job2": {
@@ -298,6 +299,7 @@ def expected_config_dict():
                     "schedule": False,
                 },
                 "triggers_on_draft_pr": True,
+                "ui_job_name_override": None,
                 "run_compare_changes": True,
             },
         }
