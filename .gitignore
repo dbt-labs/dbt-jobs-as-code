@@ -10,3 +10,6 @@ tests/integration-tests/jobs_rendered.yml
 coverage.xml
 .coverage
 site
+testing-jobs-as-code/
+.venv
+.gitignore

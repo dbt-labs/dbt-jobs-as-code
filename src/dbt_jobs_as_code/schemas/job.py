@@ -76,6 +76,10 @@ class JobDefinition(BaseModel):
     environment_id: int = field_mandatory_int_allowed_as_string_in_schema
     dbt_version: Optional[str] = None
     name: str
+    ui_job_name_override: Optional[str] = Field(
+        default=None,
+        description="When set, this name is used in dbt Cloud without the [[identifier]] suffix.",
+    )
     settings: Settings
     execution: Execution = Execution()
     deferring_job_definition_id: Optional[int] = field_optional_int_allowed_as_string_in_schema
@@ -180,14 +184,18 @@ class JobDefinition(BaseModel):
     def to_payload(self):
         """Create a dbt Cloud API payload for a JobDefinition."""
 
-        # Rewrite the job name to embed the job ID from job.yml
         payload = self.model_copy()
-        # if there is an identifier, add it to the name
-        # otherwise, it means that we are "unlinking" the job from the job.yml
-        if self.identifier:
+        if self.ui_job_name_override:
+            payload.name = self.ui_job_name_override
+        elif self.identifier:
             payload.name = f"{self.name} [[{self.identifier}]]"
         return payload.model_dump_json(
-            exclude={"linked_id", "identifier", "custom_environment_variables"}
+            exclude={
+                "linked_id",
+                "identifier",
+                "custom_environment_variables",
+                "ui_job_name_override",
+            }
         )
 
     def to_load_format(self, include_linked_id: bool = False):
@@ -203,6 +211,7 @@ class JobDefinition(BaseModel):
             "id": True,
             "custom_environment_variables": True,
             "state": True,
+            "ui_job_name_override": True,
         }
         if not include_linked_id:
             exclude_dict["linked_id"] = True

@@ -188,6 +188,19 @@
           "title": "Name",
           "type": "string"
         },
+        "ui_job_name_override": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When set, this name is used in dbt Cloud without the [[identifier]] suffix.",
+          "title": "Ui Job Name Override"
+        },
         "settings": {
           "$ref": "#/$defs/Settings"
         },
