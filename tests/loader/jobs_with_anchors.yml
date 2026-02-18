@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=../../src/dbt_jobs_as_code/schemas/load_job_schema.json
+
+anchors:
+  schedule: &every_hour # using a non-job as an anchor
+    cron: "0 * * * *"
+    date:
+      cron: "0 * * * *"
+      type: "custom_cron"
+    time:
+      hours: null
+      interval: 1
+      type: every_hour
+
+jobs:
+  job1: &main_job # using parameters of a job as the anchor
+    account_id: 43791
+    dbt_version: null
+    deactivated: false
+    deferring_job_definition_id: null
+    environment_id: 134459
+    execute_steps:
+    - "dbt run --select model1+"
+    - "dbt run --select model2+"
+    - "dbt compile"
+    execution:
+      timeout_seconds: 0
+    generate_docs: false
+    generate_sources: true
+    run_compare_changes: false
+    name: "My Job 1 with a new name"
+    project_id: 176941
+    run_generate_sources: true
+    schedule:
+      cron: "0 */2 * * *"
+      date:
+        cron: "0 */2 * * *"
+        type: "custom_cron"
+      time:
+        type: "every_hour"
+        interval: 1
+    settings:
+      target_name: production
+      threads: 4
+    state: 1
+    triggers:
+      git_provider_webhook: false
+      github_webhook: false
+      schedule: true
+  job2:
+    <<: *main_job # << means that we take all the values from the first job but we then overwrite them
+    deferring_job_definition_id: null
+    execute_steps:
+    - dbt run-operation clone_all_production_schemas
+    - dbt compile
+    generate_docs: true
+    generate_sources: true # what does it do??
+    name: CI/CD run
+    run_generate_sources: true
+    schedule: *every_hour # * means that we take the value as-is
+    settings:
+      target_name: TEST
+      threads: 4
+    triggers:
+      git_provider_webhook: false
+      github_webhook: true # this job runs from webhooks
+      schedule: false # this doesn't run on a schedule
+      on_merge: true
+    custom_environment_variables:
+      - DBT_ENV1: My val
+      - DBT_ENV2: My val2
+    job_type: "other"
+    triggers_on_draft_pr: true
+    run_compare_changes: true
+    job_completion_trigger_condition:
+      condition:
+        job_id: 123
+        project_id: 234
+        statuses: [10, 20]

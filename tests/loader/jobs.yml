@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=../../src/dbt_jobs_as_code/schemas/load_job_schema.json
+
+jobs:
+
+  job1:
+    account_id: 43791
+    project_id: 176941
+    environment_id: "134459"
+    dbt_version:
+    name: My Job 1 with a new name
+    settings:
+      threads: 4
+      target_name: production
+    execution:
+      timeout_seconds: 0
+    deferring_job_definition_id:
+    deferring_environment_id:
+    run_generate_sources: true
+    execute_steps:
+      - dbt run --select model1+
+      - dbt run --select model2+
+      - dbt compile
+    generate_docs: false
+    schedule:
+      cron: 0 */2 * * *
+    triggers:
+      github_webhook: false
+      git_provider_webhook: "false"
+      schedule: true
+      on_merge: false
+    job_completion_trigger_condition:
+
+  job2:
+    account_id: 43791
+    project_id: 176941
+    environment_id: 134459
+    dbt_version:
+    name: CI/CD run
+    settings:
+      threads: 4
+      target_name: TEST
+    execution:
+      timeout_seconds: 0
+    deferring_job_definition_id:
+    deferring_environment_id:
+    run_generate_sources: true
+    execute_steps:
+      - dbt run-operation clone_all_production_schemas
+      - dbt compile
+    generate_docs: true
+    schedule:
+      cron: 0 * * * *
+    triggers:
+      github_webhook: true
+      git_provider_webhook: false
+      schedule: false
+      on_merge: true
+    job_type: other
+    triggers_on_draft_pr: true
+    run_compare_changes: true
+    job_completion_trigger_condition:
+      condition:
+        job_id: 123
+        project_id: 234
+        statuses:
+          - 10
+          - 20
+    custom_environment_variables:
+      - DBT_ENV1: My val
+      - DBT_ENV2: My val2

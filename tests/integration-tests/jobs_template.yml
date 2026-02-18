@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=../../src/dbt_jobs_as_code/schemas/load_job_schema.json
+
+jobs:
+  with-trigger:
+    account_id: "{account_id}"
+    project_id: "{project_id}"
+    environment_id: "{environment_id}"
+    dbt_version:
+    name: Another name
+    settings:
+      threads: 4
+      target_name: default
+    execution:
+      timeout_seconds: 0
+    deferring_job_definition_id:
+    deferring_environment_id:
+    run_generate_sources: false
+    job_type: other
+    execute_steps:
+      - dbt build -s my_model
+    generate_docs: false
+    schedule:
+      cron: 0 0 * * 0,1,2,3,4,5,6
+      time:
+        type: at_exact_hours
+        hours: [1,2] 
+    triggers:
+      github_webhook: false
+      git_provider_webhook: false
+      schedule: false
+    job_completion_trigger_condition:
+      condition:
+        job_id: "{job_id}"
+        project_id: "{project_id}"
+        statuses: [10, 20]
+  no-trigger:
+    account_id: "{account_id}"
+    project_id: "{project_id}"
+    environment_id: "{environment_id}"
+    dbt_version:
+    name: Another name 2
+    settings:
+      threads: 4
+      target_name: default
+    execution:
+      timeout_seconds: 0
+    deferring_job_definition_id:
+    deferring_environment_id:
+    run_generate_sources: false
+    job_type: other
+    execute_steps:
+      - dbt build -s my_model
+    generate_docs: false
+    schedule:
+      cron: 0 0 * * 0,1,2,3,4,5,6
+      time:
+        type: at_exact_hours
+        hours: [1,2] 
+    triggers:
+      github_webhook: false
+      git_provider_webhook: false
+      schedule: false
+    custom_environment_variables:
+      - DBT_ALPHA: "true"
+    

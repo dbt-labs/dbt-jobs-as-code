@@ -12,4 +12,3 @@ coverage.xml
 site
 testing-jobs-as-code/
 .venv
-.gitignore
