@@ -100,6 +100,24 @@
     },
     "JobDefinition": {
       "description": "A definition for a dbt Cloud job.",
+      "else": {
+        "required": [
+          "schedule"
+        ]
+      },
+      "if": {
+        "properties": {
+          "job_type": {
+            "enum": [
+              "ci",
+              "merge"
+            ]
+          }
+        },
+        "required": [
+          "job_type"
+        ]
+      },
       "properties": {
         "linked_id": {
           "anyOf": [
@@ -252,7 +270,7 @@
               "type": "null"
             }
           ],
-          "default": false,
+          "default": true,
           "title": "Errors On Lint Failure"
         },
         "execute_steps": {
@@ -267,7 +285,15 @@
           "type": "boolean"
         },
         "schedule": {
-          "$ref": "#/$defs/Schedule"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Schedule"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "triggers": {
           "$ref": "#/$defs/Triggers"
@@ -354,9 +380,9 @@
         "run_generate_sources",
         "execute_steps",
         "generate_docs",
-        "schedule",
         "triggers"
       ],
+      "then": {},
       "title": "JobDefinition",
       "type": "object"
     },
