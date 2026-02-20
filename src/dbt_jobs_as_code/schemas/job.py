@@ -20,6 +20,8 @@ from dbt_jobs_as_code.schemas.common_types import (
 )
 from dbt_jobs_as_code.schemas.custom_environment_variable import CustomEnvironmentVariable
 
+JOB_TYPES_WITHOUT_SCHEDULE = ["ci", "merge"]
+
 
 @dataclass
 class IdentifierInfo:
@@ -57,9 +59,21 @@ def filter_jobs_by_import_filter(
     ]
 
 
+def _job_definition_json_schema_extra(schema: dict) -> None:
+    """Make 'schedule' conditionally required based on job_type."""
+    schema["if"] = {
+        "properties": {"job_type": {"enum": JOB_TYPES_WITHOUT_SCHEDULE}},
+        "required": ["job_type"],
+    }
+    schema["then"] = {}
+    schema["else"] = {"required": ["schedule"]}
+
+
 # Main model for loader
 class JobDefinition(BaseModel):
     """A definition for a dbt Cloud job."""
+
+    model_config = ConfigDict(json_schema_extra=_job_definition_json_schema_extra)
 
     linked_id: Optional[int] = Field(
         default=None,
@@ -85,7 +99,7 @@ class JobDefinition(BaseModel):
     errors_on_lint_failure: Optional[bool] = True
     execute_steps: List[str]
     generate_docs: bool
-    schedule: Schedule
+    schedule: Optional[Schedule] = None
     triggers: Triggers
     description: str = ""
     state: int = 1
@@ -216,6 +230,16 @@ class JobDefinition(BaseModel):
     def to_url(self, account_url: str) -> str:
         """Generate a URL for the job in dbt Cloud."""
         return f"{account_url}/deploy/{self.account_id}/projects/{self.project_id}/jobs/{self.id}"
+
+    @model_validator(mode="after")
+    def default_schedule_for_ci_merge(self):
+        """Default schedule for CI and merge jobs, require it for other job types."""
+        if self.schedule is None:
+            if self.job_type in JOB_TYPES_WITHOUT_SCHEDULE:
+                self.schedule = Schedule(cron="0 0 1 1 *")
+            else:
+                raise ValueError(f"'schedule' is required for '{self.job_type}' jobs")
+        return self
 
     @model_validator(mode="after")
     def validate_cron_expression(self):

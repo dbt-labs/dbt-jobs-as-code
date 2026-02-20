@@ -1,5 +1,11 @@
-import pytest
+import json
 
+import pytest
+from jsonschema import ValidationError as JsonSchemaValidationError
+from jsonschema import validate
+from pydantic import ValidationError
+
+from dbt_jobs_as_code.schemas.config import generate_config_schema
 from dbt_jobs_as_code.schemas.job import (
     IdentifierInfo,
     JobDefinition,
@@ -153,3 +159,83 @@ class TestJobFiltering:
         assert len(result) == 1
         assert jobs[0] in result
         assert jobs[1] not in result
+
+
+BASE_JOB_DATA = {
+    "name": "Test Job",
+    "account_id": 1,
+    "project_id": 1,
+    "environment_id": 1,
+    "settings": {},
+    "triggers": {},
+    "execute_steps": ["dbt build"],
+    "run_generate_sources": False,
+    "generate_docs": False,
+}
+
+
+class TestScheduleConditionalRequirement:
+    """Tests for schedule being optional on ci/merge jobs."""
+
+    # -- Pydantic model tests --
+
+    @pytest.mark.parametrize("job_type", ["ci", "merge"])
+    def test_pydantic_schedule_optional_for_ci_merge(self, job_type):
+        job = JobDefinition(**{**BASE_JOB_DATA, "job_type": job_type})
+        assert job.schedule is not None  # defaults to Schedule()
+
+    @pytest.mark.parametrize("job_type", ["scheduled", "other"])
+    def test_pydantic_schedule_required_for_scheduled_other(self, job_type):
+        with pytest.raises(ValidationError, match="schedule"):
+            JobDefinition(**{**BASE_JOB_DATA, "job_type": job_type})
+
+    def test_pydantic_schedule_required_when_job_type_absent(self):
+        with pytest.raises(ValidationError, match="schedule"):
+            JobDefinition(**BASE_JOB_DATA)  # job_type defaults to "scheduled"
+
+    # -- JSON schema tests --
+
+    @pytest.fixture
+    def json_schema(self):
+        return json.loads(generate_config_schema())
+
+    def _config_instance(self, job_type=None, include_schedule=False):
+        """Build a minimal config dict for JSON schema validation."""
+        job = {
+            "name": "Test Job",
+            "account_id": 1,
+            "project_id": 1,
+            "environment_id": 1,
+            "settings": {},
+            "triggers": {},
+            "execute_steps": ["dbt build"],
+            "run_generate_sources": False,
+            "generate_docs": False,
+        }
+        if job_type is not None:
+            job["job_type"] = job_type
+        if include_schedule:
+            job["schedule"] = {"cron": "0 0 * * *"}
+        return {"jobs": {"test_job": job}}
+
+    @pytest.mark.parametrize("job_type", ["ci", "merge"])
+    def test_json_schema_schedule_optional_for_ci_merge(self, json_schema, job_type):
+        instance = self._config_instance(job_type=job_type, include_schedule=False)
+        validate(instance=instance, schema=json_schema)
+
+    @pytest.mark.parametrize("job_type", ["scheduled", "other"])
+    def test_json_schema_schedule_required_for_scheduled_other(self, json_schema, job_type):
+        instance = self._config_instance(job_type=job_type, include_schedule=False)
+        with pytest.raises(JsonSchemaValidationError, match="schedule"):
+            validate(instance=instance, schema=json_schema)
+
+    def test_json_schema_schedule_required_when_job_type_absent(self, json_schema):
+        instance = self._config_instance(include_schedule=False)
+        with pytest.raises(JsonSchemaValidationError, match="schedule"):
+            validate(instance=instance, schema=json_schema)
+
+    @pytest.mark.parametrize("job_type", ["scheduled", "ci", "merge", "other"])
+    def test_json_schema_schedule_accepted_for_all_types(self, json_schema, job_type):
+        """Providing schedule is always valid regardless of job_type."""
+        instance = self._config_instance(job_type=job_type, include_schedule=True)
+        validate(instance=instance, schema=json_schema)
