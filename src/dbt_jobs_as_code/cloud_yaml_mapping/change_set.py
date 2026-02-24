@@ -290,6 +290,33 @@ def build_change_set(
     _check_no_duplicate_job_identifier(cloud_jobs)
     tracked_jobs = {job.identifier: job for job in cloud_jobs if job.identifier is not None}
 
+    # Match override jobs against untracked cloud jobs by ui_job_name_override or
+    # base name. Trying the override name first handles the steady state; falling
+    # back to the base name handles renames (the cloud still has the old name).
+    untracked_cloud_jobs = [job for job in cloud_jobs if job.identifier is None]
+    for identifier, yaml_job in defined_jobs.items():
+        if yaml_job.ui_job_name_override and identifier not in tracked_jobs:
+            candidate_names = [yaml_job.ui_job_name_override, yaml_job.name]
+            for target_name in candidate_names:
+                matched = False
+                for cloud_job in untracked_cloud_jobs:
+                    if (
+                        cloud_job.name == target_name
+                        and cloud_job.project_id == yaml_job.project_id
+                        and cloud_job.environment_id == yaml_job.environment_id
+                    ):
+                        cloud_job.identifier = identifier
+                        tracked_jobs[identifier] = cloud_job
+                        if not output_json:
+                            logger.debug(
+                                f"Matched override job '{identifier}' to cloud job "
+                                f"'{cloud_job.name}' (id={cloud_job.id})"
+                            )
+                        matched = True
+                        break
+                if matched:
+                    break
+
     # Filter out jobs based on exclude_identifiers_matching regex if provided
     if exclude_identifiers_matching:
         try:
