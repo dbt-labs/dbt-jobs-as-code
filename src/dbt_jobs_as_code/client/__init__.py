@@ -42,7 +42,7 @@ class DBTCloud:
             int, Dict[str, CustomEnvironmentVariablePayload]
         ] = {}
 
-        self.base_url = base_url
+        self.base_url = base_url.rstrip("/")
         self._headers = {
             "Authorization": f"Bearer {self._api_key}",
             "Content-Type": "application/json",
@@ -250,7 +250,7 @@ class DBTCloud:
                     "401 Unauthorized -- Check your API key and dbt Cloud parameters"
                 )
 
-            return None
+            raise DBTCloudException(f"Error fetching jobs (HTTP {response.status_code})")
 
         return response.json()
 
