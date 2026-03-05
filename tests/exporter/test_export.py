@@ -70,6 +70,7 @@ jobs:
     run_compare_changes: false
     compare_changes_flags: --select state:modified
     job_type: scheduled
+    cost_optimization_features: []
     triggers_on_draft_pr: false
     job_completion_trigger_condition:
     custom_environment_variables: []

@@ -26,6 +26,8 @@ jobs:
       git_provider_webhook: false
       github_webhook: false
       schedule: true
+    cost_optimization_features:
+      - state_aware_orchestration
 
   job2:
     account_id: 43791

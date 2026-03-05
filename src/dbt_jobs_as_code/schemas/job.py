@@ -110,6 +110,12 @@ class JobDefinition(BaseModel):
         json_schema_extra={"enum": ["scheduled", "merge", "ci", "other"]},
         default="scheduled",
     )
+    cost_optimization_features: List[str] = Field(
+        default=[],
+        json_schema_extra={
+            "items": {"enum": ["state_aware_orchestration", "efficient_testing"]},
+        },
+    )
     triggers_on_draft_pr: bool = False
     job_completion_trigger_condition: Optional[JobCompletionTriggerCondition] = None
     custom_environment_variables: List[CustomEnvironmentVariable] = Field(
@@ -270,9 +276,7 @@ class JobMissingFields(JobDefinition):
     # when adding fields we also need to update the test for pytest
 
     # TODO: Add to JobDefinition model when the feature is out
-    integration_id: Optional[int] = None
     force_node_selection: Optional[bool] = True
-    cost_optimization_features: list[str]
 
     # Unneeded read-only fields
     raw_dbt_version: Optional[str] = None
