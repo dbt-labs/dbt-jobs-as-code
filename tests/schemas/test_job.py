@@ -239,3 +239,92 @@ class TestScheduleConditionalRequirement:
         """Providing schedule is always valid regardless of job_type."""
         instance = self._config_instance(job_type=job_type, include_schedule=True)
         validate(instance=instance, schema=json_schema)
+
+
+class TestCostOptimizationFeatures:
+    """Tests for cost_optimization_features field on JobDefinition."""
+
+    def test_pydantic_defaults_to_empty_list(self):
+        job = JobDefinition(**{**BASE_JOB_DATA, "schedule": {"cron": "0 0 * * *"}})
+        assert job.cost_optimization_features == []
+
+    def test_pydantic_accepts_valid_features(self):
+        job = JobDefinition(
+            **{
+                **BASE_JOB_DATA,
+                "schedule": {"cron": "0 0 * * *"},
+                "cost_optimization_features": ["state_aware_orchestration"],
+            }
+        )
+        assert job.cost_optimization_features == ["state_aware_orchestration"]
+
+    def test_pydantic_accepts_multiple_features(self):
+        job = JobDefinition(
+            **{
+                **BASE_JOB_DATA,
+                "schedule": {"cron": "0 0 * * *"},
+                "cost_optimization_features": [
+                    "state_aware_orchestration",
+                    "efficient_testing",
+                ],
+            }
+        )
+        assert job.cost_optimization_features == [
+            "state_aware_orchestration",
+            "efficient_testing",
+        ]
+
+    def test_pydantic_accepts_empty_list(self):
+        job = JobDefinition(
+            **{
+                **BASE_JOB_DATA,
+                "schedule": {"cron": "0 0 * * *"},
+                "cost_optimization_features": [],
+            }
+        )
+        assert job.cost_optimization_features == []
+
+    def test_payload_includes_cost_optimization_features(self):
+        job = JobDefinition(
+            **{
+                **BASE_JOB_DATA,
+                "schedule": {"cron": "0 0 * * *"},
+                "cost_optimization_features": ["state_aware_orchestration"],
+            }
+        )
+        payload = json.loads(job.to_payload())
+        assert payload["cost_optimization_features"] == ["state_aware_orchestration"]
+
+    def test_payload_includes_empty_list_when_not_set(self):
+        job = JobDefinition(**{**BASE_JOB_DATA, "schedule": {"cron": "0 0 * * *"}})
+        payload = json.loads(job.to_payload())
+        assert payload["cost_optimization_features"] == []
+
+    @pytest.fixture
+    def json_schema(self):
+        return json.loads(generate_config_schema())
+
+    def test_json_schema_accepts_valid_features(self, json_schema):
+        instance = {
+            "jobs": {
+                "test_job": {
+                    **BASE_JOB_DATA,
+                    "schedule": {"cron": "0 0 * * *"},
+                    "cost_optimization_features": ["state_aware_orchestration"],
+                }
+            }
+        }
+        validate(instance=instance, schema=json_schema)
+
+    def test_json_schema_rejects_invalid_feature(self, json_schema):
+        instance = {
+            "jobs": {
+                "test_job": {
+                    **BASE_JOB_DATA,
+                    "schedule": {"cron": "0 0 * * *"},
+                    "cost_optimization_features": ["not_a_real_feature"],
+                }
+            }
+        }
+        with pytest.raises(JsonSchemaValidationError):
+            validate(instance=instance, schema=json_schema)

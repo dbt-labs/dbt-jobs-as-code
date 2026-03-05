@@ -1,6 +1,10 @@
 
 To see the details of all changes, head to the GitHub repo
 
+### 1.16
+
+- Add support for `cost_optimization_features` in job definitions. Valid values are `state_aware_orchestration` and `efficient_testing`. This allows for dbt users on the Fusion engine to configure cost optimization natively in their YAML job definitions.
+
 ### 1.14
 
 - Add applied job IDs to `sync --json` output. The JSON now includes an `applied` section with `job_id` for each operation and an `apply_success` flag. See [JSON output](advanced_config/json_output.md) for details.

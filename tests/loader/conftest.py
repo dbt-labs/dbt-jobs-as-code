@@ -206,6 +206,7 @@ def expected_config_dict():
             "job1": {
                 "account_id": 43791,
                 "compare_changes_flags": "--select state:modified",
+                "cost_optimization_features": [],
                 "custom_environment_variables": [],
                 "dbt_version": None,
                 "deferring_environment_id": None,
@@ -248,6 +249,7 @@ def expected_config_dict():
             "job2": {
                 "account_id": 43791,
                 "compare_changes_flags": "--select state:modified",
+                "cost_optimization_features": [],
                 "custom_environment_variables": [
                     {
                         "display_value": None,

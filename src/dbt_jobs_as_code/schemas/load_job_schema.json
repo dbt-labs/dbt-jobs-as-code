@@ -329,6 +329,17 @@
           "title": "Job Type",
           "type": "string"
         },
+        "cost_optimization_features": {
+          "default": [],
+          "items": {
+            "enum": [
+              "state_aware_orchestration",
+              "efficient_testing"
+            ]
+          },
+          "title": "Cost Optimization Features",
+          "type": "array"
+        },
         "triggers_on_draft_pr": {
           "default": false,
           "title": "Triggers On Draft Pr",
