@@ -22,8 +22,12 @@ def _job_to_dict(job: JobDefinition):
             "id",  # we want to exclude id because our YAML file will not have it
             "custom_environment_variables",  # TODO: Add this back in. Requires extra API calls.
             "linked_id",  # we want to exclude linked_id because dbt Cloud doesn't save it
+            "ui_job_name_override",  # local-only config, not stored in dbt Cloud
         }
     )
+    # Compare using the effective name that would be sent to the API
+    if job.ui_job_name_override:
+        dict_vals["name"] = job.ui_job_name_override
     return dict_vals
 
 
