@@ -278,6 +278,10 @@ class JobMissingFields(JobDefinition):
     # TODO: Add to JobDefinition model when the feature is out
     force_node_selection: Optional[bool] = True
 
+    # Fusion-related fields
+    is_fusion_ready_override: Optional[bool] = False
+    fusion_readiness: Optional[Any] = None
+
     # Unneeded read-only fields
     raw_dbt_version: Optional[str] = None
     created_at: str = ""
