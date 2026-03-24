@@ -73,7 +73,9 @@ class TestLoaderLoadJobConfiguration:
         with pytest.raises(LoadingJobsYAMLError) as exc_info:
             load_job_configuration([str(config_file)], None)
 
-        assert "Job identifiers cannot contain spaces" in str(exc_info.value)
+        assert "Job identifiers can only contain letters, digits, underscores, and hyphens" in str(
+            exc_info.value
+        )
         assert "job with spaces" in str(exc_info.value)
 
     def test_load_job_configuration_multiple_identifiers_with_spaces_error(
@@ -86,7 +88,9 @@ class TestLoaderLoadJobConfiguration:
         with pytest.raises(LoadingJobsYAMLError) as exc_info:
             load_job_configuration([str(config_file)], None)
 
-        assert "Job identifiers cannot contain spaces" in str(exc_info.value)
+        assert "Job identifiers can only contain letters, digits, underscores, and hyphens" in str(
+            exc_info.value
+        )
         assert "job with spaces" in str(exc_info.value)
         assert "another invalid job" in str(exc_info.value)
 
@@ -124,7 +128,9 @@ class TestValidateJobIdentifiers:
         with pytest.raises(LoadingJobsYAMLError) as exc_info:
             _validate_job_identifiers(jobs)
 
-        assert "Job identifiers cannot contain spaces" in str(exc_info.value)
+        assert "Job identifiers can only contain letters, digits, underscores, and hyphens" in str(
+            exc_info.value
+        )
         assert "job with spaces" in str(exc_info.value)
         assert "another job" in str(exc_info.value)
 
@@ -139,8 +145,25 @@ class TestValidateJobIdentifiers:
         with pytest.raises(LoadingJobsYAMLError) as exc_info:
             _validate_job_identifiers(jobs)
 
-        assert "Job identifiers cannot contain spaces" in str(exc_info.value)
+        assert "Job identifiers can only contain letters, digits, underscores, and hyphens" in str(
+            exc_info.value
+        )
         assert "job with spaces" in str(exc_info.value)
+
+    def test_validate_job_identifiers_with_special_chars(self):
+        """Test that identifiers with special characters (e.g. &, @, .) are rejected."""
+        jobs = {
+            "job&name": {},
+            "job@name": {},
+        }
+
+        with pytest.raises(LoadingJobsYAMLError) as exc_info:
+            _validate_job_identifiers(jobs)
+
+        assert "Job identifiers can only contain letters, digits, underscores, and hyphens" in str(
+            exc_info.value
+        )
+        assert "job&name" in str(exc_info.value)
 
     def test_validate_job_identifiers_empty_dict(self):
         """Test that validation passes for empty jobs dictionary."""

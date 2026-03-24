@@ -22,6 +22,10 @@ from dbt_jobs_as_code.schemas.custom_environment_variable import CustomEnvironme
 
 JOB_TYPES_WITHOUT_SCHEDULE = ["ci", "merge"]
 
+# Characters allowed in a YAML identifier key (embedded as [[identifier]] in job names).
+# Must match the character class used when extracting identifiers from job names.
+VALID_IDENTIFIER_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+
 
 @dataclass
 class IdentifierInfo:
