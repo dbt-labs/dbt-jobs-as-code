@@ -8,6 +8,7 @@ from loguru import logger
 from ruamel.yaml import YAML
 
 from dbt_jobs_as_code.schemas.config import Config
+from dbt_jobs_as_code.schemas.job import VALID_IDENTIFIER_RE
 
 
 class LoadingJobsYAMLError(Exception):
@@ -49,22 +50,26 @@ def load_job_configuration(config_files: List[str], vars_file: Optional[List[str
 
 
 def _validate_job_identifiers(jobs: dict) -> None:
-    """Validate that job identifiers don't contain spaces.
+    """Validate that job identifiers only contain allowed characters.
+
+    Identifiers are embedded as [[identifier]] in job names and extracted via regex,
+    so they must only contain letters, digits, underscores, and hyphens.
 
     Args:
         jobs: Dictionary of jobs with identifiers as keys
 
     Raises:
-        LoadingJobsYAMLError: If any job identifier contains spaces
+        LoadingJobsYAMLError: If any job identifier contains invalid characters
     """
     invalid_identifiers = []
     for identifier in jobs.keys():
-        if " " in identifier:
+        if not VALID_IDENTIFIER_RE.match(identifier):
             invalid_identifiers.append(identifier)
 
     if invalid_identifiers:
         raise LoadingJobsYAMLError(
-            f"Job identifiers cannot contain spaces. Invalid identifiers: {', '.join(invalid_identifiers)}"
+            f"Job identifiers can only contain letters, digits, underscores, and hyphens. "
+            f"Invalid identifiers: {', '.join(invalid_identifiers)}"
         )
 
 
