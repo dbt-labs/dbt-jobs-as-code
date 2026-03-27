@@ -256,6 +256,7 @@ class JobDefinition(BaseModel):
         """Validate the cron expression and include job ID in error message if invalid."""
         if not Schedule.validate_cron(self.schedule.cron):
             job_id_str = f" (Job ID: {self.id})" if self.id is not None else ""
+            identifier_str = f" (Identifier: {self.identifier})" if self.identifier else ""
             project_id_str = (
                 f" (Project ID: {self.project_id})" if self.project_id is not None else ""
             )
@@ -265,7 +266,7 @@ class JobDefinition(BaseModel):
                 else ""
             )
             raise ValueError(
-                f"The cron expression is not valid{job_id_str}{project_id_str}{environment_id_str}"
+                f"The cron expression '{self.schedule.cron}' is not valid{job_id_str}{identifier_str}{project_id_str}{environment_id_str}"
             )
         return self
 
