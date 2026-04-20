@@ -328,3 +328,40 @@ class TestCostOptimizationFeatures:
         }
         with pytest.raises(JsonSchemaValidationError):
             validate(instance=instance, schema=json_schema)
+
+
+class TestDescriptionValidation:
+    """Tests for description field length validation."""
+
+    def test_description_within_limit_is_accepted(self):
+        job = JobDefinition(
+            **{**BASE_JOB_DATA, "schedule": {"cron": "0 0 * * *"}, "description": "x" * 255}
+        )
+        assert len(job.description) == 255
+
+    def test_description_exceeding_limit_raises_validation_error(self):
+        with pytest.raises(ValidationError, match="description"):
+            JobDefinition(
+                **{**BASE_JOB_DATA, "schedule": {"cron": "0 0 * * *"}, "description": "x" * 256}
+            )
+
+    def test_empty_description_is_accepted(self):
+        job = JobDefinition(**{**BASE_JOB_DATA, "schedule": {"cron": "0 0 * * *"}})
+        assert job.description == ""
+
+    @pytest.fixture
+    def json_schema(self):
+        return json.loads(generate_config_schema())
+
+    def test_json_schema_rejects_description_exceeding_limit(self, json_schema):
+        instance = {
+            "jobs": {
+                "test_job": {
+                    **BASE_JOB_DATA,
+                    "schedule": {"cron": "0 0 * * *"},
+                    "description": "x" * 256,
+                }
+            }
+        }
+        with pytest.raises(JsonSchemaValidationError, match="description"):
+            validate(instance=instance, schema=json_schema)

@@ -105,7 +105,7 @@ class JobDefinition(BaseModel):
     generate_docs: bool
     schedule: Optional[Schedule] = None
     triggers: Triggers
-    description: str = ""
+    description: str = Field(default="", max_length=255)
     state: int = 1
     run_compare_changes: bool = False
     compare_changes_flags: str = "--select state:modified"
