@@ -344,3 +344,70 @@ def test_exclude_identifiers_matching_with_json_output(
     # Verify the result is a valid ChangeSet
     assert isinstance(result, ChangeSet)
     # JSON output should not affect the filtering behavior
+
+
+@patch("dbt_jobs_as_code.cloud_yaml_mapping.change_set.load_job_configuration")
+@patch("dbt_jobs_as_code.cloud_yaml_mapping.change_set.DBTCloud")
+@patch("dbt_jobs_as_code.cloud_yaml_mapping.change_set.glob.glob")
+def test_build_change_set_passes_use_desc_for_id_true(
+    mock_glob, mock_dbt_cloud_class, mock_load_config, sample_jobs
+):
+    """Test that build_change_set passes use_desc_for_id=True to DBTCloud constructor"""
+    sample_job = sample_jobs[0]
+
+    mock_config = Mock()
+    mock_config.jobs = {"test-job": sample_job}
+    mock_load_config.return_value = mock_config
+    mock_glob.return_value = ["test.yml"]
+
+    mock_dbt_cloud = Mock()
+    mock_dbt_cloud_class.return_value = mock_dbt_cloud
+    mock_dbt_cloud.get_jobs.return_value = []
+    mock_dbt_cloud.build_mapping_job_identifier_job_id.return_value = {}
+
+    build_change_set(
+        config="test.yml",
+        yml_vars=None,
+        disable_ssl_verification=False,
+        project_ids=[],
+        environment_ids=[],
+        use_desc_for_id=True,
+    )
+
+    # Verify DBTCloud was constructed with use_desc_for_id=True
+    mock_dbt_cloud_class.assert_called_once()
+    _, kwargs = mock_dbt_cloud_class.call_args
+    assert kwargs.get("use_desc_for_id") is True
+
+
+@patch("dbt_jobs_as_code.cloud_yaml_mapping.change_set.load_job_configuration")
+@patch("dbt_jobs_as_code.cloud_yaml_mapping.change_set.DBTCloud")
+@patch("dbt_jobs_as_code.cloud_yaml_mapping.change_set.glob.glob")
+def test_build_change_set_use_desc_for_id_defaults_to_false(
+    mock_glob, mock_dbt_cloud_class, mock_load_config, sample_jobs
+):
+    """Test that build_change_set defaults use_desc_for_id to False"""
+    sample_job = sample_jobs[0]
+
+    mock_config = Mock()
+    mock_config.jobs = {"test-job": sample_job}
+    mock_load_config.return_value = mock_config
+    mock_glob.return_value = ["test.yml"]
+
+    mock_dbt_cloud = Mock()
+    mock_dbt_cloud_class.return_value = mock_dbt_cloud
+    mock_dbt_cloud.get_jobs.return_value = []
+    mock_dbt_cloud.build_mapping_job_identifier_job_id.return_value = {}
+
+    build_change_set(
+        config="test.yml",
+        yml_vars=None,
+        disable_ssl_verification=False,
+        project_ids=[],
+        environment_ids=[],
+    )
+
+    # Verify DBTCloud was constructed with use_desc_for_id=False (default)
+    mock_dbt_cloud_class.assert_called_once()
+    _, kwargs = mock_dbt_cloud_class.call_args
+    assert kwargs.get("use_desc_for_id") is False
