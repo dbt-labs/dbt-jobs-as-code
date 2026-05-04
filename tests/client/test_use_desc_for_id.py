@@ -1,6 +1,8 @@
+import json
 from unittest.mock import MagicMock
 
 from dbt_jobs_as_code.client import DBTCloud
+from dbt_jobs_as_code.schemas.job import JobDefinition
 
 
 class TestPreProcessJobData:
@@ -190,3 +192,86 @@ class TestGetJobsDescMode:
         assert job.identifier is None
         assert job.name == "Job A"
         assert job.description == "Desc A [[job_a]]"
+
+
+class TestUpdateCreateDescMode:
+    """Tests that update_job/create_job pass use_desc_for_id to to_payload."""
+
+    def _make_job(self, identifier="daily_job"):
+        return JobDefinition(
+            id=42,
+            name=f"Daily Job [[{identifier}]]",
+            account_id=1,
+            project_id=100,
+            environment_id=200,
+            settings={},
+            triggers={},
+            execute_steps=["dbt build"],
+            run_generate_sources=False,
+            generate_docs=False,
+            schedule={"cron": "0 0 * * *"},
+        )
+
+    def _make_mock_response(self, job: JobDefinition, use_desc_for_id: bool = False):
+        """Build a MagicMock response that looks like a successful API response."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        raw = json.loads(job.to_payload(use_desc_for_id=use_desc_for_id))
+        raw["id"] = job.id
+        raw["state"] = 1
+        mock_resp.json.return_value = {"data": raw}
+        return mock_resp
+
+    def test_update_job_uses_desc_for_id_when_flag_on(self):
+        """update_job sends [[id]] in description when use_desc_for_id=True."""
+        client = DBTCloud(account_id=1, api_key="test-key", use_desc_for_id=True)
+        job = self._make_job()
+
+        captured = {}
+
+        def capture_post(**kwargs):
+            captured["data"] = kwargs.get("data") or kwargs.get("json")
+            return self._make_mock_response(job, use_desc_for_id=True)
+
+        client._session.post = capture_post
+        client.update_job(job)
+
+        payload = json.loads(captured["data"])
+        assert "[[daily_job]]" in payload["description"]
+        assert "[[daily_job]]" not in payload["name"]
+
+    def test_create_job_uses_desc_for_id_when_flag_on(self):
+        """create_job sends [[id]] in description when use_desc_for_id=True."""
+        client = DBTCloud(account_id=1, api_key="test-key", use_desc_for_id=True)
+        job = self._make_job()
+
+        captured = {}
+
+        def capture_post(**kwargs):
+            captured["data"] = kwargs.get("data") or kwargs.get("json")
+            return self._make_mock_response(job, use_desc_for_id=True)
+
+        client._session.post = capture_post
+        client.create_job(job)
+
+        payload = json.loads(captured["data"])
+        assert "[[daily_job]]" in payload["description"]
+        assert "[[daily_job]]" not in payload["name"]
+
+    def test_update_job_uses_name_for_id_when_flag_off(self):
+        """update_job sends [[id]] in name when use_desc_for_id=False (default)."""
+        client = DBTCloud(account_id=1, api_key="test-key", use_desc_for_id=False)
+        job = self._make_job()
+
+        captured = {}
+
+        def capture_post(**kwargs):
+            captured["data"] = kwargs.get("data") or kwargs.get("json")
+            return self._make_mock_response(job, use_desc_for_id=False)
+
+        client._session.post = capture_post
+        client.update_job(job)
+
+        payload = json.loads(captured["data"])
+        assert "[[daily_job]]" in payload["name"]
+        assert "[[daily_job]]" not in payload["description"]

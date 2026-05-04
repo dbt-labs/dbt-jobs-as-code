@@ -118,7 +118,7 @@ class DBTCloud:
         response = self._session.post(  # Yes, it's actually a POST. Ew.
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job.id}/",
             headers=self._headers,
-            data=job.to_payload(),
+            data=job.to_payload(use_desc_for_id=self._use_desc_for_id),
             verify=self._verify,
         )
 
@@ -138,7 +138,7 @@ class DBTCloud:
         response = self._session.post(
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
             headers=self._headers,
-            data=job.to_payload(),
+            data=job.to_payload(use_desc_for_id=self._use_desc_for_id),
             verify=self._verify,
         )
 
