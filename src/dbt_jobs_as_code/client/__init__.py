@@ -35,9 +35,11 @@ class DBTCloud:
         api_key: Optional[str],
         base_url: str = "https://cloud.getdbt.com",
         disable_ssl_verification: bool = False,
+        use_desc_for_id: bool = False,
     ) -> None:
         self.account_id = account_id
         self._api_key = api_key
+        self._use_desc_for_id = use_desc_for_id
         self._environment_variable_cache: Dict[
             int, Dict[str, CustomEnvironmentVariablePayload]
         ] = {}
@@ -60,6 +62,26 @@ class DBTCloud:
         """Clear out any cached environment variables for a given job."""
         if job_definition_id in self._environment_variable_cache:
             del self._environment_variable_cache[job_definition_id]
+
+    def _pre_process_job_data(self, data: dict) -> dict:
+        """Move [[identifier]] from description back to name for internal processing."""
+        description = data.get("description", "")
+        if not description:
+            return data
+
+        identifier_info = JobDefinition._extract_identifier_from_description(description)
+        if not identifier_info.identifier:
+            return data
+
+        data = dict(data)  # shallow copy to avoid mutating caller's dict
+        raw_id = identifier_info.raw_identifier
+        # Strip " [[raw_id]]" or "[[raw_id]]" from description
+        data["description"] = description.replace(f" [[{raw_id}]]", "").replace(
+            f"[[{raw_id}]]", ""
+        )
+        # Move identifier to name (where JobDefinition.__init__ expects it)
+        data["name"] = f"{data['name']} [[{raw_id}]]"
+        return data
 
     def _check_for_creds(self):
         """Confirm the presence of credentials"""
