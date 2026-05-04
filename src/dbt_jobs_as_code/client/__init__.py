@@ -181,7 +181,10 @@ class DBTCloud:
         if response.status_code > 200:
             logger.error(f"Issue getting the job {job_id}")
             raise DBTCloudException(f"Error getting the job {job_id}")
-        return JobDefinition(**response.json()["data"])
+        raw_data = response.json()["data"]
+        if self._use_desc_for_id:
+            raw_data = DBTCloud._pre_process_job_data(raw_data)
+        return JobDefinition(**raw_data)
 
     def get_job_missing_fields(self, job_id: int) -> Optional[JobMissingFields]:
         """Generate a Job based on a dbt Cloud job."""
@@ -218,6 +221,8 @@ class DBTCloud:
         else:
             jobs = self._fetch_jobs(project_ids, None)
 
+        if self._use_desc_for_id:
+            jobs = [DBTCloud._pre_process_job_data(job) for job in jobs]
         return [JobDefinition(**job) for job in jobs]
 
     def _fetch_jobs(self, project_ids: List[int], environment_id: Optional[int]) -> List[dict]:
