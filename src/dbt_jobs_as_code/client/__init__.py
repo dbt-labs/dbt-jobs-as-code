@@ -128,7 +128,11 @@ class DBTCloud:
         else:
             logger.success("Job updated successfully.")
 
-        return JobDefinition(**(response.json()["data"]), identifier=job.identifier)
+        raw_data = response.json()["data"]
+        if self._use_desc_for_id:
+            raw_data = DBTCloud._pre_process_job_data(raw_data)
+            return JobDefinition(**raw_data)
+        return JobDefinition(**raw_data, identifier=job.identifier)
 
     def create_job(self, job: JobDefinition) -> Optional[JobDefinition]:
         """Create a dbt Cloud Job using a JobDefinition"""
@@ -149,7 +153,11 @@ class DBTCloud:
         else:
             logger.success("Job created successfully.")
 
-        return JobDefinition(**(response.json()["data"]), identifier=job.identifier)
+        raw_data = response.json()["data"]
+        if self._use_desc_for_id:
+            raw_data = DBTCloud._pre_process_job_data(raw_data)
+            return JobDefinition(**raw_data)
+        return JobDefinition(**raw_data, identifier=job.identifier)
 
     def delete_job(self, job: JobDefinition) -> None:
         """Delete a dbt Cloud job."""

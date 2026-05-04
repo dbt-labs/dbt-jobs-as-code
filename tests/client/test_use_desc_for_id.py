@@ -197,10 +197,11 @@ class TestGetJobsDescMode:
 class TestUpdateCreateDescMode:
     """Tests that update_job/create_job pass use_desc_for_id to to_payload."""
 
-    def _make_job(self, identifier="daily_job"):
+    def _make_job(self, identifier="daily_job", description="Runs nightly"):
         return JobDefinition(
             id=42,
             name=f"Daily Job [[{identifier}]]",
+            description=description,
             account_id=1,
             project_id=100,
             environment_id=200,
@@ -293,3 +294,33 @@ class TestUpdateCreateDescMode:
         payload = json.loads(captured["data"])
         assert "[[daily_job]]" in payload["name"]
         assert "[[daily_job]]" not in payload["description"]
+
+    def test_update_job_return_value_has_identifier_in_desc_mode(self):
+        """update_job pre-processes the API response so the returned JobDefinition has a clean identifier and description."""
+        client = DBTCloud(account_id=1, api_key="test-key", use_desc_for_id=True)
+        job = self._make_job(description="Runs nightly")
+
+        def mock_post(**kwargs):
+            return self._make_mock_response(job, use_desc_for_id=True)
+
+        client._session.post = mock_post
+        result = client.update_job(job)
+
+        assert result.identifier == "daily_job"
+        assert result.name == "Daily Job"
+        assert result.description == "Runs nightly"
+
+    def test_create_job_return_value_has_identifier_in_desc_mode(self):
+        """create_job pre-processes the API response so the returned JobDefinition has a clean identifier and description."""
+        client = DBTCloud(account_id=1, api_key="test-key", use_desc_for_id=True)
+        job = self._make_job(description="Runs nightly")
+
+        def mock_post(**kwargs):
+            return self._make_mock_response(job, use_desc_for_id=True)
+
+        client._session.post = mock_post
+        result = client.create_job(job)
+
+        assert result.identifier == "daily_job"
+        assert result.name == "Daily Job"
+        assert result.description == "Runs nightly"
