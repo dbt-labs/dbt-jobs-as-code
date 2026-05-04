@@ -534,3 +534,131 @@ def test_use_desc_for_id_default_false(mock_build_change_set, mock_empty_change_
     mock_build_change_set.assert_called_once()
     call_args = mock_build_change_set.call_args
     assert call_args.kwargs.get("use_desc_for_id") is False
+
+
+@patch("dbt_jobs_as_code.main.DBTCloud")
+@patch("dbt_jobs_as_code.main.load_job_configuration")
+@patch("dbt_jobs_as_code.main.resolve_file_paths")
+def test_use_desc_for_id_option_validate(
+    mock_resolve_file_paths, mock_load_job_configuration, mock_DBTCloud
+):
+    """Test that validate --online passes use_desc_for_id=True to DBTCloud"""
+    from dbt_jobs_as_code.schemas.common_types import Settings, Triggers
+    from dbt_jobs_as_code.schemas.job import JobDefinition
+
+    mock_resolve_file_paths.return_value = (["config.yml"], [])
+
+    job = JobDefinition(
+        project_id=123,
+        environment_id=456,
+        account_id=789,
+        name="Test Job",
+        settings=Settings(threads=4),
+        run_generate_sources=False,
+        execute_steps=["dbt run"],
+        generate_docs=False,
+        schedule={"cron": "0 * * * *"},
+        triggers=Triggers(schedule=True),
+    )
+    mock_config = Mock()
+    mock_config.jobs = {"test-job": job}
+    mock_load_job_configuration.return_value = mock_config
+
+    instance = mock_DBTCloud.return_value
+    instance.get_environments.return_value = [{"id": 456, "project_id": 123}]
+    instance.get_jobs.return_value = []
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["validate", "--online", "--use-desc-for-id", "config.yml"])
+
+    assert result.exit_code == 0
+    mock_DBTCloud.assert_called_once()
+    assert mock_DBTCloud.call_args.kwargs["use_desc_for_id"] is True
+
+
+@patch("dbt_jobs_as_code.main.DBTCloud")
+def test_use_desc_for_id_option_import_jobs(mock_DBTCloud):
+    """Test that import-jobs passes use_desc_for_id=True to DBTCloud"""
+    instance = mock_DBTCloud.return_value
+    instance.get_jobs.return_value = []
+    instance.get_env_vars.return_value = {}
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["import-jobs", "--account-id", "789", "--use-desc-for-id"],
+    )
+
+    assert result.exit_code == 0
+    mock_DBTCloud.assert_called_once()
+    assert mock_DBTCloud.call_args.kwargs["use_desc_for_id"] is True
+
+
+@patch("dbt_jobs_as_code.main.DBTCloud")
+@patch("dbt_jobs_as_code.main.load_job_configuration")
+@patch("dbt_jobs_as_code.main.resolve_file_paths")
+def test_use_desc_for_id_option_link(
+    mock_resolve_file_paths, mock_load_job_configuration, mock_DBTCloud
+):
+    """Test that link passes use_desc_for_id=True to DBTCloud"""
+    from dbt_jobs_as_code.schemas.common_types import Settings, Triggers
+    from dbt_jobs_as_code.schemas.job import JobDefinition
+
+    mock_resolve_file_paths.return_value = (["config.yml"], [])
+
+    job = JobDefinition(
+        project_id=123,
+        environment_id=456,
+        account_id=789,
+        name="Test Job",
+        settings=Settings(threads=4),
+        run_generate_sources=False,
+        execute_steps=["dbt run"],
+        generate_docs=False,
+        schedule={"cron": "0 * * * *"},
+        triggers=Triggers(schedule=True),
+    )
+    mock_config = Mock()
+    mock_config.jobs = {"test-job": job}
+    mock_load_job_configuration.return_value = mock_config
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["link", "--dry-run", "--use-desc-for-id", "config.yml"])
+
+    assert result.exit_code == 0
+    mock_DBTCloud.assert_called_once()
+    assert mock_DBTCloud.call_args.kwargs["use_desc_for_id"] is True
+
+
+@patch("dbt_jobs_as_code.main.DBTCloud")
+def test_use_desc_for_id_option_unlink(mock_DBTCloud):
+    """Test that unlink passes use_desc_for_id=True to DBTCloud"""
+    instance = mock_DBTCloud.return_value
+    instance.get_jobs.return_value = []
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["unlink", "--account-id", "789", "--use-desc-for-id"],
+    )
+
+    assert result.exit_code == 0
+    mock_DBTCloud.assert_called_once()
+    assert mock_DBTCloud.call_args.kwargs["use_desc_for_id"] is True
+
+
+@patch("dbt_jobs_as_code.main.DBTCloud")
+def test_use_desc_for_id_option_deactivate_jobs(mock_DBTCloud):
+    """Test that deactivate-jobs passes use_desc_for_id=True to DBTCloud"""
+    instance = mock_DBTCloud.return_value
+    instance.get_jobs.return_value = []
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["deactivate-jobs", "--account-id", "789", "--use-desc-for-id"],
+    )
+
+    assert result.exit_code == 0
+    mock_DBTCloud.assert_called_once()
+    assert mock_DBTCloud.call_args.kwargs["use_desc_for_id"] is True

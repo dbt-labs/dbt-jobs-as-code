@@ -645,8 +645,15 @@ def unlink(
     multiple=True,
     help="The ID of the job to deactivate.",
 )
+@option_use_desc_for_id
 def deactivate_jobs(
-    config, account_id, project_id, environment_id, job_id, disable_ssl_verification
+    config,
+    account_id,
+    project_id,
+    environment_id,
+    job_id,
+    disable_ssl_verification,
+    use_desc_for_id,
 ):
     """
     Deactivate jobs triggers in dbt Cloud (schedule and CI/CI triggers) without remoing the jobs.
@@ -669,6 +676,7 @@ def deactivate_jobs(
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
+        use_desc_for_id=use_desc_for_id,
     )
     cloud_jobs = dbt_cloud.get_jobs()
 
