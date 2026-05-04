@@ -113,12 +113,14 @@ class TestIdentifierExtraction:
         assert result == IdentifierInfo(identifier=None, import_filter="", raw_identifier="")
 
     def test_extract_identifier_from_description_simple(self):
+        """Test extracting simple identifier from job description."""
         result = JobDefinition._extract_identifier_from_description("Runs nightly [[daily_job]]")
         assert result == IdentifierInfo(
             identifier="daily_job", import_filter="", raw_identifier="daily_job"
         )
 
     def test_extract_identifier_from_description_with_filter(self):
+        """Test extracting identifier with filter from job description."""
         result = JobDefinition._extract_identifier_from_description(
             "Runs nightly [[prod:daily_job]]"
         )
@@ -127,14 +129,17 @@ class TestIdentifierExtraction:
         )
 
     def test_extract_identifier_from_description_no_identifier(self):
+        """Test when description has no identifier."""
         result = JobDefinition._extract_identifier_from_description("Runs nightly")
         assert result == IdentifierInfo(identifier=None, import_filter="", raw_identifier="")
 
     def test_extract_identifier_from_description_empty(self):
+        """Test when description is empty."""
         result = JobDefinition._extract_identifier_from_description("")
         assert result == IdentifierInfo(identifier=None, import_filter="", raw_identifier="")
 
     def test_extract_identifier_from_description_only_tag(self):
+        """Test when description contains only the identifier tag."""
         result = JobDefinition._extract_identifier_from_description("[[daily_job]]")
         assert result == IdentifierInfo(
             identifier="daily_job", import_filter="", raw_identifier="daily_job"
