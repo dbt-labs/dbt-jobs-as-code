@@ -118,9 +118,10 @@ class TestGetJobsDescMode:
         assert job.description == "Runs nightly"
 
     def test_get_job_no_preprocessing_when_flag_off(self):
-        """get_job does NOT pre-process when use_desc_for_id=False."""
+        """get_job does NOT pre-process when use_desc_for_id=False; identifier stays in description."""
         client = self._make_client(use_desc_for_id=False)
-        raw = self._raw_job(name="Daily Job [[daily_job]]", description="Runs nightly")
+        # Raw API form: identifier is in description, not in name
+        raw = self._raw_job(name="Daily Job", description="Runs nightly [[daily_job]]")
 
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -129,9 +130,11 @@ class TestGetJobsDescMode:
 
         job = client.get_job(job_id=42)
 
-        assert job.identifier == "daily_job"
+        # Without preprocessing, name has no [[id]], so identifier is None
+        assert job.identifier is None
         assert job.name == "Daily Job"
-        assert job.description == "Runs nightly"
+        # Description is untouched — still contains the tag
+        assert job.description == "Runs nightly [[daily_job]]"
 
     def test_get_jobs_extracts_identifiers_from_descriptions(self):
         """get_jobs pre-processes all jobs in the API response."""
@@ -160,3 +163,30 @@ class TestGetJobsDescMode:
         assert jobs_by_id["job_a"].description == "Desc A"
         assert jobs_by_id["job_b"].identifier == "job_b"
         assert jobs_by_id["job_b"].description == "Desc B"
+
+    def test_get_jobs_no_preprocessing_when_flag_off(self):
+        """get_jobs does NOT pre-process when use_desc_for_id=False."""
+        client = self._make_client(use_desc_for_id=False)
+        raw_jobs = [
+            self._raw_job(name="Job A", description="Desc A [[job_a]]"),
+        ]
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "data": raw_jobs,
+            "extra": {
+                "filters": {"limit": 100, "offset": 0},
+                "pagination": {"total_count": 1},
+            },
+        }
+        client._session.get = MagicMock(return_value=mock_resp)
+
+        jobs = client.get_jobs(project_ids=[100])
+
+        assert len(jobs) == 1
+        job = jobs[0]
+        # Without preprocessing, identifier is not extracted
+        assert job.identifier is None
+        assert job.name == "Job A"
+        assert job.description == "Desc A [[job_a]]"
