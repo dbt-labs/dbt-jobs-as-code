@@ -50,6 +50,16 @@ class TestPreProcessJobData:
         assert result["name"] == "Daily Job [[prod:daily_job]]"
         assert result["description"] == "Runs nightly"
 
+    def test_pre_process_does_not_mutate_caller_dict(self):
+        """_pre_process_job_data must not mutate the original dict."""
+        client = self._make_client()
+        original = {"name": "Daily Job", "description": "Runs nightly [[daily_job]]"}
+        original_description = original["description"]
+        original_name = original["name"]
+        client._pre_process_job_data(original)
+        assert original["description"] == original_description
+        assert original["name"] == original_name
+
     def test_client_stores_use_desc_for_id_flag(self):
         """DBTCloud stores use_desc_for_id on the instance."""
         client = DBTCloud(account_id=1, api_key="test-key", use_desc_for_id=True)

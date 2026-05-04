@@ -1,4 +1,5 @@
 import os
+import re
 
 import requests
 from beartype.typing import Any, Dict, List, Optional
@@ -63,7 +64,8 @@ class DBTCloud:
         if job_definition_id in self._environment_variable_cache:
             del self._environment_variable_cache[job_definition_id]
 
-    def _pre_process_job_data(self, data: dict) -> dict:
+    @staticmethod
+    def _pre_process_job_data(data: dict) -> dict:
         """Move [[identifier]] from description back to name for internal processing."""
         description = data.get("description", "")
         if not description:
@@ -75,9 +77,12 @@ class DBTCloud:
 
         data = dict(data)  # shallow copy to avoid mutating caller's dict
         raw_id = identifier_info.raw_identifier
-        # Strip " [[raw_id]]" or "[[raw_id]]" from description
-        data["description"] = description.replace(f" [[{raw_id}]]", "").replace(
-            f"[[{raw_id}]]", ""
+        # Strip " [[raw_id]]" or "[[raw_id]]" from description (first occurrence only)
+        data["description"] = re.sub(
+            r" ?\[\[" + re.escape(raw_id) + r"\]\]",
+            "",
+            description,
+            count=1,
         )
         # Move identifier to name (where JobDefinition.__init__ expects it)
         data["name"] = f"{data['name']} [[{raw_id}]]"
