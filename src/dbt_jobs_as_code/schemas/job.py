@@ -203,15 +203,27 @@ class JobDefinition(BaseModel):
 
     _extract_identifier_from_description = _extract_identifier_from_name
 
-    def to_payload(self):
+    def to_payload(self, use_desc_for_id: bool = False):
         """Create a dbt Cloud API payload for a JobDefinition."""
 
-        # Rewrite the job name to embed the job ID from job.yml
+        # Rewrite the job name (or description) to embed the job ID from job.yml
         payload = self.model_copy()
-        # if there is an identifier, add it to the name
+        # if there is an identifier, add it to the name or description
         # otherwise, it means that we are "unlinking" the job from the job.yml
         if self.identifier:
-            payload.name = f"{self.name} [[{self.identifier}]]"
+            if use_desc_for_id:
+                stored_desc = (
+                    f"{self.description} [[{self.identifier}]]"
+                    if self.description
+                    else f"[[{self.identifier}]]"
+                )
+                if len(stored_desc) > 255:
+                    raise ValueError(
+                        f"Job description too long: '{stored_desc[:50]}...' is {len(stored_desc)} chars (max 255)"
+                    )
+                payload.description = stored_desc
+            else:
+                payload.name = f"{self.name} [[{self.identifier}]]"
         return payload.model_dump_json(
             exclude={"linked_id", "identifier", "custom_environment_variables"}
         )

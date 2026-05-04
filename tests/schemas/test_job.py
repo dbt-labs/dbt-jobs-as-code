@@ -398,3 +398,70 @@ class TestDescriptionValidation:
         }
         with pytest.raises(JsonSchemaValidationError, match="description"):
             validate(instance=instance, schema=json_schema)
+
+
+class TestToPayloadDescMode:
+    """Tests for to_payload() with use_desc_for_id=True."""
+
+    def _make_job(self, name="Test Job", description="", identifier=None):
+        job = JobDefinition(
+            **{
+                **BASE_JOB_DATA,
+                "schedule": {"cron": "0 0 * * *"},
+                "name": f"{name} [[{identifier}]]" if identifier else name,
+                "description": description,
+            }
+        )
+        return job
+
+    def test_to_payload_use_desc_for_id(self):
+        """Identifier goes to description, name is clean."""
+        job = self._make_job(description="Runs nightly", identifier="daily_job")
+        payload = json.loads(job.to_payload(use_desc_for_id=True))
+        assert payload["name"] == "Test Job"
+        assert payload["description"] == "Runs nightly [[daily_job]]"
+
+    def test_to_payload_use_desc_for_id_empty_description(self):
+        """Empty description stores [[id]] without leading space."""
+        job = self._make_job(description="", identifier="daily_job")
+        payload = json.loads(job.to_payload(use_desc_for_id=True))
+        assert payload["name"] == "Test Job"
+        assert payload["description"] == "[[daily_job]]"
+
+    def test_to_payload_use_desc_for_id_no_identifier(self):
+        """No identifier: both fields remain clean."""
+        job = self._make_job(description="Runs nightly")
+        payload = json.loads(job.to_payload(use_desc_for_id=True))
+        assert payload["name"] == "Test Job"
+        assert payload["description"] == "Runs nightly"
+
+    def test_to_payload_default_mode_unchanged(self):
+        """use_desc_for_id=False (default): identifier still goes in name."""
+        job = self._make_job(description="Runs nightly", identifier="daily_job")
+        payload = json.loads(job.to_payload())
+        assert payload["name"] == "Test Job [[daily_job]]"
+        assert payload["description"] == "Runs nightly"
+
+    def test_to_payload_description_too_long(self):
+        """ValueError when description + [[identifier]] exceeds 255 chars."""
+        long_desc = "x" * 240  # 240 + len(" [[daily_job]]") = 254, just under
+        job = self._make_job(description=long_desc, identifier="daily_job")
+        # 240 + 14 = 254 chars — should pass
+        payload = json.loads(job.to_payload(use_desc_for_id=True))
+        assert len(payload["description"]) == 254
+
+        # Now make it too long: 242 + 14 = 256 chars — should fail
+        too_long_desc = "x" * 242
+        job2 = self._make_job(description=too_long_desc, identifier="daily_job")
+        with pytest.raises(ValueError, match="description"):
+            job2.to_payload(use_desc_for_id=True)
+
+    def test_to_payload_description_too_long_empty_base(self):
+        """ValueError when identifier alone exceeds 255 chars (edge case: no base description)."""
+        # Identifier must be > 255 chars to fail without base description.
+        # This is unlikely in practice but ensures boundary check is done on stored value.
+        # Use a max-length description that leaves no room for any suffix at all.
+        job = self._make_job(description="x" * 250, identifier="id")
+        # stored = "x" * 250 + " [[id]]" = 257 chars — should fail
+        with pytest.raises(ValueError, match="description"):
+            job.to_payload(use_desc_for_id=True)
