@@ -275,3 +275,21 @@ class TestUpdateCreateDescMode:
         payload = json.loads(captured["data"])
         assert "[[daily_job]]" in payload["name"]
         assert "[[daily_job]]" not in payload["description"]
+
+    def test_create_job_uses_name_for_id_when_flag_off(self):
+        """create_job sends [[id]] in name when use_desc_for_id=False (default)."""
+        client = DBTCloud(account_id=1, api_key="test-key", use_desc_for_id=False)
+        job = self._make_job()
+
+        captured = {}
+
+        def capture_post(**kwargs):
+            captured["data"] = kwargs.get("data") or kwargs.get("json")
+            return self._make_mock_response(job, use_desc_for_id=False)
+
+        client._session.post = capture_post
+        client.create_job(job)
+
+        payload = json.loads(captured["data"])
+        assert "[[daily_job]]" in payload["name"]
+        assert "[[daily_job]]" not in payload["description"]
