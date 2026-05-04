@@ -486,3 +486,51 @@ def test_sync_command_with_json_and_exclude_pattern(mock_build_change_set, mock_
     assert call_args[0][6] == "temp:.*"  # exclude_identifiers_matching
     # Check that output_json is True
     assert call_args.kwargs.get("output_json") is True
+
+
+# ============= use_desc_for_id Option Tests =============
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_use_desc_for_id_option_sync(mock_build_change_set, mock_empty_change_set):
+    """Test that sync command accepts --use-desc-for-id and passes it to build_change_set"""
+    mock_build_change_set.return_value = mock_empty_change_set
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["sync", "--use-desc-for-id", "config.yml"])
+
+    assert result.exit_code == 0
+
+    mock_build_change_set.assert_called_once()
+    call_args = mock_build_change_set.call_args
+    assert call_args.kwargs.get("use_desc_for_id") is True
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_use_desc_for_id_option_plan(mock_build_change_set, mock_empty_change_set):
+    """Test that plan command accepts --use-desc-for-id and passes it to build_change_set"""
+    mock_build_change_set.return_value = mock_empty_change_set
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["plan", "--use-desc-for-id", "config.yml"])
+
+    assert result.exit_code == 0
+
+    mock_build_change_set.assert_called_once()
+    call_args = mock_build_change_set.call_args
+    assert call_args.kwargs.get("use_desc_for_id") is True
+
+
+@patch("dbt_jobs_as_code.main.build_change_set")
+def test_use_desc_for_id_default_false(mock_build_change_set, mock_empty_change_set):
+    """Test that omitting --use-desc-for-id defaults to False"""
+    mock_build_change_set.return_value = mock_empty_change_set
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["plan", "config.yml"])
+
+    assert result.exit_code == 0
+
+    mock_build_change_set.assert_called_once()
+    call_args = mock_build_change_set.call_args
+    assert call_args.kwargs.get("use_desc_for_id") is False
