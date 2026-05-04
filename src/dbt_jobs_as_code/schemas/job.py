@@ -201,6 +201,28 @@ class JobDefinition(BaseModel):
         else:
             raise ValueError(f"Invalid job identifier - More than 1 colon: '{raw_identifier}'")
 
+    @staticmethod
+    def _extract_identifier_from_description(description: str) -> IdentifierInfo:
+        """Extract identifier from job description (used in --use-desc-for-id mode)."""
+        matches = re.search(r"\[\[([*:a-zA-Z0-9_-]+)\]\]", description)
+        if matches is None:
+            return IdentifierInfo(identifier=None, import_filter="", raw_identifier="")
+
+        raw_identifier = matches.groups()[0]
+        num_colons = raw_identifier.count(":")
+
+        if num_colons == 0:
+            return IdentifierInfo(
+                identifier=raw_identifier, import_filter="", raw_identifier=raw_identifier
+            )
+        elif num_colons == 1:
+            import_filter, identifier = raw_identifier.split(":")
+            return IdentifierInfo(
+                identifier=identifier, import_filter=import_filter, raw_identifier=raw_identifier
+            )
+        else:
+            raise ValueError(f"Invalid job identifier - More than 1 colon: '{raw_identifier}'")
+
     def to_payload(self):
         """Create a dbt Cloud API payload for a JobDefinition."""
 
