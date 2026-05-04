@@ -25,6 +25,7 @@ JOB_TYPES_WITHOUT_SCHEDULE = ["ci", "merge"]
 # Characters allowed in a YAML identifier key (embedded as [[identifier]] in job names).
 # Must match the character class used when extracting identifiers from job names.
 VALID_IDENTIFIER_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+DESCRIPTION_MAX_LENGTH = 255
 
 
 @dataclass
@@ -105,7 +106,7 @@ class JobDefinition(BaseModel):
     generate_docs: bool
     schedule: Optional[Schedule] = None
     triggers: Triggers
-    description: str = Field(default="", max_length=255)
+    description: str = Field(default="", max_length=DESCRIPTION_MAX_LENGTH)
     state: int = 1
     run_compare_changes: bool = False
     compare_changes_flags: str = "--select state:modified"
@@ -217,9 +218,9 @@ class JobDefinition(BaseModel):
                     if self.description
                     else f"[[{self.identifier}]]"
                 )
-                if len(stored_desc) > 255:
+                if len(stored_desc) > DESCRIPTION_MAX_LENGTH:
                     raise ValueError(
-                        f"Job description too long: '{stored_desc[:50]}...' is {len(stored_desc)} chars (max 255)"
+                        f"Job description too long: '{stored_desc[:50]}...' is {len(stored_desc)} chars (max {DESCRIPTION_MAX_LENGTH})"
                     )
                 payload.description = stored_desc
             else:

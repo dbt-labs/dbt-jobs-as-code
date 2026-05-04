@@ -442,26 +442,25 @@ class TestToPayloadDescMode:
         assert payload["name"] == "Test Job [[daily_job]]"
         assert payload["description"] == "Runs nightly"
 
-    def test_to_payload_description_too_long(self):
-        """ValueError when description + [[identifier]] exceeds 255 chars."""
-        long_desc = "x" * 240  # 240 + len(" [[daily_job]]") = 254, just under
+    def test_to_payload_description_at_limit(self):
+        """Description + [[identifier]] at exactly 255 chars is accepted."""
+        # "x" * 240 + " [[daily_job]]" = 240 + 14 = 254 chars — within limit
+        long_desc = "x" * 240
         job = self._make_job(description=long_desc, identifier="daily_job")
-        # 240 + 14 = 254 chars — should pass
         payload = json.loads(job.to_payload(use_desc_for_id=True))
         assert len(payload["description"]) == 254
 
-        # Now make it too long: 242 + 14 = 256 chars — should fail
+    def test_to_payload_description_over_limit(self):
+        """ValueError when description + [[identifier]] exceeds 255 chars."""
+        # "x" * 242 + " [[daily_job]]" = 242 + 14 = 256 chars — over limit
         too_long_desc = "x" * 242
-        job2 = self._make_job(description=too_long_desc, identifier="daily_job")
+        job = self._make_job(description=too_long_desc, identifier="daily_job")
         with pytest.raises(ValueError, match="description"):
-            job2.to_payload(use_desc_for_id=True)
+            job.to_payload(use_desc_for_id=True)
 
-    def test_to_payload_description_too_long_empty_base(self):
-        """ValueError when identifier alone exceeds 255 chars (edge case: no base description)."""
-        # Identifier must be > 255 chars to fail without base description.
-        # This is unlikely in practice but ensures boundary check is done on stored value.
-        # Use a max-length description that leaves no room for any suffix at all.
+    def test_to_payload_description_barely_over_with_long_base(self):
+        """ValueError when a nearly-full base description pushes the stored string over 255."""
+        # "x" * 250 + " [[id]]" = 257 chars — should fail
         job = self._make_job(description="x" * 250, identifier="id")
-        # stored = "x" * 250 + " [[id]]" = 257 chars — should fail
         with pytest.raises(ValueError, match="description"):
             job.to_payload(use_desc_for_id=True)
