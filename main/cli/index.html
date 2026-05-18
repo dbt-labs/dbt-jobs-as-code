@@ -811,7 +811,7 @@
 <h1 id="cli-reference">CLI reference</h1>
 <p>This page provides documentation for our command line tools.</p>
 <h2 id="dbt-jobs-as-code">dbt-jobs-as-code</h2>
-<p>dbt-jobs-as-code 1.17.1.dev4+g4856cfa</p>
+<p>dbt-jobs-as-code 1.17.1.dev20+g1645dbc</p>
 <p>A CLI to allow defining dbt Cloud jobs as code</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code>dbt-jobs-as-code [OPTIONS] COMMAND [ARGS]...
@@ -894,6 +894,12 @@ When the new jobs have been created, this command can be used to deactivate the 
 <td>integer</td>
 <td>The ID of the job to deactivate.</td>
 <td>None</td>
+</tr>
+<tr>
+<td><code>--use-desc-for-id</code></td>
+<td>boolean</td>
+<td>Store the [[identifier]] tag in the job description instead of the job name.</td>
+<td><code>False</code></td>
 </tr>
 <tr>
 <td><code>--help</code></td>
@@ -983,6 +989,12 @@ When the new jobs have been created, this command can be used to deactivate the 
 <td>None</td>
 </tr>
 <tr>
+<td><code>--use-desc-for-id</code></td>
+<td>boolean</td>
+<td>Store the [[identifier]] tag in the job description instead of the job name.</td>
+<td><code>False</code></td>
+</tr>
+<tr>
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>
@@ -1030,6 +1042,12 @@ All relevant jobs get the part [[...]] added to their name</p>
 <td><code>--dry-run</code></td>
 <td>boolean</td>
 <td>In dry run mode we don't update dbt Cloud.</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--use-desc-for-id</code></td>
+<td>boolean</td>
+<td>Store the [[identifier]] tag in the job description instead of the job name.</td>
 <td><code>False</code></td>
 </tr>
 <tr>
@@ -1101,6 +1119,12 @@ This command will not update dbt Cloud.</p>
 <td>None</td>
 </tr>
 <tr>
+<td><code>--use-desc-for-id</code></td>
+<td>boolean</td>
+<td>Store the [[identifier]] tag in the job description instead of the job name.</td>
+<td><code>False</code></td>
+</tr>
+<tr>
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>
@@ -1167,6 +1191,12 @@ This command will update dbt Cloud with the changes in the local YML file. It is
 <td>text</td>
 <td>Exclude jobs from dbt Cloud if their identifiers match this regex pattern.</td>
 <td>None</td>
+</tr>
+<tr>
+<td><code>--use-desc-for-id</code></td>
+<td>boolean</td>
+<td>Store the [[identifier]] tag in the job description instead of the job name.</td>
+<td><code>False</code></td>
 </tr>
 <tr>
 <td><code>--fail-fast</code></td>
@@ -1242,6 +1272,12 @@ All relevant jobs get the part [[...]] removed from their name</p>
 <td>None</td>
 </tr>
 <tr>
+<td><code>--use-desc-for-id</code></td>
+<td>boolean</td>
+<td>Store the [[identifier]] tag in the job description instead of the job name.</td>
+<td><code>False</code></td>
+</tr>
+<tr>
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>
@@ -1282,6 +1318,12 @@ All relevant jobs get the part [[...]] removed from their name</p>
 <td><code>--online</code></td>
 <td>boolean</td>
 <td>Connect to dbt Cloud to check that IDs are correct.</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--use-desc-for-id</code></td>
+<td>boolean</td>
+<td>Store the [[identifier]] tag in the job description instead of the job name.</td>
 <td><code>False</code></td>
 </tr>
 <tr>
