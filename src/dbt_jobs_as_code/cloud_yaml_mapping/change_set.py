@@ -235,6 +235,7 @@ def build_change_set(
     limit_projects_envs_to_yml: bool = False,
     exclude_identifiers_matching: Optional[str] = None,
     output_json: bool = False,
+    use_desc_for_id: bool = False,
 ):
     """Compares the config of YML files versus dbt Cloud.
     Depending on the value of no_update, it will either update the dbt Cloud config or not.
@@ -284,6 +285,7 @@ def build_change_set(
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
+        use_desc_for_id=use_desc_for_id,
     )
 
     cloud_jobs = dbt_cloud.get_jobs(project_ids=project_ids, environment_ids=environment_ids)

@@ -1,4 +1,5 @@
 import os
+import re
 
 import requests
 from beartype.typing import Any, Dict, List, Optional
@@ -35,9 +36,11 @@ class DBTCloud:
         api_key: Optional[str],
         base_url: str = "https://cloud.getdbt.com",
         disable_ssl_verification: bool = False,
+        use_desc_for_id: bool = False,
     ) -> None:
         self.account_id = account_id
         self._api_key = api_key
+        self._use_desc_for_id = use_desc_for_id
         self._environment_variable_cache: Dict[
             int, Dict[str, CustomEnvironmentVariablePayload]
         ] = {}
@@ -60,6 +63,30 @@ class DBTCloud:
         """Clear out any cached environment variables for a given job."""
         if job_definition_id in self._environment_variable_cache:
             del self._environment_variable_cache[job_definition_id]
+
+    @staticmethod
+    def _pre_process_job_data(data: dict) -> dict:
+        """Move [[identifier]] from description back to name for internal processing."""
+        description = data.get("description", "")
+        if not description:
+            return data
+
+        identifier_info = JobDefinition._extract_identifier_from_description(description)
+        if not identifier_info.identifier:
+            return data
+
+        data = dict(data)  # shallow copy to avoid mutating caller's dict
+        raw_id = identifier_info.raw_identifier
+        # Strip " [[raw_id]]" or "[[raw_id]]" from description (first occurrence only)
+        data["description"] = re.sub(
+            r" ?\[\[" + re.escape(raw_id) + r"\]\]",
+            "",
+            description,
+            count=1,
+        )
+        # Move identifier to name (where JobDefinition.__init__ expects it)
+        data["name"] = f"{data['name']} [[{raw_id}]]"
+        return data
 
     def _check_for_creds(self):
         """Confirm the presence of credentials"""
@@ -91,7 +118,7 @@ class DBTCloud:
         response = self._session.post(  # Yes, it's actually a POST. Ew.
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/{job.id}/",
             headers=self._headers,
-            data=job.to_payload(),
+            data=job.to_payload(use_desc_for_id=self._use_desc_for_id),
             verify=self._verify,
         )
 
@@ -101,7 +128,11 @@ class DBTCloud:
         else:
             logger.success("Job updated successfully.")
 
-        return JobDefinition(**(response.json()["data"]), identifier=job.identifier)
+        raw_data = response.json()["data"]
+        if self._use_desc_for_id:
+            raw_data = DBTCloud._pre_process_job_data(raw_data)
+            return JobDefinition(**raw_data)
+        return JobDefinition(**raw_data, identifier=job.identifier)
 
     def create_job(self, job: JobDefinition) -> Optional[JobDefinition]:
         """Create a dbt Cloud Job using a JobDefinition"""
@@ -111,7 +142,7 @@ class DBTCloud:
         response = self._session.post(
             url=f"{self.base_url}/api/v2/accounts/{self.account_id}/jobs/",
             headers=self._headers,
-            data=job.to_payload(),
+            data=job.to_payload(use_desc_for_id=self._use_desc_for_id),
             verify=self._verify,
         )
 
@@ -122,7 +153,11 @@ class DBTCloud:
         else:
             logger.success("Job created successfully.")
 
-        return JobDefinition(**(response.json()["data"]), identifier=job.identifier)
+        raw_data = response.json()["data"]
+        if self._use_desc_for_id:
+            raw_data = DBTCloud._pre_process_job_data(raw_data)
+            return JobDefinition(**raw_data)
+        return JobDefinition(**raw_data, identifier=job.identifier)
 
     def delete_job(self, job: JobDefinition) -> None:
         """Delete a dbt Cloud job."""
@@ -154,7 +189,10 @@ class DBTCloud:
         if response.status_code > 200:
             logger.error(f"Issue getting the job {job_id}")
             raise DBTCloudException(f"Error getting the job {job_id}")
-        return JobDefinition(**response.json()["data"])
+        raw_data = response.json()["data"]
+        if self._use_desc_for_id:
+            raw_data = DBTCloud._pre_process_job_data(raw_data)
+        return JobDefinition(**raw_data)
 
     def get_job_missing_fields(self, job_id: int) -> Optional[JobMissingFields]:
         """Generate a Job based on a dbt Cloud job."""
@@ -191,6 +229,8 @@ class DBTCloud:
         else:
             jobs = self._fetch_jobs(project_ids, None)
 
+        if self._use_desc_for_id:
+            jobs = [DBTCloud._pre_process_job_data(job) for job in jobs]
         return [JobDefinition(**job) for job in jobs]
 
     def _fetch_jobs(self, project_ids: List[int], environment_id: Optional[int]) -> List[dict]:

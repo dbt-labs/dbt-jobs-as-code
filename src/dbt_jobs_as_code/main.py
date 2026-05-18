@@ -73,6 +73,15 @@ option_exclude_identifiers_matching = click.option(
     help="Exclude jobs from dbt Cloud if their identifiers match this regex pattern.",
 )
 
+option_use_desc_for_id = click.option(
+    "--use-desc-for-id",
+    is_flag=True,
+    envvar="DBT_JOBS_AS_CODE_USE_DESC_FOR_ID",
+    show_envvar=True,
+    default=False,
+    help="Store the [[identifier]] tag in the job description instead of the job name.",
+)
+
 
 @click.group(
     help=f"dbt-jobs-as-code {VERSION}\n\nA CLI to allow defining dbt Cloud jobs as code",
@@ -92,6 +101,7 @@ def cli() -> None:
 @option_limit_projects_envs_to_yml
 @option_json_output
 @option_exclude_identifiers_matching
+@option_use_desc_for_id
 @click.option(
     "--fail-fast",
     is_flag=True,
@@ -106,6 +116,7 @@ def sync(
     disable_ssl_verification,
     output_json: bool,
     exclude_identifiers_matching: str,
+    use_desc_for_id: bool,
     fail_fast: bool,
 ):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
@@ -138,6 +149,7 @@ def sync(
         limit_projects_envs_to_yml,
         exclude_identifiers_matching,
         output_json=output_json,
+        use_desc_for_id=use_desc_for_id,
     )
     plan_json = (
         change_set.to_json()
@@ -178,6 +190,7 @@ def sync(
 @option_limit_projects_envs_to_yml
 @option_json_output
 @option_exclude_identifiers_matching
+@option_use_desc_for_id
 def plan(
     config: str,
     vars_yml: str,
@@ -187,6 +200,7 @@ def plan(
     disable_ssl_verification: bool,
     output_json: bool,
     exclude_identifiers_matching: str,
+    use_desc_for_id: bool,
 ):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
     This command will not update dbt Cloud.
@@ -217,6 +231,7 @@ def plan(
         limit_projects_envs_to_yml,
         exclude_identifiers_matching,
         output_json=output_json,
+        use_desc_for_id=use_desc_for_id,
     )
     if len(change_set) == 0:
         if output_json:
@@ -237,7 +252,8 @@ def plan(
 @click.argument("config", type=str)
 @option_vars_yml
 @click.option("--online", is_flag=True, help="Connect to dbt Cloud to check that IDs are correct.")
-def validate(config, vars_yml, online, disable_ssl_verification):
+@option_use_desc_for_id
+def validate(config, vars_yml, online, disable_ssl_verification, use_desc_for_id):
     """Check that the config file is valid
 
     CONFIG is the path to your YML jobs config file (also supports glob patterns for those files or a directory).
@@ -262,6 +278,7 @@ def validate(config, vars_yml, online, disable_ssl_verification):
             api_key=os.environ.get("DBT_API_KEY"),
             base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
             disable_ssl_verification=disable_ssl_verification,
+            use_desc_for_id=use_desc_for_id,
         )
         all_environments = dbt_cloud.get_environments(project_ids=list(config_project_ids))
         cloud_project_ids = set([env["project_id"] for env in all_environments])
@@ -372,6 +389,7 @@ def validate(config, vars_yml, online, disable_ssl_verification):
     type=str,
     help="Only import jobs where the identifier prefix, before `:` contains this value, is empty or is '*'.",
 )
+@option_use_desc_for_id
 def import_jobs(
     config,
     account_id,
@@ -384,6 +402,7 @@ def import_jobs(
     managed_only=False,
     templated_fields=None,
     filter=None,
+    use_desc_for_id: bool = False,
 ):
     """
     Generate YML file for import.
@@ -412,6 +431,7 @@ def import_jobs(
             api_key=os.environ.get("DBT_API_KEY"),
             base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
             disable_ssl_verification=disable_ssl_verification,
+            use_desc_for_id=use_desc_for_id,
         )
 
         if check_missing_fields:
@@ -450,7 +470,8 @@ def import_jobs(
 @option_project_ids
 @option_environment_ids
 @click.option("--dry-run", is_flag=True, help="In dry run mode we don't update dbt Cloud.")
-def link(config, project_id, environment_id, dry_run, disable_ssl_verification):
+@option_use_desc_for_id
+def link(config, project_id, environment_id, dry_run, disable_ssl_verification, use_desc_for_id):
     """
     Link the YML file to dbt Cloud by adding the identifier to the job name.
     All relevant jobs get the part [[...]] added to their name
@@ -467,6 +488,7 @@ def link(config, project_id, environment_id, dry_run, disable_ssl_verification):
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
+        use_desc_for_id=use_desc_for_id,
     )
 
     # Filter jobs based on project_id and environment_id if provided
@@ -528,8 +550,16 @@ def link(config, project_id, environment_id, dry_run, disable_ssl_verification):
     multiple=True,
     help="[Optional] The identifiers we want to unlink. If not provided, all jobs are unlinked.",
 )
+@option_use_desc_for_id
 def unlink(
-    config, account_id, project_id, environment_id, dry_run, identifier, disable_ssl_verification
+    config,
+    account_id,
+    project_id,
+    environment_id,
+    dry_run,
+    identifier,
+    disable_ssl_verification,
+    use_desc_for_id,
 ):
     """
     Unlink the YML file to dbt Cloud.
@@ -562,6 +592,7 @@ def unlink(
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
+        use_desc_for_id=use_desc_for_id,
     )
     cloud_jobs = dbt_cloud.get_jobs(project_ids=project_ids, environment_ids=environment_ids)
     selected_jobs = [job for job in cloud_jobs if job.identifier is not None]
@@ -614,8 +645,15 @@ def unlink(
     multiple=True,
     help="The ID of the job to deactivate.",
 )
+@option_use_desc_for_id
 def deactivate_jobs(
-    config, account_id, project_id, environment_id, job_id, disable_ssl_verification
+    config,
+    account_id,
+    project_id,
+    environment_id,
+    job_id,
+    disable_ssl_verification,
+    use_desc_for_id,
 ):
     """
     Deactivate jobs triggers in dbt Cloud (schedule and CI/CI triggers) without remoing the jobs.
@@ -638,6 +676,7 @@ def deactivate_jobs(
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
+        use_desc_for_id=use_desc_for_id,
     )
     cloud_jobs = dbt_cloud.get_jobs()
 
