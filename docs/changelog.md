@@ -1,6 +1,15 @@
 
 To see the details of all changes, head to the GitHub repo
 
+### 1.18
+
+- Add `--use-desc-for-id` flag (env var: `DBT_JOBS_AS_CODE_USE_DESC_FOR_ID`) to store the `[[<identifier>]]` tag in the job description instead of the job name. This is useful when keeping job names clean in the dbt Cloud UI is a requirement. Supported by all commands: `plan`, `sync`, `validate`, `import-jobs`, `link`, `unlink`, `deactivate-jobs`.
+
+### 1.17
+
+- Validate that job descriptions don't exceed the 255 character limit before sending to the API.
+- Drop Python 3.9 support (EOL) and update dependencies.
+
 ### 1.16
 
 - Add support for `cost_optimization_features` in job definitions. Valid values are `state_aware_orchestration` and `efficient_testing`. This allows for dbt users on the Fusion engine to configure cost optimization natively in their YAML job definitions.

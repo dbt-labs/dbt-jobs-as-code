@@ -39,6 +39,7 @@ The following environment variables are used to run the code:
 
 - `DBT_API_KEY`: [Mandatory] The dbt Cloud API key to interact with dbt Cloud. Can be a Service Token (preferred, would require the "job admin" scope) or the API token of a given user
 - `DBT_BASE_URL`: [Optional] By default, the tool queries `https://cloud.getdbt.com`, if your dbt Cloud instance is hosted on another domain, define it in this env variable (e.g. `https://emea.dbt.com`)
+- `DBT_JOBS_AS_CODE_USE_DESC_FOR_ID`: [Optional] When set to `True`, stores the `[[<identifier>]]` tag in the job description instead of the job name. See `--use-desc-for-id` for details.
 
 ## How to use `dbt-jobs-as-code`
 

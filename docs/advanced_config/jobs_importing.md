@@ -112,7 +112,7 @@ To do, so the identifier of the job should be in the format `[[envs_filter:ident
     - the jobs with an `envs_filter` that is empty are imported
     - the jobs with an `envs_filter` equal to `*` are imported
 
-As an example, if a job is named `My daily job [[uat:my-daily-job]]` :
+As an example, if a job is named `My daily job [[uat:my-daily-job]]` (or has `[[uat:my-daily-job]]` in its description when using `--use-desc-for-id`) :
 
 - `dbt-jobs-as-code import-jobs ... --filter uat` will import the job ✅
 - `dbt-jobs-as-code import-jobs ...` without a filter will import the job ✅
