@@ -9,6 +9,7 @@ on:
     - cron: '0 2 * * 0'
 
 env:
+  CI_LABEL: "ci-ok"
   DBT_BASE_URL: ${{ secrets.DBT_BASE_URL }}
   DBT_API_KEY: ${{ secrets.DBT_API_KEY }}
   DBT_JOB_ID: ${{ secrets.DBT_JOB_ID }}
@@ -19,11 +20,30 @@ env:
 permissions: write-all
 
 jobs:
+  check-run-approval:
+    # Gate fork PRs behind the CI_LABEL
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Strip label on synchronize/reopen for labeled fork PRs"
+        if: ${{ github.event_name == 'pull_request_target' && (github.event.action == 'synchronize' || github.event.action == 'reopened') && github.event.pull_request.head.repo.full_name != github.repository && contains(github.event.pull_request.labels.*.name, env.CI_LABEL) }}
+        run: |
+          echo "Synchronizing PR, removing '${{ env.CI_LABEL }}' label"
+          gh pr edit ${{ github.event.pull_request.number }} --remove-label ${{ env.CI_LABEL }} --repo ${{ github.repository }}
+          msg="All pull request updates require re-approval of CI. No CI will be run."
+          echo "::error::$msg"
+          exit 1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Require '${{ env.CI_LABEL }}' label on fork PRs"
+        if: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository && !contains(github.event.pull_request.labels.*.name, env.CI_LABEL) }}
+        run: |
+          msg="Pull request is from a public fork but does not have the '${{ env.CI_LABEL }}' label. No CI will be run."
+          echo "::error::$msg"
+          exit 1
+
   test:
-    if: |
-      github.event_name == 'schedule' ||
-      github.event.pull_request.head.repo.full_name == github.repository ||
-      contains(github.event.pull_request.labels.*.name, 'ci-ok')
+    needs: check-run-approval
     runs-on: ubuntu-latest
 
     strategy:
