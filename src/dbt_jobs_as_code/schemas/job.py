@@ -304,6 +304,7 @@ class JobMissingFields(JobDefinition):
 
     # Unneeded read-only fields
     raw_dbt_version: Optional[str] = None
+    deactivation_reason: Optional[Any] = None
     created_at: str = ""
     updated_at: str = ""
     deactivated: bool
