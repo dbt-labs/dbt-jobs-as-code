@@ -214,6 +214,20 @@ def test_apply_templated_fields_missing_path():
     assert result["name"] == "test job"  # Unchanged field
 
 
+def test_apply_templated_fields_null_parent():
+    """Test applying templated fields when a parent node is null (e.g. job_completion_trigger_condition is null)"""
+    job_dict = {"name": "test job", "job_completion_trigger_condition": None}
+
+    template_config = {"job_completion_trigger_condition.condition.project_id": "{{ project_id }}"}
+
+    result = apply_templated_fields(job_dict, template_config)
+
+    assert (
+        result["job_completion_trigger_condition"]["condition"]["project_id"] == "{{ project_id }}"
+    )
+    assert result["name"] == "test job"
+
+
 def test_apply_templated_fields_empty_config():
     """Test applying empty template config"""
     job_dict = {"name": "test job", "environment_id": 123}

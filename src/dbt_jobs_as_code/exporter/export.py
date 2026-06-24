@@ -22,7 +22,7 @@ def apply_templated_fields(
     def set_nested_value(d: Dict[Any, Any], path: str, value: str):
         parts = path.split(".")
         for part in parts[:-1]:
-            if part not in d:
+            if part not in d or d[part] is None:
                 d[part] = {}
             d = d[part]
         d[parts[-1]] = value
