@@ -118,7 +118,7 @@ class JobDefinition(BaseModel):
     cost_optimization_features: List[str] = Field(
         default=[],
         json_schema_extra={
-            "items": {"enum": ["state_aware_orchestration", "efficient_testing"]},
+            "items": {"enum": ["state_aware_orchestration", "efficient_testing", "dbt_state"]},
         },
     )
     triggers_on_draft_pr: bool = False
