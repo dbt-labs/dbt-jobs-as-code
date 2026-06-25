@@ -335,7 +335,8 @@
           "items": {
             "enum": [
               "state_aware_orchestration",
-              "efficient_testing"
+              "efficient_testing",
+              "dbt_state"
             ]
           },
           "title": "Cost Optimization Features",
