@@ -19,7 +19,7 @@ Below is a video demonstration of how to use dbt-jobs-as-code as part of CI/CD, 
 
 ## Why not Terraform
 
-Terrraform is widely used to manage infrastructure as code. And a comprehensive [Terraform provider](https://registry.terraform.io/providers/dbt-labs/dbtcloud/latest) exists for dbt Cloud, able to manage dbt Cloud jobs (as well as most of the rest of the dbt Cloud configuration like projects, environments, warehouse connections etc...).
+Terraform is widely used to manage infrastructure as code. And a comprehensive [Terraform provider](https://registry.terraform.io/providers/dbt-labs/dbtcloud/latest) exists for dbt Cloud, able to manage dbt Cloud jobs (as well as most of the rest of the dbt Cloud configuration like projects, environments, warehouse connections etc...).
 
 Terraform is much more powerful but using it requires some knowledge about the tool and requires managing/storing/sharing a state file, containing information about the state of the application.
 

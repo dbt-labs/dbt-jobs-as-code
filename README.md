@@ -22,7 +22,7 @@ Below is a demonstration of how to use dbt-jobs-as-code as part of CI/CD, levera
 
 ## Why not Terraform
 
-Terrraform is widely used to manage infrastructure as code. And a comprehensive [Terraform provider](https://registry.terraform.io/providers/dbt-labs/dbtcloud/latest) exists for dbt Cloud, able to manage dbt Cloud jobs (as well as most of the rest of the dbt Cloud configuration like projects, environments, warehouse connections etc...).
+Terraform is widely used to manage infrastructure as code. And a comprehensive [Terraform provider](https://registry.terraform.io/providers/dbt-labs/dbtcloud/latest) exists for dbt Cloud, able to manage dbt Cloud jobs (as well as most of the rest of the dbt Cloud configuration like projects, environments, warehouse connections etc...).
 
 Terraform is much more powerful but using it requires some knowledge about the tool and requires managing/storing/sharing a state file, containing information about the state of the application.
 
@@ -214,7 +214,7 @@ We can only restricts by providing the IDs or by forcing to restrict on the envi
 
 An example of GitHub Action is provided in the [example_cicd folder](https://github.com/dbt-labs/dbt-jobs-as-code/blob/HEAD/example_cicd). This example requires having set the GitHub secret `DBT_API_KEY`.
 
-You can copy/paste thie file in your own repo under `.github/workflows`. The current script except your jobs `yml` file to be saved under `jobs/jobs.yml`
+You can copy/paste this file in your own repo under `.github/workflows`. The current script except your jobs `yml` file to be saved under `jobs/jobs.yml`
 
 After a PR on `main` is approved, the action will run a `sync` to compare the local `yml` file with the dbt Cloud configuration and will create/update/delete dbt Cloud jobs to align the two.
 

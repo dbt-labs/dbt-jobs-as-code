@@ -676,7 +676,7 @@ def deactivate_jobs(
     use_desc_for_id,
 ):
     """
-    Deactivate jobs triggers in dbt Cloud (schedule and CI/CI triggers) without remoing the jobs.
+    Deactivate jobs triggers in dbt Cloud (schedule and CI/CD triggers) without removing the jobs.
 
     This can be useful when moving jobs from one project to another.
     When the new jobs have been created, this command can be used to deactivate the jobs from the old project.
