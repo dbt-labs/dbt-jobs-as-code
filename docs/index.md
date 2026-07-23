@@ -27,7 +27,7 @@ With this package's approach, people don't need to learn another tool and can co
 
 - **no state file required**: the link between the YAML jobs and the dbt Cloud jobs is stored in the jobs name, in the `[[<identifier>]]` part
 - **YAML**: dbt users are familiar with YAML and we created a JSON schema allowing people to verify that their YAML files are correct
-- by using filters like `--project-id`, `--environment-id` or `--limit-projects-envs-to-yml` and the templating deature, people can limit the projects and environments checked by the tool, which can be used to "promote" jobs between different dbt Cloud environments
+- by using filters like `--project-id`, `--environment-id` or `--limit-projects-envs-to-yml` and the templating feature, people can limit the projects and environments checked by the tool, which can be used to "promote" jobs between different dbt Cloud environments
 
 ## But why not both?
 
