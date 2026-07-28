@@ -308,7 +308,7 @@ class JobMissingFields(JobDefinition):
     created_at: str = ""
     updated_at: str = ""
     deactivated: bool
-    run_failure_count: int = False
+    run_failure_count: int = 0
     lifecycle_webhooks: bool = False
     lifecycle_webhooks_url: Optional[str] = None
     is_deferrable: bool = False
