@@ -50,7 +50,7 @@ mkdocs = [
     "mkdocs-material>=9.6.3",
     "mike>=2.1.3",
     "mkdocs-git-revision-date-localized-plugin>=1.3.0",
-    "gitpython>=3.1.50",  # CVE: RCE via newline injection in config_writer()
+    "gitpython>=3.1.52",  # CVE: RCE via newline injection in config_writer()
     "pymdown-extensions>=10.21.3",  # CVE: path traversal bypass in snippets
 ]
 
