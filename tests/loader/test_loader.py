@@ -8,6 +8,7 @@ from dbt_jobs_as_code.loader.load import (
     _load_yaml_no_template,
     _load_yaml_with_template,
     _validate_job_identifiers,
+    any_file_declares_jobs_key,
     load_job_configuration,
     resolve_file_paths,
 )
@@ -718,3 +719,49 @@ class TestLoaderLoadVarsFiles:
             {"name": "item1", "value": "null"},
             {"name": "item2", "value": "not_null"},
         ]
+
+
+class TestAnyFileDeclaresJobsKey:
+    def test_true_for_empty_jobs_dict(self, tmp_path):
+        config_file = tmp_path / "jobs.yml"
+        config_file.write_text("jobs: {}\n")
+
+        assert any_file_declares_jobs_key([str(config_file)], None) is True
+
+    def test_true_for_empty_jobs_list(self, tmp_path):
+        config_file = tmp_path / "jobs.yml"
+        config_file.write_text("jobs: []\n")
+
+        assert any_file_declares_jobs_key([str(config_file)], None) is True
+
+    def test_true_for_bare_jobs_key(self, tmp_path):
+        config_file = tmp_path / "jobs.yml"
+        config_file.write_text("jobs:\n")
+
+        assert any_file_declares_jobs_key([str(config_file)], None) is True
+
+    def test_false_when_no_file_mentions_jobs(self, tmp_path):
+        config_file = tmp_path / "unrelated.yml"
+        config_file.write_text("foo: bar\n")
+
+        assert any_file_declares_jobs_key([str(config_file)], None) is False
+
+    def test_true_when_any_file_among_several_declares_jobs(self, tmp_path):
+        unrelated = tmp_path / "unrelated.yml"
+        unrelated.write_text("foo: bar\n")
+        jobs_file = tmp_path / "jobs.yml"
+        jobs_file.write_text("jobs: {}\n")
+
+        assert any_file_declares_jobs_key([str(unrelated), str(jobs_file)], None) is True
+
+    def test_true_for_real_jobs_file(self, expected_config_dict):
+        assert any_file_declares_jobs_key(["tests/loader/jobs.yml"], None) is True
+
+    def test_works_with_templated_files(self):
+        assert (
+            any_file_declares_jobs_key(
+                ["tests/loader/jobs_templated.yml"],
+                ["tests/loader/jobs_templated_vars.yml"],
+            )
+            is True
+        )

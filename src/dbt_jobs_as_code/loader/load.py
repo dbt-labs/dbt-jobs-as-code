@@ -49,6 +49,33 @@ def load_job_configuration(config_files: List[str], vars_file: Optional[List[str
     return Config(**config)
 
 
+def any_file_declares_jobs_key(config_files: List[str], vars_file: Optional[List[str]]) -> bool:
+    """Whether at least one of `config_files` explicitly declares a top-level `jobs`
+    key, even if it's empty (`jobs: {}`, `jobs: []`, `jobs:`).
+
+    Only call this after `load_job_configuration` already loaded the same files
+    successfully - it doesn't re-validate Jinja rendering errors.
+    """
+    template_vars_values = _load_vars_files(vars_file) if vars_file else {}
+    env = Environment(undefined=StrictUndefined) if vars_file else None
+
+    for config_file in config_files:
+        with open(config_file) as f:
+            config_string = f.read()
+
+        rendered = (
+            env.from_string(config_string).render(template_vars_values)
+            if env is not None
+            else config_string
+        )
+
+        parsed = YAML(typ="safe").load(rendered)
+        if parsed and "jobs" in parsed:
+            return True
+
+    return False
+
+
 def _validate_job_identifiers(jobs: dict) -> None:
     """Validate that job identifiers only contain allowed characters.
 

@@ -103,6 +103,11 @@ def cli() -> None:
 @option_exclude_identifiers_matching
 @option_use_desc_for_id
 @click.option(
+    "--account-id",
+    type=int,
+    help="[Optional] The ID of your dbt Cloud account. Required to reconcile deletions when the config defines no jobs at all.",
+)
+@click.option(
     "--fail-fast",
     is_flag=True,
     help="Stop subsequent operations if any step fails during sync.",
@@ -117,6 +122,7 @@ def sync(
     output_json: bool,
     exclude_identifiers_matching: str,
     use_desc_for_id: bool,
+    account_id,
     fail_fast: bool,
 ):
     """Synchronize a dbt Cloud job config file against dbt Cloud.
@@ -150,6 +156,7 @@ def sync(
         exclude_identifiers_matching,
         output_json=output_json,
         use_desc_for_id=use_desc_for_id,
+        account_id=account_id,
     )
     plan_json = (
         change_set.to_json()
@@ -191,6 +198,11 @@ def sync(
 @option_json_output
 @option_exclude_identifiers_matching
 @option_use_desc_for_id
+@click.option(
+    "--account-id",
+    type=int,
+    help="[Optional] The ID of your dbt Cloud account. Required to reconcile deletions when the config defines no jobs at all.",
+)
 def plan(
     config: str,
     vars_yml: str,
@@ -201,6 +213,7 @@ def plan(
     output_json: bool,
     exclude_identifiers_matching: str,
     use_desc_for_id: bool,
+    account_id,
 ):
     """Check the difference between a local file and dbt Cloud without updating dbt Cloud.
     This command will not update dbt Cloud.
@@ -232,6 +245,7 @@ def plan(
         exclude_identifiers_matching,
         output_json=output_json,
         use_desc_for_id=use_desc_for_id,
+        account_id=account_id,
     )
     if len(change_set) == 0:
         if output_json:
@@ -266,6 +280,12 @@ def validate(config, vars_yml, online, disable_ssl_verification, use_desc_for_id
             logger.success("✅ The config file has a valid YML format.")
 
         if not online:
+            return
+
+        if not defined_jobs:
+            logger.warning(
+                "No jobs found in the Jobs YAML file - skipping online validation against dbt Cloud."
+            )
             return
 
         # Retrieve the list of Project IDs and Environment IDs from the config file
