@@ -62,12 +62,17 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # astral-sh/setup-uv@v3
 
+    - name: Check uv.lock is up to date with pyproject.toml
+      run: uv lock --check
+
     - name: Run ruff (lint + format check)
       run: make lint
 
-    - name: Run ty (informational only, not yet blocking)
+    - name: Run ty
       run: make typecheck
-      continue-on-error: true
+
+    - name: Run pre-commit (catches drift between .pre-commit-config.yaml and pyproject.toml)
+      run: uv run pre-commit run --all-files
 
   test:
     needs: check-run-approval
