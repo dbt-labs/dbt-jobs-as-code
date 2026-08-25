@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#118" class="md-skip">
+        <a href="#119" class="md-skip">
           Skip to content
         </a>
       
@@ -693,6 +693,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#119" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.19
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#118" class="md-nav__link">
     <span class="md-ellipsis">
       1.18
@@ -826,6 +835,12 @@
   <h1>Changelog</h1>
 
 <p>To see the details of all changes, head to the GitHub repo</p>
+<h3 id="119">1.19</h3>
+<ul>
+<li><code>plan</code>/<code>sync</code> can now reconcile job deletions when jobs are removed from the YAML (individually, or by emptying the <code>jobs</code> key entirely), as long as the command is scoped with <code>--project-id</code> and <code>--environment-id</code>. See <a href="../advanced_config/glob_config_files/">glob config files</a> for the different scenarios.</li>
+<li>Add an <code>--account-id</code> flag to <code>plan</code> and <code>sync</code>, needed to reconcile deletions when the config declares no jobs at all.</li>
+<li>Fix <code>validate --online</code> crashing with an <code>IndexError</code> when the config declares no jobs.</li>
+</ul>
 <h3 id="118">1.18</h3>
 <ul>
 <li>Add <code>--use-desc-for-id</code> flag (env var: <code>DBT_JOBS_AS_CODE_USE_DESC_FOR_ID</code>) to store the <code>[[&lt;identifier&gt;]]</code> tag in the job description instead of the job name. This is useful when keeping job names clean in the dbt Cloud UI is a requirement. Supported by all commands: <code>plan</code>, <code>sync</code>, <code>validate</code>, <code>import-jobs</code>, <code>link</code>, <code>unlink</code>, <code>deactivate-jobs</code>.</li>
@@ -896,7 +911,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">May 18, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">August 25, 2026</span>
   </span>
 
     

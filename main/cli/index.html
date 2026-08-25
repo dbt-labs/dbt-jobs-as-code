@@ -811,7 +811,7 @@
 <h1 id="cli-reference">CLI reference</h1>
 <p>This page provides documentation for our command line tools.</p>
 <h2 id="dbt-jobs-as-code">dbt-jobs-as-code</h2>
-<p>dbt-jobs-as-code 1.18.3.dev6+g4f73014</p>
+<p>dbt-jobs-as-code 1.18.3.dev8+g597b412</p>
 <p>A CLI to allow defining dbt Cloud jobs as code</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code>dbt-jobs-as-code [OPTIONS] COMMAND [ARGS]...
@@ -1125,6 +1125,12 @@ This command will not update dbt Cloud.</p>
 <td><code>False</code></td>
 </tr>
 <tr>
+<td><code>--account-id</code></td>
+<td>integer</td>
+<td>[Optional] The ID of your dbt Cloud account. Required to reconcile deletions when the config defines no jobs at all.</td>
+<td>None</td>
+</tr>
+<tr>
 <td><code>--help</code></td>
 <td>boolean</td>
 <td>Show this message and exit.</td>
@@ -1197,6 +1203,12 @@ This command will update dbt Cloud with the changes in the local YML file. It is
 <td>boolean</td>
 <td>Store the [[identifier]] tag in the job description instead of the job name.</td>
 <td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--account-id</code></td>
+<td>integer</td>
+<td>[Optional] The ID of your dbt Cloud account. Required to reconcile deletions when the config defines no jobs at all.</td>
+<td>None</td>
 </tr>
 <tr>
 <td><code>--fail-fast</code></td>
