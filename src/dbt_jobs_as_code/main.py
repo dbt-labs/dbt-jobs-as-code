@@ -293,7 +293,7 @@ def validate(config, vars_yml, online, disable_ssl_verification, use_desc_for_id
 
         # Retrieve the list of Project IDs and Environment IDs from dbt Cloud by calling the environment API endpoint
         dbt_cloud = DBTCloud(
-            account_id=list(defined_jobs)[0].account_id,
+            account_id=next(iter(defined_jobs)).account_id,
             api_key=os.environ.get("DBT_API_KEY"),
             base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
             disable_ssl_verification=disable_ssl_verification,
@@ -500,7 +500,7 @@ def link(config, project_id, environment_id, dry_run, disable_ssl_verification, 
 
     config_files, _ = resolve_file_paths(config, None)
     yaml_jobs = load_job_configuration(config_files, None).jobs
-    account_id = list(yaml_jobs.values())[0].account_id
+    account_id = next(iter(yaml_jobs.values())).account_id
 
     dbt_cloud = DBTCloud(
         account_id=account_id,
@@ -593,7 +593,7 @@ def unlink(
         # we get the account id from the config file
         config_files, _ = resolve_file_paths(config, None)
         defined_jobs = load_job_configuration(config_files, None).jobs
-        cloud_account_id = list(defined_jobs.values())[0].account_id
+        cloud_account_id = next(iter(defined_jobs.values())).account_id
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
 
@@ -680,7 +680,7 @@ def deactivate_jobs(
         cloud_account_id = account_id
     elif config:
         defined_jobs = load_job_configuration(config, None).jobs.values()
-        cloud_account_id = list(defined_jobs)[0].account_id
+        cloud_account_id = next(iter(defined_jobs)).account_id
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
 

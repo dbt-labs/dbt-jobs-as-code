@@ -157,8 +157,8 @@ class JobDefinition(BaseModel):
         if environment_variables:
             data["custom_environment_variables"] = [
                 {
-                    "name": list(variable.keys())[0],
-                    "value": list(variable.values())[0],
+                    "name": next(iter(variable.keys())),
+                    "value": next(iter(variable.values())),
                     "project_id": data["project_id"],
                     "account_id": data["account_id"],
                 }

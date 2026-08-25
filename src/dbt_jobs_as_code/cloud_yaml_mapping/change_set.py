@@ -287,9 +287,9 @@ def _account_id_for_run(
     returned True for the same arguments.
     """
     if defined_jobs:
-        return list(defined_jobs.values())[0].account_id
+        return next(iter(defined_jobs.values())).account_id
     if all_defined_jobs:
-        return list(all_defined_jobs.values())[0].account_id
+        return next(iter(all_defined_jobs.values())).account_id
     return account_id
 
 

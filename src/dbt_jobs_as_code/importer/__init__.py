@@ -11,7 +11,7 @@ def get_account_id(config_files: list[str] | None, account_id: int | None) -> in
         return account_id
     elif config_files:
         defined_jobs = load_job_configuration(config_files, None).jobs.values()
-        return list(defined_jobs)[0].account_id
+        return next(iter(defined_jobs)).account_id
     else:
         raise ValueError("Either config or account_id must be provided")
 

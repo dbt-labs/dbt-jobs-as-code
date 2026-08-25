@@ -87,5 +87,4 @@ line-length = 99
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 ignore = [
     "E501", # line-length, need to fix those by hands first
-    "RUF015", # list(x)[0] vs next(iter(x)), changes exception type on empty input, needs manual review
 ]
