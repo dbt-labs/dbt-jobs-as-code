@@ -1,7 +1,25 @@
 from unittest.mock import Mock
 
 from dbt_jobs_as_code.client import DBTCloudException
-from dbt_jobs_as_code.cloud_yaml_mapping.change_set import Change, ChangeSet
+from dbt_jobs_as_code.cloud_yaml_mapping.change_set import BuildChangeSetOptions, Change, ChangeSet
+
+
+def test_build_change_set_options_defaults():
+    """Pin the optional fields' defaults, since callers (e.g. direct API use) may
+    construct this with only the required fields."""
+    options = BuildChangeSetOptions(
+        config="jobs.yml",
+        yml_vars=None,
+        disable_ssl_verification=False,
+        project_ids=[],
+        environment_ids=[],
+    )
+
+    assert options.limit_projects_envs_to_yml is False
+    assert options.exclude_identifiers_matching is None
+    assert options.output_json is False
+    assert options.use_desc_for_id is False
+    assert options.account_id is None
 
 
 def test_change_set_to_json_empty():

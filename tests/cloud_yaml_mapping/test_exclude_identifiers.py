@@ -2,7 +2,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from dbt_jobs_as_code.cloud_yaml_mapping.change_set import ChangeSet, build_change_set
+from dbt_jobs_as_code.cloud_yaml_mapping.change_set import (
+    BuildChangeSetOptions,
+    ChangeSet,
+    build_change_set,
+)
 from dbt_jobs_as_code.schemas.common_types import Settings, Triggers
 from dbt_jobs_as_code.schemas.job import JobDefinition
 
@@ -93,12 +97,14 @@ def test_exclude_identifiers_matching_no_pattern(
 
     # Call build_change_set without exclude pattern
     result = build_change_set(
-        config="test.yml",
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
-        exclude_identifiers_matching=None,
+        BuildChangeSetOptions(
+            config="test.yml",
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+            exclude_identifiers_matching=None,
+        )
     )
 
     # Verify that get_jobs was called (jobs should be processed normally)
@@ -131,12 +137,14 @@ def test_exclude_identifiers_matching_simple_pattern(
 
     # Call build_change_set with exclude pattern for staging jobs
     result = build_change_set(
-        config="test.yml",
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
-        exclude_identifiers_matching="staging:.*",
+        BuildChangeSetOptions(
+            config="test.yml",
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+            exclude_identifiers_matching="staging:.*",
+        )
     )
 
     # Verify the result is a valid ChangeSet
@@ -165,12 +173,14 @@ def test_exclude_identifiers_matching_multiple_patterns(
 
     # Call build_change_set with pattern matching legacy and temp jobs
     result = build_change_set(
-        config="test.yml",
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
-        exclude_identifiers_matching="(legacy|temp):.*",
+        BuildChangeSetOptions(
+            config="test.yml",
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+            exclude_identifiers_matching="(legacy|temp):.*",
+        )
     )
 
     # Verify the result is a valid ChangeSet
@@ -198,12 +208,14 @@ def test_exclude_identifiers_matching_jobs_without_identifier(
 
     # Call build_change_set with pattern that would match if identifier existed
     result = build_change_set(
-        config="test.yml",
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
-        exclude_identifiers_matching=".*",  # This would match anything if identifier exists
+        BuildChangeSetOptions(
+            config="test.yml",
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+            exclude_identifiers_matching=".*",  # This would match anything if identifier exists
+        )
     )
 
     # Verify the result is a valid ChangeSet
@@ -232,12 +244,14 @@ def test_exclude_identifiers_matching_invalid_regex(
 
     # Call build_change_set with invalid regex pattern
     result = build_change_set(
-        config="test.yml",
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
-        exclude_identifiers_matching="[invalid-regex",  # Missing closing bracket
+        BuildChangeSetOptions(
+            config="test.yml",
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+            exclude_identifiers_matching="[invalid-regex",  # Missing closing bracket
+        )
     )
 
     # Should return empty ChangeSet when regex is invalid
@@ -266,12 +280,14 @@ def test_exclude_identifiers_matching_case_sensitive(
 
     # Call build_change_set with uppercase pattern (should not match lowercase identifiers)
     result = build_change_set(
-        config="test.yml",
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
-        exclude_identifiers_matching="STAGING:.*",  # Uppercase, won't match "staging:.*"
+        BuildChangeSetOptions(
+            config="test.yml",
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+            exclude_identifiers_matching="STAGING:.*",  # Uppercase, won't match "staging:.*"
+        )
     )
 
     # Verify the result is a valid ChangeSet (no jobs should be excluded)
@@ -299,12 +315,14 @@ def test_exclude_identifiers_matching_partial_match(
 
     # Call build_change_set with pattern that matches part of identifier
     result = build_change_set(
-        config="test.yml",
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
-        exclude_identifiers_matching="test",  # Should match both "nightly-test" and "feature-test"
+        BuildChangeSetOptions(
+            config="test.yml",
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+            exclude_identifiers_matching="test",  # Should match both "nightly-test" and "feature-test"
+        )
     )
 
     # Verify the result is a valid ChangeSet
@@ -332,13 +350,15 @@ def test_exclude_identifiers_matching_with_json_output(
 
     # Call build_change_set with JSON output enabled
     result = build_change_set(
-        config="test.yml",
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
-        exclude_identifiers_matching="staging:.*",
-        output_json=True,
+        BuildChangeSetOptions(
+            config="test.yml",
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+            exclude_identifiers_matching="staging:.*",
+            output_json=True,
+        )
     )
 
     # Verify the result is a valid ChangeSet
@@ -366,12 +386,14 @@ def test_build_change_set_passes_use_desc_for_id_true(
     mock_dbt_cloud.build_mapping_job_identifier_job_id.return_value = {}
 
     build_change_set(
-        config="test.yml",
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
-        use_desc_for_id=True,
+        BuildChangeSetOptions(
+            config="test.yml",
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+            use_desc_for_id=True,
+        )
     )
 
     # Verify DBTCloud was constructed with use_desc_for_id=True
@@ -400,11 +422,13 @@ def test_build_change_set_use_desc_for_id_defaults_to_false(
     mock_dbt_cloud.build_mapping_job_identifier_job_id.return_value = {}
 
     build_change_set(
-        config="test.yml",
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
+        BuildChangeSetOptions(
+            config="test.yml",
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+        )
     )
 
     # Verify DBTCloud was constructed with use_desc_for_id=False (default)

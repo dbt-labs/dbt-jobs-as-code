@@ -1,6 +1,6 @@
 import json
+from typing import Any
 
-from beartype.typing import Any, Dict
 from pydantic import BaseModel
 
 from dbt_jobs_as_code.schemas import JobDefinition
@@ -9,7 +9,7 @@ from dbt_jobs_as_code.schemas import JobDefinition
 class Config(BaseModel):
     """Internal representation of a Jobs as Code configuration file."""
 
-    jobs: Dict[str, JobDefinition]
+    jobs: dict[str, JobDefinition]
 
     def __init__(self, **data: Any):
         # Check for instances where account_id is missing from a job, and add it from the config data.

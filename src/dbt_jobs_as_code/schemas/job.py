@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
+from typing import Any
 
-from beartype.typing import Any, List, Optional
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -32,14 +32,14 @@ DESCRIPTION_MAX_LENGTH = 255
 class IdentifierInfo:
     """Information extracted from a job identifier."""
 
-    identifier: Optional[str]
-    import_filter: Optional[str]
+    identifier: str | None
+    import_filter: str | None
     raw_identifier: str
 
 
 def filter_jobs_by_import_filter(
-    jobs: List["JobDefinition"], filter_value: Optional[str]
-) -> List["JobDefinition"]:
+    jobs: list["JobDefinition"], filter_value: str | None
+) -> list["JobDefinition"]:
     """Filter jobs based on their identifier prefix.
 
     Args:
@@ -80,31 +80,31 @@ class JobDefinition(BaseModel):
 
     model_config = ConfigDict(json_schema_extra=_job_definition_json_schema_extra)
 
-    linked_id: Optional[int] = Field(
+    linked_id: int | None = Field(
         default=None,
         description="The ID of the job in dbt Cloud that we want to link. Only used for the 'link' command.",
     )
-    id: Optional[int] = None
-    identifier: Optional[str] = Field(
+    id: int | None = None
+    identifier: str | None = Field(
         default=None,
         description="The internal job identifier for the job for dbt-jobs-as-code. Will be added at the end of the job name.",
     )
-    _filter_import: Optional[str] = None
+    _filter_import: str | None = None
     account_id: int = field_mandatory_int_allowed_as_string_in_schema
     project_id: int = field_mandatory_int_allowed_as_string_in_schema
     environment_id: int = field_mandatory_int_allowed_as_string_in_schema
-    dbt_version: Optional[str] = None
+    dbt_version: str | None = None
     name: str
     settings: Settings
     execution: Execution = Execution()
-    deferring_job_definition_id: Optional[int] = field_optional_int_allowed_as_string_in_schema
-    deferring_environment_id: Optional[int] = field_optional_int_allowed_as_string_in_schema
+    deferring_job_definition_id: int | None = field_optional_int_allowed_as_string_in_schema
+    deferring_environment_id: int | None = field_optional_int_allowed_as_string_in_schema
     run_generate_sources: bool
-    run_lint: Optional[bool] = False
-    errors_on_lint_failure: Optional[bool] = True
-    execute_steps: List[str]
+    run_lint: bool | None = False
+    errors_on_lint_failure: bool | None = True
+    execute_steps: list[str]
     generate_docs: bool
-    schedule: Optional[Schedule] = None
+    schedule: Schedule | None = None
     triggers: Triggers
     description: str = Field(default="", max_length=DESCRIPTION_MAX_LENGTH)
     state: int = 1
@@ -115,15 +115,15 @@ class JobDefinition(BaseModel):
         json_schema_extra={"enum": ["scheduled", "merge", "ci", "other"]},
         default="scheduled",
     )
-    cost_optimization_features: List[str] = Field(
+    cost_optimization_features: list[str] = Field(
         default=[],
         json_schema_extra={
             "items": {"enum": ["state_aware_orchestration", "efficient_testing", "dbt_state"]},
         },
     )
     triggers_on_draft_pr: bool = False
-    job_completion_trigger_condition: Optional[JobCompletionTriggerCondition] = None
-    custom_environment_variables: List[CustomEnvironmentVariable] = Field(
+    job_completion_trigger_condition: JobCompletionTriggerCondition | None = None
+    custom_environment_variables: list[CustomEnvironmentVariable] = Field(
         default=[],
         json_schema_extra={
             "items": {
@@ -153,12 +153,12 @@ class JobDefinition(BaseModel):
             data["name"] = data["name"].replace(f" [[{identifier_info.raw_identifier}]]", "")
 
         # Rewrite custom environment variables to include account and project id
-        environment_variables = data.get("custom_environment_variables", None)
+        environment_variables = data.get("custom_environment_variables")
         if environment_variables:
             data["custom_environment_variables"] = [
                 {
-                    "name": list(variable.keys())[0],
-                    "value": list(variable.values())[0],
+                    "name": next(iter(variable.keys())),
+                    "value": next(iter(variable.values())),
                     "project_id": data["project_id"],
                     "account_id": data["account_id"],
                 }
@@ -269,6 +269,9 @@ class JobDefinition(BaseModel):
     @model_validator(mode="after")
     def validate_cron_expression(self):
         """Validate the cron expression and include job ID in error message if invalid."""
+        assert self.schedule is not None, (
+            "default_schedule_for_ci_merge runs first and always sets a schedule or raises"
+        )
         if not Schedule.validate_cron(self.schedule.cron):
             job_id_str = f" (Job ID: {self.id})" if self.id is not None else ""
             identifier_str = f" (Identifier: {self.identifier})" if self.identifier else ""
@@ -296,26 +299,26 @@ class JobMissingFields(JobDefinition):
     # when adding fields we also need to update the test for pytest
 
     # TODO: Add to JobDefinition model when the feature is out
-    force_node_selection: Optional[bool] = True
+    force_node_selection: bool | None = True
 
     # Fusion-related fields
-    is_fusion_ready_override: Optional[bool] = False
-    fusion_readiness: Optional[Any] = None
+    is_fusion_ready_override: bool | None = False
+    fusion_readiness: Any | None = None
 
     # Unneeded read-only fields
-    raw_dbt_version: Optional[str] = None
-    deactivation_reason: Optional[Any] = None
+    raw_dbt_version: str | None = None
+    deactivation_reason: Any | None = None
     created_at: str = ""
     updated_at: str = ""
     deactivated: bool
     run_failure_count: int = 0
     lifecycle_webhooks: bool = False
-    lifecycle_webhooks_url: Optional[str] = None
+    lifecycle_webhooks_url: str | None = None
     is_deferrable: bool = False
     generate_sources: bool = False
     cron_humanized: str = ""
-    next_run: Optional[str] = ""
-    next_run_humanized: Optional[str] = ""
+    next_run: str | None = ""
+    next_run_humanized: str | None = ""
     is_system: bool
     account: Any
     project: Any

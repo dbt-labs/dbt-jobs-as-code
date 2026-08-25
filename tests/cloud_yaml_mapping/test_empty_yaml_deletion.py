@@ -1,6 +1,10 @@
 from unittest.mock import Mock, patch
 
-from dbt_jobs_as_code.cloud_yaml_mapping.change_set import ChangeSet, build_change_set
+from dbt_jobs_as_code.cloud_yaml_mapping.change_set import (
+    BuildChangeSetOptions,
+    ChangeSet,
+    build_change_set,
+)
 from dbt_jobs_as_code.schemas.common_types import Settings, Triggers
 from dbt_jobs_as_code.schemas.job import JobDefinition
 
@@ -61,12 +65,14 @@ def test_empty_yaml_scoped_with_account_id_proposes_deletion(mock_dbt_cloud_clas
     instance = _mock_dbt_cloud(mock_dbt_cloud_class, [_cloud_job()])
 
     change_set = build_change_set(
-        config=str(config_file),
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[123],
-        environment_ids=[456],
-        account_id=789,
+        BuildChangeSetOptions(
+            config=str(config_file),
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[123],
+            environment_ids=[456],
+            account_id=789,
+        )
     )
 
     instance.get_jobs.assert_called_once()
@@ -88,12 +94,14 @@ def test_empty_yaml_across_multiple_files_proposes_deletion(mock_dbt_cloud_class
     instance = _mock_dbt_cloud(mock_dbt_cloud_class, [_cloud_job()])
 
     change_set = build_change_set(
-        config=str(tmp_path / "*.yml"),
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[123],
-        environment_ids=[456],
-        account_id=789,
+        BuildChangeSetOptions(
+            config=str(tmp_path / "*.yml"),
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[123],
+            environment_ids=[456],
+            account_id=789,
+        )
     )
 
     instance.get_jobs.assert_called_once()
@@ -111,12 +119,14 @@ def test_directory_with_no_job_files_does_not_delete(mock_dbt_cloud_class, tmp_p
     instance = _mock_dbt_cloud(mock_dbt_cloud_class, [_cloud_job()])
 
     change_set = build_change_set(
-        config=str(tmp_path / "*.yml"),
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[123],
-        environment_ids=[456],
-        account_id=789,
+        BuildChangeSetOptions(
+            config=str(tmp_path / "*.yml"),
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[123],
+            environment_ids=[456],
+            account_id=789,
+        )
     )
 
     instance.get_jobs.assert_not_called()
@@ -144,11 +154,13 @@ def test_partial_empty_multiple_files_no_mass_delete(mock_dbt_cloud_class, tmp_p
     )
 
     change_set = build_change_set(
-        config=str(tmp_path / "*.yml"),
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
+        BuildChangeSetOptions(
+            config=str(tmp_path / "*.yml"),
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+        )
     )
 
     instance.get_jobs.assert_called_once()
@@ -166,11 +178,13 @@ def test_empty_yaml_unscoped_bails_out(mock_dbt_cloud_class, tmp_path):
     instance = _mock_dbt_cloud(mock_dbt_cloud_class, [_cloud_job()])
 
     change_set = build_change_set(
-        config=str(config_file),
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
+        BuildChangeSetOptions(
+            config=str(config_file),
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+        )
     )
 
     instance.get_jobs.assert_not_called()
@@ -186,11 +200,13 @@ def test_empty_yaml_scoped_without_account_id_bails_out(mock_dbt_cloud_class, tm
     instance = _mock_dbt_cloud(mock_dbt_cloud_class, [_cloud_job()])
 
     change_set = build_change_set(
-        config=str(config_file),
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[123],
-        environment_ids=[456],
+        BuildChangeSetOptions(
+            config=str(config_file),
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[123],
+            environment_ids=[456],
+        )
     )
 
     instance.get_jobs.assert_not_called()
@@ -207,13 +223,15 @@ def test_limit_projects_envs_to_yml_with_empty_config_bails(mock_dbt_cloud_class
     instance = _mock_dbt_cloud(mock_dbt_cloud_class, [_cloud_job()])
 
     change_set = build_change_set(
-        config=str(config_file),
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
-        limit_projects_envs_to_yml=True,
-        account_id=789,
+        BuildChangeSetOptions(
+            config=str(config_file),
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+            limit_projects_envs_to_yml=True,
+            account_id=789,
+        )
     )
 
     instance.get_jobs.assert_not_called()
@@ -238,11 +256,13 @@ def test_non_empty_yaml_filtered_to_zero_scoped_to_both_proposes_deletion(
     instance = _mock_dbt_cloud(mock_dbt_cloud_class, [_cloud_job()])
 
     change_set = build_change_set(
-        config=str(config_file),
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[123],
-        environment_ids=[456],
+        BuildChangeSetOptions(
+            config=str(config_file),
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[123],
+            environment_ids=[456],
+        )
     )
 
     instance.get_jobs.assert_called_once()
@@ -270,11 +290,13 @@ def test_non_empty_yaml_filtered_to_zero_scoped_to_one_dimension_bails_out(
     instance = _mock_dbt_cloud(mock_dbt_cloud_class, [_cloud_job()])
 
     change_set = build_change_set(
-        config=str(config_file),
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[123],
-        environment_ids=[],
+        BuildChangeSetOptions(
+            config=str(config_file),
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[123],
+            environment_ids=[],
+        )
     )
 
     instance.get_jobs.assert_not_called()
@@ -298,12 +320,14 @@ def test_account_id_override_does_not_affect_non_empty_path(
     instance = _mock_dbt_cloud(mock_dbt_cloud_class, [])
 
     build_change_set(
-        config="jobs.yml",
-        yml_vars=None,
-        disable_ssl_verification=False,
-        project_ids=[],
-        environment_ids=[],
-        account_id=999999,
+        BuildChangeSetOptions(
+            config="jobs.yml",
+            yml_vars=None,
+            disable_ssl_verification=False,
+            project_ids=[],
+            environment_ids=[],
+            account_id=999999,
+        )
     )
 
     _, kwargs = mock_dbt_cloud_class.call_args

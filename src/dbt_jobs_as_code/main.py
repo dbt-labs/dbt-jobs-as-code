@@ -3,7 +3,6 @@ import os
 import sys
 from importlib.metadata import version
 from pathlib import Path
-from typing import List
 
 import click
 from loguru import logger
@@ -11,7 +10,11 @@ from rich.console import Console
 from ruamel.yaml import YAML
 
 from dbt_jobs_as_code.client import DBTCloud
-from dbt_jobs_as_code.cloud_yaml_mapping.change_set import build_change_set, json_serializer_type
+from dbt_jobs_as_code.cloud_yaml_mapping.change_set import (
+    BuildChangeSetOptions,
+    build_change_set,
+    json_serializer_type,
+)
 from dbt_jobs_as_code.cloud_yaml_mapping.validate_link import can_be_linked
 from dbt_jobs_as_code.exporter.export import export_jobs_yml
 from dbt_jobs_as_code.importer import check_job_fields, fetch_jobs, get_account_id
@@ -147,16 +150,18 @@ def sync(
 
     logger.info("-- SYNC -- Invoking build_change_set")
     change_set = build_change_set(
-        config,
-        vars_yml,
-        disable_ssl_verification,
-        cloud_project_ids,
-        cloud_environment_ids,
-        limit_projects_envs_to_yml,
-        exclude_identifiers_matching,
-        output_json=output_json,
-        use_desc_for_id=use_desc_for_id,
-        account_id=account_id,
+        BuildChangeSetOptions(
+            config=config,
+            yml_vars=vars_yml,
+            disable_ssl_verification=disable_ssl_verification,
+            project_ids=cloud_project_ids,
+            environment_ids=cloud_environment_ids,
+            limit_projects_envs_to_yml=limit_projects_envs_to_yml,
+            exclude_identifiers_matching=exclude_identifiers_matching,
+            output_json=output_json,
+            use_desc_for_id=use_desc_for_id,
+            account_id=account_id,
+        )
     )
     plan_json = (
         change_set.to_json()
@@ -206,8 +211,8 @@ def sync(
 def plan(
     config: str,
     vars_yml: str,
-    project_id: List[int],
-    environment_id: List[int],
+    project_id: list[int],
+    environment_id: list[int],
     limit_projects_envs_to_yml: bool,
     disable_ssl_verification: bool,
     output_json: bool,
@@ -236,16 +241,18 @@ def plan(
         cloud_environment_ids = list(environment_id)
 
     change_set = build_change_set(
-        config,
-        vars_yml,
-        disable_ssl_verification,
-        cloud_project_ids,
-        cloud_environment_ids,
-        limit_projects_envs_to_yml,
-        exclude_identifiers_matching,
-        output_json=output_json,
-        use_desc_for_id=use_desc_for_id,
-        account_id=account_id,
+        BuildChangeSetOptions(
+            config=config,
+            yml_vars=vars_yml,
+            disable_ssl_verification=disable_ssl_verification,
+            project_ids=cloud_project_ids,
+            environment_ids=cloud_environment_ids,
+            limit_projects_envs_to_yml=limit_projects_envs_to_yml,
+            exclude_identifiers_matching=exclude_identifiers_matching,
+            output_json=output_json,
+            use_desc_for_id=use_desc_for_id,
+            account_id=account_id,
+        )
     )
     if len(change_set) == 0:
         if output_json:
@@ -294,7 +301,7 @@ def validate(config, vars_yml, online, disable_ssl_verification, use_desc_for_id
 
         # Retrieve the list of Project IDs and Environment IDs from dbt Cloud by calling the environment API endpoint
         dbt_cloud = DBTCloud(
-            account_id=list(defined_jobs)[0].account_id,
+            account_id=next(iter(defined_jobs)).account_id,
             api_key=os.environ.get("DBT_API_KEY"),
             base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
             disable_ssl_verification=disable_ssl_verification,
@@ -438,10 +445,10 @@ def import_jobs(
         if templated_fields:
             try:
                 yaml = YAML()
-                with open(templated_fields, "r") as f:
+                with open(templated_fields) as f:
                     yaml.load(f)
             except Exception as e:
-                raise ValueError(f"Invalid templated fields YAML file: {str(e)}") from e
+                raise ValueError(f"Invalid templated fields YAML file: {e!s}") from e
 
         config_files, _ = resolve_file_paths(config, None)
         cloud_account_id = get_account_id(config_files, account_id)
@@ -501,7 +508,7 @@ def link(config, project_id, environment_id, dry_run, disable_ssl_verification, 
 
     config_files, _ = resolve_file_paths(config, None)
     yaml_jobs = load_job_configuration(config_files, None).jobs
-    account_id = list(yaml_jobs.values())[0].account_id
+    account_id = next(iter(yaml_jobs.values())).account_id
 
     dbt_cloud = DBTCloud(
         account_id=account_id,
@@ -594,18 +601,12 @@ def unlink(
         # we get the account id from the config file
         config_files, _ = resolve_file_paths(config, None)
         defined_jobs = load_job_configuration(config_files, None).jobs
-        cloud_account_id = list(defined_jobs.values())[0].account_id
+        cloud_account_id = next(iter(defined_jobs.values())).account_id
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
 
-    if project_id:
-        project_ids = list(project_id)
-    else:
-        project_ids = None
-    if environment_id:
-        environment_ids = list(environment_id)
-    else:
-        environment_ids = None
+    project_ids = list(project_id) if project_id else None
+    environment_ids = list(environment_id) if environment_id else None
 
     dbt_cloud = DBTCloud(
         account_id=cloud_account_id,
@@ -687,7 +688,7 @@ def deactivate_jobs(
         cloud_account_id = account_id
     elif config:
         defined_jobs = load_job_configuration(config, None).jobs.values()
-        cloud_account_id = list(defined_jobs)[0].account_id
+        cloud_account_id = next(iter(defined_jobs)).account_id
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
 

@@ -44,6 +44,8 @@ dev = [
     "pytest-beartype<1.0.0,>=0.0.2",
     "pytest-cov<6.0.0,>=5.0.0",
     "pre-commit",
+    "ty>=0.0.74",
+    "ruff>=0.16.4",
 ]
 mkdocs = [
     "mkdocs-click>=0.8.1",
@@ -82,6 +84,11 @@ markers = [
 line-length = 99
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
-ignore = ["E501"] # line-length, need to fix those by hands first
-typing-modules = ["beartype.typing"]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "W", "FURB", "PLR0913"]
+ignore = [
+    "E501", # line-length, need to fix those by hands first
+]
+
+[tool.ruff.lint.per-file-ignores]
+# click commands take one parameter per @click.option/@click.argument; that's the idiom, not a smell
+"src/dbt_jobs_as_code/main.py" = ["PLR0913"]

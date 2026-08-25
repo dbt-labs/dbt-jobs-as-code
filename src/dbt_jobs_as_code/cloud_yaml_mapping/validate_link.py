@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from dbt_jobs_as_code.client import DBTCloud, DBTCloudException
 from dbt_jobs_as_code.schemas.job import JobDefinition
@@ -9,7 +8,7 @@ from dbt_jobs_as_code.schemas.job import JobDefinition
 class LinkableCheck:
     can_be_linked: bool
     message: str
-    linked_job: Optional[JobDefinition] = None
+    linked_job: JobDefinition | None = None
 
 
 def can_be_linked(

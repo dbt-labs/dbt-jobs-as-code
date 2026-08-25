@@ -1,4 +1,3 @@
-from beartype.typing import List, Optional
 from loguru import logger
 
 from dbt_jobs_as_code.client import DBTCloud
@@ -6,18 +5,18 @@ from dbt_jobs_as_code.loader.load import load_job_configuration
 from dbt_jobs_as_code.schemas.job import JobDefinition
 
 
-def get_account_id(config_files: Optional[List[str]], account_id: Optional[int]) -> int:
+def get_account_id(config_files: list[str] | None, account_id: int | None) -> int:
     """Get account ID from either config file or direct input"""
     if account_id:
         return account_id
     elif config_files:
         defined_jobs = load_job_configuration(config_files, None).jobs.values()
-        return list(defined_jobs)[0].account_id
+        return next(iter(defined_jobs)).account_id
     else:
         raise ValueError("Either config or account_id must be provided")
 
 
-def check_job_fields(dbt_cloud: DBTCloud, job_ids: List[int]) -> None:
+def check_job_fields(dbt_cloud: DBTCloud, job_ids: list[int]) -> None:
     """Check if there are new fields in job model"""
     if not job_ids:
         logger.error("We need to provide some job_id to test the import")
@@ -28,8 +27,8 @@ def check_job_fields(dbt_cloud: DBTCloud, job_ids: List[int]) -> None:
 
 
 def fetch_jobs(
-    dbt_cloud: DBTCloud, job_ids: List[int], project_ids: List[int], environment_ids: List[int]
-) -> List[JobDefinition]:
+    dbt_cloud: DBTCloud, job_ids: list[int], project_ids: list[int], environment_ids: list[int]
+) -> list[JobDefinition]:
     """Fetch jobs from dbt Cloud based on provided filters"""
     logger.info("Getting the jobs definition from dbt Cloud")
 

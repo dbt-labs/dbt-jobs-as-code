@@ -371,16 +371,15 @@ def test_plan_command_with_exclude_identifiers_matching(
 
     # Verify that build_change_set was called with the correct exclude_identifiers_matching parameter
     mock_build_change_set.assert_called_once()
-    call_args = mock_build_change_set.call_args
+    options = mock_build_change_set.call_args[0][0]
 
-    # Check positional arguments
-    assert call_args[0][0] == "config.yml"  # config
-    assert call_args[0][1] is None  # vars_yml
-    assert call_args[0][2] is False  # disable_ssl_verification
-    assert call_args[0][3] == []  # project_ids
-    assert call_args[0][4] == []  # environment_ids
-    assert call_args[0][5] is False  # limit_projects_envs_to_yml
-    assert call_args[0][6] == "staging:.*"  # exclude_identifiers_matching
+    assert options.config == "config.yml"
+    assert options.yml_vars is None
+    assert options.disable_ssl_verification is False
+    assert options.project_ids == []
+    assert options.environment_ids == []
+    assert options.limit_projects_envs_to_yml is False
+    assert options.exclude_identifiers_matching == "staging:.*"
 
 
 @patch("dbt_jobs_as_code.main.build_change_set")
@@ -399,10 +398,9 @@ def test_sync_command_with_exclude_identifiers_matching(
 
     # Verify that build_change_set was called with the correct exclude_identifiers_matching parameter
     mock_build_change_set.assert_called_once()
-    call_args = mock_build_change_set.call_args
+    options = mock_build_change_set.call_args[0][0]
 
-    # Check that exclude_identifiers_matching parameter is passed correctly
-    assert call_args[0][6] == "legacy:.*"  # exclude_identifiers_matching
+    assert options.exclude_identifiers_matching == "legacy:.*"
 
 
 @patch("dbt_jobs_as_code.main.build_change_set")
@@ -419,10 +417,9 @@ def test_plan_command_without_exclude_identifiers_matching(
 
     # Verify that build_change_set was called with None for exclude_identifiers_matching
     mock_build_change_set.assert_called_once()
-    call_args = mock_build_change_set.call_args
+    options = mock_build_change_set.call_args[0][0]
 
-    # Check that exclude_identifiers_matching parameter is None
-    assert call_args[0][6] is None  # exclude_identifiers_matching
+    assert options.exclude_identifiers_matching is None
 
 
 @patch("dbt_jobs_as_code.main.build_change_set")
@@ -439,10 +436,9 @@ def test_sync_command_without_exclude_identifiers_matching(
 
     # Verify that build_change_set was called with None for exclude_identifiers_matching
     mock_build_change_set.assert_called_once()
-    call_args = mock_build_change_set.call_args
+    options = mock_build_change_set.call_args[0][0]
 
-    # Check that exclude_identifiers_matching parameter is None
-    assert call_args[0][6] is None  # exclude_identifiers_matching
+    assert options.exclude_identifiers_matching is None
 
 
 @patch("dbt_jobs_as_code.main.build_change_set")
@@ -460,10 +456,9 @@ def test_plan_command_with_complex_regex_pattern(mock_build_change_set, mock_emp
 
     # Verify that build_change_set was called with the correct complex pattern
     mock_build_change_set.assert_called_once()
-    call_args = mock_build_change_set.call_args
+    options = mock_build_change_set.call_args[0][0]
 
-    # Check that the complex pattern is passed correctly
-    assert call_args[0][6] == complex_pattern  # exclude_identifiers_matching
+    assert options.exclude_identifiers_matching == complex_pattern
 
 
 @patch("dbt_jobs_as_code.main.build_change_set")
@@ -480,12 +475,10 @@ def test_sync_command_with_json_and_exclude_pattern(mock_build_change_set, mock_
 
     # Verify that build_change_set was called with both parameters
     mock_build_change_set.assert_called_once()
-    call_args = mock_build_change_set.call_args
+    options = mock_build_change_set.call_args[0][0]
 
-    # Check that exclude_identifiers_matching parameter is passed
-    assert call_args[0][6] == "temp:.*"  # exclude_identifiers_matching
-    # Check that output_json is True
-    assert call_args.kwargs.get("output_json") is True
+    assert options.exclude_identifiers_matching == "temp:.*"
+    assert options.output_json is True
 
 
 # ============= use_desc_for_id Option Tests =============
@@ -502,8 +495,8 @@ def test_use_desc_for_id_option_sync(mock_build_change_set, mock_empty_change_se
     assert result.exit_code == 0
 
     mock_build_change_set.assert_called_once()
-    call_args = mock_build_change_set.call_args
-    assert call_args.kwargs.get("use_desc_for_id") is True
+    options = mock_build_change_set.call_args[0][0]
+    assert options.use_desc_for_id is True
 
 
 @patch("dbt_jobs_as_code.main.build_change_set")
@@ -517,8 +510,8 @@ def test_use_desc_for_id_option_plan(mock_build_change_set, mock_empty_change_se
     assert result.exit_code == 0
 
     mock_build_change_set.assert_called_once()
-    call_args = mock_build_change_set.call_args
-    assert call_args.kwargs.get("use_desc_for_id") is True
+    options = mock_build_change_set.call_args[0][0]
+    assert options.use_desc_for_id is True
 
 
 @patch("dbt_jobs_as_code.main.build_change_set")
@@ -532,8 +525,8 @@ def test_use_desc_for_id_default_false(mock_build_change_set, mock_empty_change_
     assert result.exit_code == 0
 
     mock_build_change_set.assert_called_once()
-    call_args = mock_build_change_set.call_args
-    assert call_args.kwargs.get("use_desc_for_id") is False
+    options = mock_build_change_set.call_args[0][0]
+    assert options.use_desc_for_id is False
 
 
 @patch("dbt_jobs_as_code.main.DBTCloud")

@@ -4,10 +4,10 @@ import os
 import re
 import string
 from collections import Counter
-from typing import Dict, Optional
+from collections.abc import Callable
+from dataclasses import dataclass
 
 from beartype import BeartypeConf, BeartypeStrategy, beartype
-from beartype.typing import Callable, List
 from loguru import logger
 from pydantic import BaseModel, Field
 from rich.console import Console
@@ -43,7 +43,7 @@ class Change(BaseModel):
     env_id: int
     sync_function: Callable
     parameters: dict
-    differences: Optional[Dict] = {}
+    differences: dict | None = {}
 
     def __str__(self):
         return f"{self.action.upper()} {string.capwords(self.type)} {self.identifier}"
@@ -55,7 +55,7 @@ class Change(BaseModel):
 class ChangeSet(BaseModel):
     """Store the set of changes to be displayed or applied."""
 
-    root: List[Change] = []
+    root: list[Change] = []
     apply_success: bool = True
     applied_changes: list[dict] = Field(default_factory=list)
 
@@ -181,7 +181,7 @@ class ChangeSet(BaseModel):
 # Don't bear type this function as we do some odd things in tests
 @nobeartype
 def filter_config(
-    defined_jobs: dict[str, JobDefinition], project_ids: List[int], environment_ids: List[int]
+    defined_jobs: dict[str, JobDefinition], project_ids: list[int], environment_ids: list[int]
 ) -> dict[str, JobDefinition]:
     """Filters the config based on the inputs provided for project ids and environment ids."""
     removed_job_ids: set[str] = set()
@@ -202,7 +202,7 @@ def filter_config(
     return {job_id: job for job_id, job in defined_jobs.items() if job_id not in removed_job_ids}
 
 
-def _check_no_duplicate_job_identifier(remote_jobs: List[JobDefinition]):
+def _check_no_duplicate_job_identifier(remote_jobs: list[JobDefinition]):
     """Check if there are duplicate job identifiers in dbt Cloud.
 
     If so, raise some error logs"""
@@ -218,7 +218,7 @@ def _check_no_duplicate_job_identifier(remote_jobs: List[JobDefinition]):
         )
 
 
-def _check_single_account_id(defined_jobs: List[JobDefinition]):
+def _check_single_account_id(defined_jobs: list[JobDefinition]):
     """Check if there are duplicate job identifiers in dbt Cloud.
 
     If so, raise some error logs"""
@@ -230,28 +230,34 @@ def _check_single_account_id(defined_jobs: List[JobDefinition]):
         )
 
 
-def _deletion_scope_is_valid(
-    defined_jobs: dict[str, JobDefinition],
-    all_defined_jobs: dict[str, JobDefinition],
-    project_ids: List[int],
-    environment_ids: List[int],
-    account_id: Optional[int],
-    config: str,
-    config_files: List[str],
-    yml_vars_files: Optional[List[str]],
-) -> bool:
+@dataclass
+class RunScope:
+    """The jobs/scope inputs needed to decide whether a run may safely reconcile
+    deletions, and to pick which dbt Cloud account_id to use."""
+
+    defined_jobs: dict[str, JobDefinition]
+    all_defined_jobs: dict[str, JobDefinition]
+    project_ids: list[int]
+    environment_ids: list[int]
+    account_id: int | None
+    config: str
+    config_files: list[str]
+    yml_vars_files: list[str] | None
+
+
+def _deletion_scope_is_valid(scope: RunScope) -> bool:
     """Whether project_ids/environment_ids scope this run enough to safely reconcile
     jobs deleted from the YAML. Logs a warning explaining why whenever it doesn't.
     """
-    if defined_jobs:
-        _check_single_account_id(list(defined_jobs.values()))
+    if scope.defined_jobs:
+        _check_single_account_id(list(scope.defined_jobs.values()))
         return True
 
-    scoped_to_project_and_environment = bool(project_ids and environment_ids)
+    scoped_to_project_and_environment = bool(scope.project_ids and scope.environment_ids)
 
-    if all_defined_jobs:
+    if scope.all_defined_jobs:
         if scoped_to_project_and_environment:
-            _check_single_account_id(list(all_defined_jobs.values()))
+            _check_single_account_id(list(scope.all_defined_jobs.values()))
             return True
         logger.warning(
             "No jobs found in the Jobs YAML file after filtering based on the "
@@ -261,14 +267,14 @@ def _deletion_scope_is_valid(
         )
         return False
 
-    if not any_file_declares_jobs_key(config_files, yml_vars_files):
+    if not any_file_declares_jobs_key(scope.config_files, scope.yml_vars_files):
         logger.warning(
-            f"None of the file(s) matching pattern '{config}' declare a 'jobs' "
+            f"None of the file(s) matching pattern '{scope.config}' declare a 'jobs' "
             "key - double-check your config pattern."
         )
         return False
 
-    if scoped_to_project_and_environment and account_id:
+    if scoped_to_project_and_environment and scope.account_id:
         return True
 
     logger.warning(
@@ -279,38 +285,53 @@ def _deletion_scope_is_valid(
     return False
 
 
-def _account_id_for_run(
-    defined_jobs: dict[str, JobDefinition],
-    all_defined_jobs: dict[str, JobDefinition],
-    account_id: Optional[int],
-) -> int:
+def _account_id_for_run(scope: RunScope) -> int:
     """Pick the dbt Cloud account_id to use. Only valid after `_deletion_scope_is_valid`
-    returned True for the same arguments.
+    returned True for the same scope.
     """
-    if defined_jobs:
-        return list(defined_jobs.values())[0].account_id
-    if all_defined_jobs:
-        return list(all_defined_jobs.values())[0].account_id
-    return account_id
+    if scope.defined_jobs:
+        return next(iter(scope.defined_jobs.values())).account_id
+    if scope.all_defined_jobs:
+        return next(iter(scope.all_defined_jobs.values())).account_id
+    assert scope.account_id is not None, (
+        "account_id must be set here: _deletion_scope_is_valid only returns True in this "
+        "branch when scoped_to_project_and_environment and account_id are both truthy"
+    )
+    return scope.account_id
 
 
-def build_change_set(
-    config: str,
-    yml_vars: Optional[str],
-    disable_ssl_verification: bool,
-    project_ids: List[int],
-    environment_ids: List[int],
-    limit_projects_envs_to_yml: bool = False,
-    exclude_identifiers_matching: Optional[str] = None,
-    output_json: bool = False,
-    use_desc_for_id: bool = False,
-    account_id: Optional[int] = None,
-):
+@dataclass
+class BuildChangeSetOptions:
+    """Inputs for build_change_set: what to compare, and how to scope/filter the comparison."""
+
+    config: str
+    yml_vars: str | None
+    disable_ssl_verification: bool
+    project_ids: list[int]
+    environment_ids: list[int]
+    limit_projects_envs_to_yml: bool = False
+    exclude_identifiers_matching: str | None = None
+    output_json: bool = False
+    use_desc_for_id: bool = False
+    account_id: int | None = None
+
+
+def build_change_set(options: BuildChangeSetOptions):
     """Compares the config of YML files versus dbt Cloud.
     Depending on the value of no_update, it will either update the dbt Cloud config or not.
 
     CONFIG is the path to your jobs.yml config file.
     """
+    config = options.config
+    yml_vars = options.yml_vars
+    disable_ssl_verification = options.disable_ssl_verification
+    project_ids = options.project_ids
+    environment_ids = options.environment_ids
+    limit_projects_envs_to_yml = options.limit_projects_envs_to_yml
+    exclude_identifiers_matching = options.exclude_identifiers_matching
+    output_json = options.output_json
+    use_desc_for_id = options.use_desc_for_id
+    account_id = options.account_id
 
     # If the config is a directory, we automatically search for all the `*.yml` files in this directory
     if os.path.isdir(config):
@@ -342,19 +363,21 @@ def build_change_set(
         # If a project_id or environment_id is passed in as a parameter (one or multiple), check if these match the ID's in Jobs YAML file, otherwise add a warning and continue the process
         defined_jobs = filter_config(all_defined_jobs, project_ids, environment_ids)
 
-    if not _deletion_scope_is_valid(
-        defined_jobs,
-        all_defined_jobs,
-        project_ids,
-        environment_ids,
-        account_id,
-        config,
-        config_files,
-        yml_vars_files,
-    ):
+    scope = RunScope(
+        defined_jobs=defined_jobs,
+        all_defined_jobs=all_defined_jobs,
+        project_ids=project_ids,
+        environment_ids=environment_ids,
+        account_id=account_id,
+        config=config,
+        config_files=config_files,
+        yml_vars_files=yml_vars_files,
+    )
+
+    if not _deletion_scope_is_valid(scope):
         return ChangeSet()
 
-    cloud_account_id = _account_id_for_run(defined_jobs, all_defined_jobs, account_id)
+    cloud_account_id = _account_id_for_run(scope)
 
     dbt_cloud = DBTCloud(
         account_id=cloud_account_id,
