@@ -287,7 +287,7 @@ def build_change_set(
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
-        use_desc_for_id=use_desc_for_id,[9:56 AM])
+        use_desc_for_id=use_desc_for_id,)
 
     cloud_jobs = dbt_cloud.get_jobs(project_ids=project_ids, environment_ids=environment_ids)
     _check_no_duplicate_job_identifier(cloud_jobs)
