@@ -10,7 +10,11 @@ from rich.console import Console
 from ruamel.yaml import YAML
 
 from dbt_jobs_as_code.client import DBTCloud
-from dbt_jobs_as_code.cloud_yaml_mapping.change_set import build_change_set, json_serializer_type
+from dbt_jobs_as_code.cloud_yaml_mapping.change_set import (
+    BuildChangeSetOptions,
+    build_change_set,
+    json_serializer_type,
+)
 from dbt_jobs_as_code.cloud_yaml_mapping.validate_link import can_be_linked
 from dbt_jobs_as_code.exporter.export import export_jobs_yml
 from dbt_jobs_as_code.importer import check_job_fields, fetch_jobs, get_account_id
@@ -146,16 +150,18 @@ def sync(
 
     logger.info("-- SYNC -- Invoking build_change_set")
     change_set = build_change_set(
-        config,
-        vars_yml,
-        disable_ssl_verification,
-        cloud_project_ids,
-        cloud_environment_ids,
-        limit_projects_envs_to_yml,
-        exclude_identifiers_matching,
-        output_json=output_json,
-        use_desc_for_id=use_desc_for_id,
-        account_id=account_id,
+        BuildChangeSetOptions(
+            config=config,
+            yml_vars=vars_yml,
+            disable_ssl_verification=disable_ssl_verification,
+            project_ids=cloud_project_ids,
+            environment_ids=cloud_environment_ids,
+            limit_projects_envs_to_yml=limit_projects_envs_to_yml,
+            exclude_identifiers_matching=exclude_identifiers_matching,
+            output_json=output_json,
+            use_desc_for_id=use_desc_for_id,
+            account_id=account_id,
+        )
     )
     plan_json = (
         change_set.to_json()
@@ -235,16 +241,18 @@ def plan(
         cloud_environment_ids = list(environment_id)
 
     change_set = build_change_set(
-        config,
-        vars_yml,
-        disable_ssl_verification,
-        cloud_project_ids,
-        cloud_environment_ids,
-        limit_projects_envs_to_yml,
-        exclude_identifiers_matching,
-        output_json=output_json,
-        use_desc_for_id=use_desc_for_id,
-        account_id=account_id,
+        BuildChangeSetOptions(
+            config=config,
+            yml_vars=vars_yml,
+            disable_ssl_verification=disable_ssl_verification,
+            project_ids=cloud_project_ids,
+            environment_ids=cloud_environment_ids,
+            limit_projects_envs_to_yml=limit_projects_envs_to_yml,
+            exclude_identifiers_matching=exclude_identifiers_matching,
+            output_json=output_json,
+            use_desc_for_id=use_desc_for_id,
+            account_id=account_id,
+        )
     )
     if len(change_set) == 0:
         if output_json:
