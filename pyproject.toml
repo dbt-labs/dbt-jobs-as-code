@@ -84,7 +84,7 @@ markers = [
 line-length = 99
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "W", "FURB"]
 ignore = [
     "E501", # line-length, need to fix those by hands first
 ]

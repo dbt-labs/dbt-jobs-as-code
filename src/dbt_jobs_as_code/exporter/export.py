@@ -55,7 +55,7 @@ def export_jobs_yml(
 
     export_yml = {"jobs": {}}
     for id, cloud_job in enumerate(jobs):
-        yaml_key = cloud_job.identifier if cloud_job.identifier else f"import_{id + 1}"
+        yaml_key = cloud_job.identifier or f"import_{id + 1}"
         job_dict = cloud_job.to_load_format(include_linked_id)
 
         if template_config:
@@ -66,7 +66,7 @@ def export_jobs_yml(
     print(
         "# yaml-language-server: $schema=https://raw.githubusercontent.com/dbt-labs/dbt-jobs-as-code/main/src/dbt_jobs_as_code/schemas/load_job_schema.json"
     )
-    print("")
+    print()
 
     yaml.width = 4096
     yaml.block_seq_indent = 2
