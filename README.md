@@ -91,6 +91,11 @@ Returns the list of actions create/update/delete that are required to have dbt C
     - when both projects and environments are provided, the command will run for the jobs that are both part of the environment ID(s) and the project ID(s) provided
   - or it accepts the flag `--limit-projects-envs-to-yml` to only check jobs that are in the projects and environments listed in the jobs YAML file
 - it supports templating the jobs YAML file (see [templating](#templating-jobs-yaml-file))
+- deleting jobs from dbt Cloud by removing them from the YAML file(s) requires the command to be scoped with both `-p`/`--project-id` and `-e`/`--environment-id`:
+  - if the config file(s) have jobs left for other projects/environments, but none for the requested `-p`/`-e` scope, those dbt Cloud jobs get proposed for deletion
+  - if the matched config file(s) declare an empty `jobs` key (e.g. `jobs: {}`, or every job was removed), `--account-id` is also required, since there is no job left anywhere to read the account ID from
+  - a pattern/directory that doesn't match any job-bearing YAML at all (no file declares a `jobs` key) is always a no-op and logs a warning to check the config pattern, regardless of scoping
+  - in the other two cases, if the required flags are missing, the command logs a warning naming exactly which one(s) to add instead of silently doing nothing
 
 #### `sync`
 
@@ -105,6 +110,7 @@ Create/update/delete jobs and env vars overwrites in jobs to align dbt Cloud wit
   environment ID(s) and the project ID(s) provided
   - or it accepts the flag `--limit-projects-envs-to-yml` to only check jobs that are in the projects and environments listed in the jobs YAML file
 - it supports templating the jobs YAML file (see [templating](#templating-jobs-yaml-file))
+- same as `plan`, deletions (see above) are only reconciled when explicitly scoped with `-p`/`--project-id` and `-e`/`--environment-id` (and `--account-id` for an emptied config file)
 
 #### `import-jobs`
 

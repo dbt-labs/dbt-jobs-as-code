@@ -539,6 +539,29 @@ def test_use_desc_for_id_default_false(mock_build_change_set, mock_empty_change_
 @patch("dbt_jobs_as_code.main.DBTCloud")
 @patch("dbt_jobs_as_code.main.load_job_configuration")
 @patch("dbt_jobs_as_code.main.resolve_file_paths")
+def test_validate_online_empty_jobs_does_not_crash(
+    mock_resolve_file_paths, mock_load_job_configuration, mock_DBTCloud
+):
+    """Regression test for issue #152: `validate --online` against a config that
+    declares no jobs (`jobs: {}`) used to raise IndexError on
+    `list(defined_jobs)[0].account_id` - it should now warn and skip the online
+    check instead of crashing."""
+    mock_resolve_file_paths.return_value = (["config.yml"], [])
+
+    mock_config = Mock()
+    mock_config.jobs = {}
+    mock_load_job_configuration.return_value = mock_config
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["validate", "--online", "config.yml"])
+
+    assert result.exit_code == 0
+    mock_DBTCloud.assert_not_called()
+
+
+@patch("dbt_jobs_as_code.main.DBTCloud")
+@patch("dbt_jobs_as_code.main.load_job_configuration")
+@patch("dbt_jobs_as_code.main.resolve_file_paths")
 def test_use_desc_for_id_option_validate(
     mock_resolve_file_paths, mock_load_job_configuration, mock_DBTCloud
 ):

@@ -1,6 +1,12 @@
 
 To see the details of all changes, head to the GitHub repo
 
+### 1.19
+
+- `plan`/`sync` can now reconcile job deletions when jobs are removed from the YAML (individually, or by emptying the `jobs` key entirely), as long as the command is scoped with `--project-id` and `--environment-id`. See [glob config files](advanced_config/glob_config_files.md) for the different scenarios.
+- Add an `--account-id` flag to `plan` and `sync`, needed to reconcile deletions when the config declares no jobs at all.
+- Fix `validate --online` crashing with an `IndexError` when the config declares no jobs.
+
 ### 1.18
 
 - Add `--use-desc-for-id` flag (env var: `DBT_JOBS_AS_CODE_USE_DESC_FOR_ID`) to store the `[[<identifier>]]` tag in the job description instead of the job name. This is useful when keeping job names clean in the dbt Cloud UI is a requirement. Supported by all commands: `plan`, `sync`, `validate`, `import-jobs`, `link`, `unlink`, `deactivate-jobs`.

@@ -14,7 +14,11 @@ from rich.console import Console
 from rich.table import Table
 
 from dbt_jobs_as_code.client import DBTCloud, DBTCloudException
-from dbt_jobs_as_code.loader.load import LoadingJobsYAMLError, load_job_configuration
+from dbt_jobs_as_code.loader.load import (
+    LoadingJobsYAMLError,
+    any_file_declares_jobs_key,
+    load_job_configuration,
+)
 from dbt_jobs_as_code.schemas import check_env_var_same, check_job_mapping_same
 from dbt_jobs_as_code.schemas.custom_environment_variable import CustomEnvironmentVariablePayload
 from dbt_jobs_as_code.schemas.job import JobDefinition
@@ -226,6 +230,70 @@ def _check_single_account_id(defined_jobs: List[JobDefinition]):
         )
 
 
+def _deletion_scope_is_valid(
+    defined_jobs: dict[str, JobDefinition],
+    all_defined_jobs: dict[str, JobDefinition],
+    project_ids: List[int],
+    environment_ids: List[int],
+    account_id: Optional[int],
+    config: str,
+    config_files: List[str],
+    yml_vars_files: Optional[List[str]],
+) -> bool:
+    """Whether project_ids/environment_ids scope this run enough to safely reconcile
+    jobs deleted from the YAML. Logs a warning explaining why whenever it doesn't.
+    """
+    if defined_jobs:
+        _check_single_account_id(list(defined_jobs.values()))
+        return True
+
+    scoped_to_project_and_environment = bool(project_ids and environment_ids)
+
+    if all_defined_jobs:
+        if scoped_to_project_and_environment:
+            _check_single_account_id(list(all_defined_jobs.values()))
+            return True
+        logger.warning(
+            "No jobs found in the Jobs YAML file after filtering based on the "
+            "project_id and environment_id provided as arguments!!! To reconcile "
+            "this as a deletion of the dbt Cloud jobs in that project/environment, "
+            "pass both --project-id and --environment-id explicitly."
+        )
+        return False
+
+    if not any_file_declares_jobs_key(config_files, yml_vars_files):
+        logger.warning(
+            f"None of the file(s) matching pattern '{config}' declare a 'jobs' "
+            "key - double-check your config pattern."
+        )
+        return False
+
+    if scoped_to_project_and_environment and account_id:
+        return True
+
+    logger.warning(
+        "The Jobs YAML file(s) declare no jobs!!! To reconcile deletions of "
+        "jobs that still exist in dbt Cloud, pass --project-id, "
+        "--environment-id and --account-id explicitly."
+    )
+    return False
+
+
+def _account_id_for_run(
+    defined_jobs: dict[str, JobDefinition],
+    all_defined_jobs: dict[str, JobDefinition],
+    account_id: Optional[int],
+) -> int:
+    """Pick the dbt Cloud account_id to use. Only valid after `_deletion_scope_is_valid`
+    returned True for the same arguments.
+    """
+    if defined_jobs:
+        return list(defined_jobs.values())[0].account_id
+    if all_defined_jobs:
+        return list(all_defined_jobs.values())[0].account_id
+    return account_id
+
+
 def build_change_set(
     config: str,
     yml_vars: Optional[str],
@@ -236,6 +304,7 @@ def build_change_set(
     exclude_identifiers_matching: Optional[str] = None,
     output_json: bool = False,
     use_desc_for_id: bool = False,
+    account_id: Optional[int] = None,
 ):
     """Compares the config of YML files versus dbt Cloud.
     Depending on the value of no_update, it will either update the dbt Cloud config or not.
@@ -260,6 +329,8 @@ def build_change_set(
         logger.error(f"Error loading jobs YAML file ({type(e).__name__}): {e}")
         exit(1)
 
+    all_defined_jobs = configuration.jobs
+
     if limit_projects_envs_to_yml:
         # if limit_projects_envs_to_yml is True, we keep all the YML jobs
         defined_jobs = configuration.jobs
@@ -269,19 +340,24 @@ def build_change_set(
 
     else:
         # If a project_id or environment_id is passed in as a parameter (one or multiple), check if these match the ID's in Jobs YAML file, otherwise add a warning and continue the process
-        unfiltered_defined_jobs = configuration.jobs
-        defined_jobs = filter_config(unfiltered_defined_jobs, project_ids, environment_ids)
+        defined_jobs = filter_config(all_defined_jobs, project_ids, environment_ids)
 
-    if len(defined_jobs) == 0:
-        logger.warning(
-            "No jobs found in the Jobs YAML file after filtering based on the project_id and environment_id provided as arguments!!!"
-        )
+    if not _deletion_scope_is_valid(
+        defined_jobs,
+        all_defined_jobs,
+        project_ids,
+        environment_ids,
+        account_id,
+        config,
+        config_files,
+        yml_vars_files,
+    ):
         return ChangeSet()
 
-    _check_single_account_id(list(defined_jobs.values()))
+    cloud_account_id = _account_id_for_run(defined_jobs, all_defined_jobs, account_id)
 
     dbt_cloud = DBTCloud(
-        account_id=list(defined_jobs.values())[0].account_id,
+        account_id=cloud_account_id,
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
