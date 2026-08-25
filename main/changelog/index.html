@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#119" class="md-skip">
+        <a href="#120" class="md-skip">
           Skip to content
         </a>
       
@@ -693,6 +693,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#120" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.20
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#119" class="md-nav__link">
     <span class="md-ellipsis">
       1.19
@@ -835,6 +844,10 @@
   <h1>Changelog</h1>
 
 <p>To see the details of all changes, head to the GitHub repo</p>
+<h3 id="120">1.20</h3>
+<ul>
+<li>Internal: modernized the lint/type-checking tooling (expanded the <code>ruff</code> rule set, added Astral's <code>ty</code> type checker, dropped an unneeded <code>beartype.typing</code> compatibility shim, enforced these in CI). No user-facing changes.</li>
+</ul>
 <h3 id="119">1.19</h3>
 <ul>
 <li><code>plan</code>/<code>sync</code> can now reconcile job deletions when jobs are removed from the YAML (individually, or by emptying the <code>jobs</code> key entirely), as long as the command is scoped with <code>--project-id</code> and <code>--environment-id</code>. See <a href="../advanced_config/glob_config_files/">glob config files</a> for the different scenarios.</li>
