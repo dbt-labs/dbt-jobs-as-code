@@ -243,7 +243,7 @@ def build_change_set(
     CONFIG is the path to your jobs.yml config file.
     """
 
-    # If the config is a directory, we automatically search for all the `*.yml` files in this directory
+    # If the config is a directory, we automatically search for all the *.yml files in this directory
     if os.path.isdir(config):
         config = os.path.join(config, "*.yml")
     # Get list of files matching the glob pattern
@@ -272,21 +272,22 @@ def build_change_set(
         unfiltered_defined_jobs = configuration.jobs
         defined_jobs = filter_config(unfiltered_defined_jobs, project_ids, environment_ids)
 
+    # When the YAML defines no jobs (e.g. jobs: {} or the last job was removed),
+    # we can still reconcile deletions of jobs that exist in dbt Cloud — but only if
+    # the run is explicitly scoped to specific project(s) AND environment(s) and we
+    # have an account_id to talk to the API with (it can't come from the empty YAML).
+    # Without that scoping we bail out early to avoid proposing a destructive
+    # account-wide "delete everything" plan. See issue #152.
     if len(defined_jobs) == 0:
-        logger.warning(
-            "No jobs found in the Jobs YAML file after filtering based on the project_id and environment_id provided as arguments!!!"
-        )
-        return ChangeSet()
-
-    _check_single_account_id(list(defined_jobs.values()))
+        _check_single_account_id(list(defined_jobs.values()))
+        account_id = list(defined_jobs.values())[0].account_id
 
     dbt_cloud = DBTCloud(
-        account_id=list(defined_jobs.values())[0].account_id,
+        account_id=account_id,
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
-        use_desc_for_id=use_desc_for_id,
-    )
+        use_desc_for_id=use_desc_for_id,[9:56 AM])
 
     cloud_jobs = dbt_cloud.get_jobs(project_ids=project_ids, environment_ids=environment_ids)
     _check_no_duplicate_job_identifier(cloud_jobs)
