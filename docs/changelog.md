@@ -1,6 +1,10 @@
 
 To see the details of all changes, head to the GitHub repo
 
+### 1.20
+
+- Internal: modernized the lint/type-checking tooling (expanded the `ruff` rule set, added Astral's `ty` type checker, dropped an unneeded `beartype.typing` compatibility shim, enforced these in CI). No user-facing changes.
+
 ### 1.19
 
 - `plan`/`sync` can now reconcile job deletions when jobs are removed from the YAML (individually, or by emptying the `jobs` key entirely), as long as the command is scoped with `--project-id` and `--environment-id`. See [glob config files](advanced_config/glob_config_files.md) for the different scenarios.
