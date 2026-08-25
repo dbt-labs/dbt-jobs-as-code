@@ -272,13 +272,25 @@ def build_change_set(
         unfiltered_defined_jobs = configuration.jobs
         defined_jobs = filter_config(unfiltered_defined_jobs, project_ids, environment_ids)
 
-    # When the YAML defines no jobs (e.g. jobs: {} or the last job was removed),
+    # When the YAML defines no jobs (e.g. `jobs: {}` or the last job was removed),
     # we can still reconcile deletions of jobs that exist in dbt Cloud — but only if
     # the run is explicitly scoped to specific project(s) AND environment(s) and we
     # have an account_id to talk to the API with (it can't come from the empty YAML).
     # Without that scoping we bail out early to avoid proposing a destructive
     # account-wide "delete everything" plan. See issue #152.
     if len(defined_jobs) == 0:
+        can_scope_deletions = len(project_ids) > 0 and len(environment_ids) > 0
+        account_id_env = os.environ.get("DBT_ACCOUNT_ID")
+        if not (can_scope_deletions and account_id_env):
+            logger.warning(
+                "No jobs found in the Jobs YAML file after filtering based on the "
+                "project_id and environment_id provided as arguments!!! To reconcile "
+                "deletions from an empty YAML, pass both --project-id and "
+                "--environment-id and set the DBT_ACCOUNT_ID environment variable."
+            )
+            return ChangeSet()
+        account_id = int(account_id_env)
+    else:
         _check_single_account_id(list(defined_jobs.values()))
         account_id = list(defined_jobs.values())[0].account_id
 
@@ -287,7 +299,8 @@ def build_change_set(
         api_key=os.environ.get("DBT_API_KEY"),
         base_url=os.environ.get("DBT_BASE_URL", "https://cloud.getdbt.com"),
         disable_ssl_verification=disable_ssl_verification,
-        use_desc_for_id=use_desc_for_id,)
+        use_desc_for_id=use_desc_for_id,
+    )
 
     cloud_jobs = dbt_cloud.get_jobs(project_ids=project_ids, environment_ids=environment_ids)
     _check_no_duplicate_job_identifier(cloud_jobs)
