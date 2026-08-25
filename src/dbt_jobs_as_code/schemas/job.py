@@ -269,6 +269,9 @@ class JobDefinition(BaseModel):
     @model_validator(mode="after")
     def validate_cron_expression(self):
         """Validate the cron expression and include job ID in error message if invalid."""
+        assert self.schedule is not None, (
+            "default_schedule_for_ci_merge runs first and always sets a schedule or raises"
+        )
         if not Schedule.validate_cron(self.schedule.cron):
             job_id_str = f" (Job ID: {self.id})" if self.id is not None else ""
             identifier_str = f" (Identifier: {self.identifier})" if self.identifier else ""

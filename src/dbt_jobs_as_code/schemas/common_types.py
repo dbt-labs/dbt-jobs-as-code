@@ -87,7 +87,7 @@ class Schedule(BaseModel):
         return croniter.is_valid(cron)
 
     @field_serializer("time", when_used="json")
-    def serialize_field(time: Time | None):  # type: ignore
+    def serialize_field(time: Time | None):
         if time is None:
             return None
         return time.serialize()

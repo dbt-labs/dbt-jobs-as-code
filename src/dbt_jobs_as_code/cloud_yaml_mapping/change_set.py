@@ -290,6 +290,10 @@ def _account_id_for_run(
         return next(iter(defined_jobs.values())).account_id
     if all_defined_jobs:
         return next(iter(all_defined_jobs.values())).account_id
+    assert account_id is not None, (
+        "account_id must be set here: _deletion_scope_is_valid only returns True in this "
+        "branch when scoped_to_project_and_environment and account_id are both truthy"
+    )
     return account_id
 
 

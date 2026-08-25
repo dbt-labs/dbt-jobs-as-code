@@ -162,7 +162,7 @@ def _load_vars_files(vars_file: list[str]) -> dict:
                         f"Variable '{key}' is defined multiple times in vars files"
                     )
             template_vars_values.update(vars_data)
-    return _replace_none_with_null(template_vars_values)  # type: ignore
+    return _replace_none_with_null(template_vars_values)
 
 
 def _load_yaml_with_template(config_files: list[str], vars_file: list[str]) -> dict:
