@@ -1,4 +1,5 @@
-from beartype.typing import Any, Dict, Optional, Tuple
+from typing import Any
+
 from deepdiff import DeepDiff
 
 from dbt_jobs_as_code.schemas.custom_environment_variable import (
@@ -29,7 +30,7 @@ def _job_to_dict(job: JobDefinition):
 
 def check_job_mapping_same(
     source_job: JobDefinition, dest_job: JobDefinition
-) -> Tuple[bool, Optional[Dict]]:
+) -> tuple[bool, dict | None]:
     """Checks if the source and destination jobs are the same
 
     Returns:
@@ -55,7 +56,7 @@ def check_job_mapping_same(
 def check_env_var_same(
     source_env_var: CustomEnvironmentVariable,
     dest_env_vars: dict[str, CustomEnvironmentVariablePayload],
-) -> Tuple[bool, Optional[int], Optional[Dict]]:
+) -> tuple[bool, int | None, dict | None]:
     """Checks if the source env vars is the same in the destination env vars
 
     Returns:

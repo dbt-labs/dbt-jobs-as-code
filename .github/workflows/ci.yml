@@ -44,6 +44,31 @@ jobs:
           echo "::error::$msg"
           exit 1
 
+  lint:
+    needs: check-run-approval
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # actions/checkout@v4
+      with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+    - name: Set up Python
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # actions/setup-python@v5
+      with:
+        python-version: "3.13"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # astral-sh/setup-uv@v3
+
+    - name: Run ruff (lint + format check)
+      run: make lint
+
+    - name: Run ty (informational only, not yet blocking)
+      run: make typecheck
+      continue-on-error: true
+
   test:
     needs: check-run-approval
     runs-on: ubuntu-latest

@@ -3,7 +3,6 @@ import os
 import sys
 from importlib.metadata import version
 from pathlib import Path
-from typing import List
 
 import click
 from loguru import logger
@@ -206,8 +205,8 @@ def sync(
 def plan(
     config: str,
     vars_yml: str,
-    project_id: List[int],
-    environment_id: List[int],
+    project_id: list[int],
+    environment_id: list[int],
     limit_projects_envs_to_yml: bool,
     disable_ssl_verification: bool,
     output_json: bool,
@@ -438,10 +437,10 @@ def import_jobs(
         if templated_fields:
             try:
                 yaml = YAML()
-                with open(templated_fields, "r") as f:
+                with open(templated_fields) as f:
                     yaml.load(f)
             except Exception as e:
-                raise ValueError(f"Invalid templated fields YAML file: {str(e)}") from e
+                raise ValueError(f"Invalid templated fields YAML file: {e!s}") from e
 
         config_files, _ = resolve_file_paths(config, None)
         cloud_account_id = get_account_id(config_files, account_id)
@@ -598,14 +597,8 @@ def unlink(
     else:
         raise click.BadParameter("Either --config or --account-id must be provided")
 
-    if project_id:
-        project_ids = list(project_id)
-    else:
-        project_ids = None
-    if environment_id:
-        environment_ids = list(environment_id)
-    else:
-        environment_ids = None
+    project_ids = list(project_id) if project_id else None
+    environment_ids = list(environment_id) if environment_id else None
 
     dbt_cloud = DBTCloud(
         account_id=cloud_account_id,

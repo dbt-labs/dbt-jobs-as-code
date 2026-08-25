@@ -1,7 +1,6 @@
 import glob
 import os
 
-from beartype.typing import List, Optional, Set
 from jinja2 import Environment, StrictUndefined, meta
 from jinja2.exceptions import UndefinedError
 from loguru import logger
@@ -15,7 +14,7 @@ class LoadingJobsYAMLError(Exception):
     pass
 
 
-def load_job_configuration(config_files: List[str], vars_file: Optional[List[str]]) -> Config:
+def load_job_configuration(config_files: list[str], vars_file: list[str] | None) -> Config:
     """Load the job configuration set in a YAML file into a Config object
 
     Can be a non-templated YAML or a templated one for which we need to replace Jinja values
@@ -49,7 +48,7 @@ def load_job_configuration(config_files: List[str], vars_file: Optional[List[str
     return Config(**config)
 
 
-def any_file_declares_jobs_key(config_files: List[str], vars_file: Optional[List[str]]) -> bool:
+def any_file_declares_jobs_key(config_files: list[str], vars_file: list[str] | None) -> bool:
     """Whether at least one of `config_files` explicitly declares a top-level `jobs`
     key, even if it's empty (`jobs: {}`, `jobs: []`, `jobs:`).
 
@@ -89,7 +88,7 @@ def _validate_job_identifiers(jobs: dict) -> None:
         LoadingJobsYAMLError: If any job identifier contains invalid characters
     """
     invalid_identifiers = []
-    for identifier in jobs.keys():
+    for identifier in jobs:
         if not VALID_IDENTIFIER_RE.match(identifier):
             invalid_identifiers.append(identifier)
 
@@ -100,7 +99,7 @@ def _validate_job_identifiers(jobs: dict) -> None:
         )
 
 
-def _load_yaml_no_template(config_files: List[str]) -> dict:
+def _load_yaml_no_template(config_files: list[str]) -> dict:
     """Load a job YAML file into a Config object"""
 
     combined_config = {}
@@ -138,7 +137,7 @@ def _replace_none_with_null(obj):
     return "null" if obj is None else obj
 
 
-def _load_vars_files(vars_file: List[str]) -> dict:
+def _load_vars_files(vars_file: list[str]) -> dict:
     """Load and merge multiple vars files into a single dictionary.
 
     Args:
@@ -166,7 +165,7 @@ def _load_vars_files(vars_file: List[str]) -> dict:
     return _replace_none_with_null(template_vars_values)  # type: ignore
 
 
-def _load_yaml_with_template(config_files: List[str], vars_file: List[str]) -> dict:
+def _load_yaml_with_template(config_files: list[str], vars_file: list[str]) -> dict:
     """Load a job YAML file into a Config object"""
     # Load and merge vars files
     template_vars_values = _load_vars_files(vars_file)
@@ -203,14 +202,14 @@ def _load_yaml_with_template(config_files: List[str], vars_file: List[str]) -> d
     return combined_config
 
 
-def _get_jinja_variables(input: str) -> Set[str]:
+def _get_jinja_variables(input: str) -> set[str]:
     """Get the variables from a Jinja template"""
     env = Environment()
     parsed_input = env.parse(input)
     return meta.find_undeclared_variables(parsed_input)
 
 
-def _resolve_pattern(pattern: str) -> List[str]:
+def _resolve_pattern(pattern: str) -> list[str]:
     """
     Resolve a file pattern to a list of file paths.
 
@@ -233,8 +232,8 @@ def _resolve_pattern(pattern: str) -> List[str]:
 
 
 def resolve_file_paths(
-    config_pattern: Optional[str], vars_pattern: Optional[str] = None
-) -> tuple[List[str], List[str]]:
+    config_pattern: str | None, vars_pattern: str | None = None
+) -> tuple[list[str], list[str]]:
     """
     Resolve glob patterns to lists of file paths.
 

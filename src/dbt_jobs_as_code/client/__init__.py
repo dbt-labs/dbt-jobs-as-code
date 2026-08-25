@@ -1,8 +1,8 @@
 import os
 import re
+from typing import Any
 
 import requests
-from beartype.typing import Any, Dict, List, Optional
 from importlib_metadata import version
 from loguru import logger
 from urllib3.exceptions import InsecureRequestWarning
@@ -13,10 +13,7 @@ from dbt_jobs_as_code.schemas.custom_environment_variable import (
 )
 from dbt_jobs_as_code.schemas.job import JobDefinition, JobMissingFields
 
-if os.getenv("DBT_JOB_ID", "") == "":
-    VERSION = f"v{version('dbt-jobs-as-code')}"
-else:
-    VERSION = "dev"
+VERSION = f"v{version('dbt-jobs-as-code')}" if os.getenv("DBT_JOB_ID", "") == "" else "dev"
 
 
 class DBTCloudException(Exception):
@@ -33,7 +30,7 @@ class DBTCloud:
     def __init__(
         self,
         account_id: int,
-        api_key: Optional[str],
+        api_key: str | None,
         base_url: str = "https://cloud.getdbt.com",
         disable_ssl_verification: bool = False,
         use_desc_for_id: bool = False,
@@ -41,8 +38,8 @@ class DBTCloud:
         self.account_id = account_id
         self._api_key = api_key
         self._use_desc_for_id = use_desc_for_id
-        self._environment_variable_cache: Dict[
-            int, Dict[str, CustomEnvironmentVariablePayload]
+        self._environment_variable_cache: dict[
+            int, dict[str, CustomEnvironmentVariablePayload]
         ] = {}
 
         self.base_url = base_url.rstrip("/")
@@ -59,7 +56,7 @@ class DBTCloud:
             )
         self._session = requests.Session()
 
-    def _clear_env_var_cache(self, job_definition_id: Optional[int]) -> None:
+    def _clear_env_var_cache(self, job_definition_id: int | None) -> None:
         """Clear out any cached environment variables for a given job."""
         if job_definition_id in self._environment_variable_cache:
             del self._environment_variable_cache[job_definition_id]
@@ -96,9 +93,7 @@ class DBTCloud:
         if not self.account_id:
             raise DBTCloudParamsException("An account_id is required to get dbt Cloud jobs.")
 
-    def build_mapping_job_identifier_job_id(
-        self, cloud_jobs: Optional[List[JobDefinition]] = None
-    ):
+    def build_mapping_job_identifier_job_id(self, cloud_jobs: list[JobDefinition] | None = None):
         if cloud_jobs is None:
             # TODO, we should filter things here at least if we call it often
             cloud_jobs = self.get_jobs()
@@ -134,7 +129,7 @@ class DBTCloud:
             return JobDefinition(**raw_data)
         return JobDefinition(**raw_data, identifier=job.identifier)
 
-    def create_job(self, job: JobDefinition) -> Optional[JobDefinition]:
+    def create_job(self, job: JobDefinition) -> JobDefinition | None:
         """Create a dbt Cloud Job using a JobDefinition"""
 
         logger.debug("Creating {job_name}. {job}", job_name=job.name, job=job)
@@ -193,7 +188,7 @@ class DBTCloud:
             raw_data = DBTCloud._pre_process_job_data(raw_data)
         return JobDefinition(**raw_data)
 
-    def get_job_missing_fields(self, job_id: int) -> Optional[JobMissingFields]:
+    def get_job_missing_fields(self, job_id: int) -> JobMissingFields | None:
         """Generate a Job based on a dbt Cloud job."""
 
         self._check_for_creds()
@@ -210,16 +205,16 @@ class DBTCloud:
 
     def get_jobs(
         self,
-        project_ids: Optional[List[int]] = None,
-        environment_ids: Optional[List[int]] = None,
-    ) -> List[JobDefinition]:
+        project_ids: list[int] | None = None,
+        environment_ids: list[int] | None = None,
+    ) -> list[JobDefinition]:
         """Return a list of Jobs for all the dbt Cloud jobs in an environment."""
 
         self._check_for_creds()
         project_ids = project_ids or []
         environment_ids = environment_ids or []
 
-        jobs: List[dict] = []
+        jobs: list[dict] = []
         if len(environment_ids) > 1:
             for env_id in environment_ids:
                 jobs.extend(self._fetch_jobs(project_ids, env_id))
@@ -232,9 +227,9 @@ class DBTCloud:
             jobs = [DBTCloud._pre_process_job_data(job) for job in jobs]
         return [JobDefinition(**job) for job in jobs]
 
-    def _fetch_jobs(self, project_ids: List[int], environment_id: Optional[int]) -> List[dict]:
+    def _fetch_jobs(self, project_ids: list[int], environment_id: int | None) -> list[dict]:
         offset = 0
-        jobs: List[dict] = []
+        jobs: list[dict] = []
 
         while True:
             parameters = self._build_parameters(project_ids, environment_id, offset)
@@ -256,7 +251,7 @@ class DBTCloud:
         return jobs
 
     def _build_parameters(
-        self, project_ids: List[int], environment_id: Optional[int], offset
+        self, project_ids: list[int], environment_id: int | None, offset
     ) -> dict[str, Any]:
         parameters = {"offset": offset}
 
@@ -295,7 +290,7 @@ class DBTCloud:
 
     def get_env_vars(
         self, project_id: int, job_id: int
-    ) -> Dict[str, CustomEnvironmentVariablePayload]:
+    ) -> dict[str, CustomEnvironmentVariablePayload]:
         """Get the existing env vars job overwrite in dbt Cloud."""
 
         if job_id in self._environment_variable_cache:
@@ -352,10 +347,10 @@ class DBTCloud:
         self,
         custom_env_var: CustomEnvironmentVariable,
         project_id: int,
-        job_id: Optional[int],
-        env_var_id: Optional[int],
-        yml_job_identifier: Optional[str] = None,
-    ) -> Optional[CustomEnvironmentVariablePayload]:
+        job_id: int | None,
+        env_var_id: int | None,
+        yml_job_identifier: str | None = None,
+    ) -> CustomEnvironmentVariablePayload | None:
         """Update env vars job overwrite in dbt Cloud."""
 
         self._check_for_creds()
@@ -410,7 +405,7 @@ class DBTCloud:
 
         logger.success("Env Var Job Overwrite deleted successfully.")
 
-    def _fetch_environment(self, url) -> List[dict]:
+    def _fetch_environment(self, url) -> list[dict]:
         response = self._session.get(
             url=url,
             headers=self._headers,
@@ -424,7 +419,7 @@ class DBTCloud:
 
         return response.json()["data"]
 
-    def get_environments(self, project_ids: List[int]) -> List[dict]:
+    def get_environments(self, project_ids: list[int]) -> list[dict]:
         """Return a list of Environments for all the dbt Cloud jobs in an account"""
 
         self._check_for_creds()

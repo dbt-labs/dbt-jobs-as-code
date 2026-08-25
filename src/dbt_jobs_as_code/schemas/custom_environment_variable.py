@@ -1,4 +1,5 @@
-from beartype.typing import Any, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self
 
@@ -6,9 +7,9 @@ from typing_extensions import Self
 class CustomEnvironmentVariable(BaseModel):
     name: str
     type: Literal["project", "environment", "job", "user"] = "job"
-    value: Optional[str] = Field(default=None)
-    display_value: Optional[str] = None
-    job_definition_id: Optional[int] = None
+    value: str | None = Field(default=None)
+    display_value: str | None = None
+    job_definition_id: int | None = None
 
     @model_validator(mode="after")
     def check_env_var(self) -> Self:
@@ -22,11 +23,11 @@ class CustomEnvironmentVariable(BaseModel):
 class CustomEnvironmentVariablePayload(CustomEnvironmentVariable):
     """A dbt Cloud-serializable representation of a CustomEnvironmentVariables."""
 
-    id: Optional[int] = None
+    id: int | None = None
     project_id: int
     account_id: int
-    raw_value: Optional[str] = None
-    value: Optional[str] = Field(default=None, exclude=True)
+    raw_value: str | None = None
+    value: str | None = Field(default=None, exclude=True)
 
     def __init__(self, **data: Any):
         data["raw_value"] = data["value"] if "value" in data else data["display_value"]

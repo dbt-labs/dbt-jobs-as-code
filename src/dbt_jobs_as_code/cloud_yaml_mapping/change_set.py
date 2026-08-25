@@ -4,10 +4,9 @@ import os
 import re
 import string
 from collections import Counter
-from typing import Dict, Optional
+from collections.abc import Callable
 
 from beartype import BeartypeConf, BeartypeStrategy, beartype
-from beartype.typing import Callable, List
 from loguru import logger
 from pydantic import BaseModel, Field
 from rich.console import Console
@@ -43,7 +42,7 @@ class Change(BaseModel):
     env_id: int
     sync_function: Callable
     parameters: dict
-    differences: Optional[Dict] = {}
+    differences: dict | None = {}
 
     def __str__(self):
         return f"{self.action.upper()} {string.capwords(self.type)} {self.identifier}"
@@ -55,7 +54,7 @@ class Change(BaseModel):
 class ChangeSet(BaseModel):
     """Store the set of changes to be displayed or applied."""
 
-    root: List[Change] = []
+    root: list[Change] = []
     apply_success: bool = True
     applied_changes: list[dict] = Field(default_factory=list)
 
@@ -181,7 +180,7 @@ class ChangeSet(BaseModel):
 # Don't bear type this function as we do some odd things in tests
 @nobeartype
 def filter_config(
-    defined_jobs: dict[str, JobDefinition], project_ids: List[int], environment_ids: List[int]
+    defined_jobs: dict[str, JobDefinition], project_ids: list[int], environment_ids: list[int]
 ) -> dict[str, JobDefinition]:
     """Filters the config based on the inputs provided for project ids and environment ids."""
     removed_job_ids: set[str] = set()
@@ -202,7 +201,7 @@ def filter_config(
     return {job_id: job for job_id, job in defined_jobs.items() if job_id not in removed_job_ids}
 
 
-def _check_no_duplicate_job_identifier(remote_jobs: List[JobDefinition]):
+def _check_no_duplicate_job_identifier(remote_jobs: list[JobDefinition]):
     """Check if there are duplicate job identifiers in dbt Cloud.
 
     If so, raise some error logs"""
@@ -218,7 +217,7 @@ def _check_no_duplicate_job_identifier(remote_jobs: List[JobDefinition]):
         )
 
 
-def _check_single_account_id(defined_jobs: List[JobDefinition]):
+def _check_single_account_id(defined_jobs: list[JobDefinition]):
     """Check if there are duplicate job identifiers in dbt Cloud.
 
     If so, raise some error logs"""
@@ -233,12 +232,12 @@ def _check_single_account_id(defined_jobs: List[JobDefinition]):
 def _deletion_scope_is_valid(
     defined_jobs: dict[str, JobDefinition],
     all_defined_jobs: dict[str, JobDefinition],
-    project_ids: List[int],
-    environment_ids: List[int],
-    account_id: Optional[int],
+    project_ids: list[int],
+    environment_ids: list[int],
+    account_id: int | None,
     config: str,
-    config_files: List[str],
-    yml_vars_files: Optional[List[str]],
+    config_files: list[str],
+    yml_vars_files: list[str] | None,
 ) -> bool:
     """Whether project_ids/environment_ids scope this run enough to safely reconcile
     jobs deleted from the YAML. Logs a warning explaining why whenever it doesn't.
@@ -282,7 +281,7 @@ def _deletion_scope_is_valid(
 def _account_id_for_run(
     defined_jobs: dict[str, JobDefinition],
     all_defined_jobs: dict[str, JobDefinition],
-    account_id: Optional[int],
+    account_id: int | None,
 ) -> int:
     """Pick the dbt Cloud account_id to use. Only valid after `_deletion_scope_is_valid`
     returned True for the same arguments.
@@ -296,15 +295,15 @@ def _account_id_for_run(
 
 def build_change_set(
     config: str,
-    yml_vars: Optional[str],
+    yml_vars: str | None,
     disable_ssl_verification: bool,
-    project_ids: List[int],
-    environment_ids: List[int],
+    project_ids: list[int],
+    environment_ids: list[int],
     limit_projects_envs_to_yml: bool = False,
-    exclude_identifiers_matching: Optional[str] = None,
+    exclude_identifiers_matching: str | None = None,
     output_json: bool = False,
     use_desc_for_id: bool = False,
-    account_id: Optional[int] = None,
+    account_id: int | None = None,
 ):
     """Compares the config of YML files versus dbt Cloud.
     Depending on the value of no_update, it will either update the dbt Cloud config or not.

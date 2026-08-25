@@ -1,5 +1,5 @@
 from io import StringIO
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ruamel.yaml import YAML
 
@@ -7,8 +7,8 @@ from dbt_jobs_as_code.schemas.job import JobDefinition
 
 
 def apply_templated_fields(
-    job_dict: Dict[Any, Any], template_config: Dict[str, str]
-) -> Dict[Any, Any]:
+    job_dict: dict[Any, Any], template_config: dict[str, str]
+) -> dict[Any, Any]:
     """Apply templated fields to a job dictionary based on a template configuration.
 
     Args:
@@ -19,7 +19,7 @@ def apply_templated_fields(
         The modified job dictionary
     """
 
-    def set_nested_value(d: Dict[Any, Any], path: str, value: str):
+    def set_nested_value(d: dict[Any, Any], path: str, value: str):
         parts = path.split(".")
         for part in parts[:-1]:
             if part not in d or d[part] is None:
@@ -35,7 +35,7 @@ def apply_templated_fields(
 
 
 def export_jobs_yml(
-    jobs: list[JobDefinition], include_linked_id: bool = False, template_file: Optional[str] = None
+    jobs: list[JobDefinition], include_linked_id: bool = False, template_file: str | None = None
 ):
     """Export a list of job definitions to YML
 
@@ -47,7 +47,7 @@ def export_jobs_yml(
     yaml = YAML()
     template_config = {}
     if template_file:
-        with open(template_file, "r") as f:
+        with open(template_file) as f:
             # Replace curly braces with custom delimiters in template file content
             content = f.read()
             content = escape_curly_braces(content)

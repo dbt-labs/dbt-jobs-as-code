@@ -450,7 +450,7 @@ class TestLoaderResolveFilePaths:
         (jobs_dir / "job2.yaml").write_text("content2")
         (jobs_dir / "job3.yml").write_text("content3")
 
-        config_files, vars_files = resolve_file_paths(str(jobs_dir))
+        config_files, _vars_files = resolve_file_paths(str(jobs_dir))
         assert len(config_files) == 3
         yml_count = sum(1 for f in config_files if f.endswith(".yml"))
         yaml_count = sum(1 for f in config_files if f.endswith(".yaml"))
@@ -492,7 +492,7 @@ class TestLoaderResolveFilePaths:
         (jobs_dir / "category1" / "subcategory1" / "job2.yml").write_text("content2")
         (jobs_dir / "category2" / "job3.yml").write_text("content3")
 
-        config_files, vars_files = resolve_file_paths(str(jobs_dir / "**" / "*.yml"))
+        config_files, _vars_files = resolve_file_paths(str(jobs_dir / "**" / "*.yml"))
         assert len(config_files) == 4
         assert all(f.endswith(".yml") for f in config_files)
 
