@@ -464,3 +464,117 @@ class TestToPayloadDescMode:
         job = self._make_job(description="x" * 250, identifier="id")
         with pytest.raises(ValueError, match="description"):
             job.to_payload(use_desc_for_id=True)
+
+
+class TestSelfDeferring:
+    """Tests for the self_deferring field ("This Job" in the dbt Cloud UI)."""
+
+    def _make_job(self, **overrides):
+        return JobDefinition(**{**BASE_JOB_DATA, "schedule": {"cron": "0 0 * * *"}, **overrides})
+
+    def test_defaults_to_false(self):
+        job = self._make_job()
+        assert job.self_deferring is False
+
+    def test_mutually_exclusive_with_deferring_job_definition_id(self):
+        with pytest.raises(ValidationError, match="self_deferring"):
+            self._make_job(self_deferring=True, deferring_job_definition_id=42)
+
+    @pytest.fixture
+    def json_schema_for_exclusivity(self):
+        return json.loads(generate_config_schema())
+
+    def _config_instance(self, **job_overrides):
+        return {
+            "jobs": {
+                "test_job": {
+                    **BASE_JOB_DATA,
+                    "schedule": {"cron": "0 0 * * *"},
+                    **job_overrides,
+                }
+            }
+        }
+
+    def test_json_schema_rejects_self_deferring_with_deferring_job_definition_id(
+        self, json_schema_for_exclusivity
+    ):
+        """The mutual-exclusion rule enforced by the Pydantic validator should also
+        be catchable by JSON schema tooling alone (IDE YAML validation, `jsonschema`),
+        without running Python."""
+        instance = self._config_instance(self_deferring=True, deferring_job_definition_id=42)
+        with pytest.raises(JsonSchemaValidationError):
+            validate(instance=instance, schema=json_schema_for_exclusivity)
+
+    def test_json_schema_accepts_self_deferring_alone(self, json_schema_for_exclusivity):
+        instance = self._config_instance(self_deferring=True)
+        validate(instance=instance, schema=json_schema_for_exclusivity)
+
+    def test_json_schema_accepts_deferring_job_definition_id_alone(
+        self, json_schema_for_exclusivity
+    ):
+        instance = self._config_instance(deferring_job_definition_id=42)
+        validate(instance=instance, schema=json_schema_for_exclusivity)
+
+    def test_to_payload_with_unknown_id_sends_null(self):
+        """Brand-new job: id isn't known yet, so we can't self-reference on create."""
+        job = self._make_job(self_deferring=True)
+        payload = json.loads(job.to_payload())
+        assert payload["deferring_job_definition_id"] is None
+
+    def test_to_payload_with_known_id_self_references(self):
+        """Existing job: id is known, so the payload points the job at itself."""
+        job = self._make_job(self_deferring=True, id=42)
+        payload = json.loads(job.to_payload())
+        assert payload["deferring_job_definition_id"] == 42
+
+    def test_to_payload_excludes_self_deferring_field(self):
+        """self_deferring isn't a real dbt Cloud API field, only deferring_job_definition_id is."""
+        job = self._make_job(self_deferring=True, id=42)
+        payload = json.loads(job.to_payload())
+        assert "self_deferring" not in payload
+
+    @pytest.fixture
+    def json_schema(self):
+        return json.loads(generate_config_schema())
+
+    def test_json_schema_accepts_self_deferring(self, json_schema):
+        instance = {
+            "jobs": {
+                "test_job": {
+                    **BASE_JOB_DATA,
+                    "schedule": {"cron": "0 0 * * *"},
+                    "self_deferring": True,
+                }
+            }
+        }
+        validate(instance=instance, schema=json_schema)
+
+    def test_json_schema_rejects_non_boolean_self_deferring(self, json_schema):
+        instance = {
+            "jobs": {
+                "test_job": {
+                    **BASE_JOB_DATA,
+                    "schedule": {"cron": "0 0 * * *"},
+                    "self_deferring": "yes",
+                }
+            }
+        }
+        with pytest.raises(JsonSchemaValidationError):
+            validate(instance=instance, schema=json_schema)
+
+    def test_to_load_format_exports_legacy_self_id_as_self_deferring(self):
+        """Importing a job that self-defers via a literal id (set before this flag
+        existed, e.g. by hand in the dbt Cloud UI) should surface the new, portable
+        self_deferring flag in the generated YAML, not the job's own numeric id --
+        the whole point is a YAML file that isn't tied to one job's id."""
+        job = self._make_job(id=42, deferring_job_definition_id=42)
+        data = job.to_load_format()
+        assert data["self_deferring"] is True
+        assert data["deferring_job_definition_id"] is None
+
+    def test_to_load_format_leaves_cross_job_deferring_untouched(self):
+        """Deferring to a genuinely different job's id is unaffected."""
+        job = self._make_job(id=42, deferring_job_definition_id=999)
+        data = job.to_load_format()
+        assert data["self_deferring"] is False
+        assert data["deferring_job_definition_id"] == 999

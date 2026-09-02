@@ -1,6 +1,10 @@
 
 To see the details of all changes, head to the GitHub repo
 
+### 1.21
+
+- Add `self_deferring` to job definitions, to configure a job to defer to its own last successful run ("This Job" in the dbt Cloud UI) without hardcoding the job's own dbt Cloud ID.
+
 ### 1.20
 
 - Internal: modernized the lint/type-checking tooling (expanded the `ruff` rule set, added Astral's `ty` type checker, dropped an unneeded `beartype.typing` compatibility shim, enforced these in CI). No user-facing changes.

@@ -235,6 +235,7 @@ def expected_config_dict():
                     "date": {"cron": "0 */2 * * *", "type": "custom_cron"},
                     "time": {"interval": 1, "type": "every_hour"},
                 },
+                "self_deferring": False,
                 "settings": {"target_name": "production", "threads": 4},
                 "state": 1,
                 "triggers": {
@@ -291,6 +292,7 @@ def expected_config_dict():
                     "date": {"cron": "0 * * * *", "type": "custom_cron"},
                     "time": {"interval": 1, "type": "every_hour"},
                 },
+                "self_deferring": False,
                 "settings": {"target_name": "TEST", "threads": 4},
                 "state": 1,
                 "triggers": {

@@ -118,6 +118,32 @@
           "job_type"
         ]
       },
+      "not": {
+        "allOf": [
+          {
+            "properties": {
+              "self_deferring": {
+                "const": true
+              }
+            },
+            "required": [
+              "self_deferring"
+            ]
+          },
+          {
+            "properties": {
+              "deferring_job_definition_id": {
+                "not": {
+                  "type": "null"
+                }
+              }
+            },
+            "required": [
+              "deferring_job_definition_id"
+            ]
+          }
+        ]
+      },
       "properties": {
         "linked_id": {
           "anyOf": [
@@ -244,6 +270,12 @@
           ],
           "default": null,
           "title": "Deferring Environment Id"
+        },
+        "self_deferring": {
+          "default": false,
+          "description": "Defer this job to its own last successful run ('This Job' in the dbt Cloud UI). Mutually exclusive with deferring_job_definition_id.",
+          "title": "Self Deferring",
+          "type": "boolean"
         },
         "run_generate_sources": {
           "title": "Run Generate Sources",

@@ -67,6 +67,7 @@ The main commands are `plan` and `sync`. Both commands require a YML jobs defini
         account_id: 43791
         dbt_version: null
         deferring_job_definition_id: null
+        self_deferring: false # set to true to defer to this job's own last successful run ("This Job" in the dbt Cloud UI), instead of setting deferring_job_definition_id
         environment_id: 134459
         execute_steps:
           - "dbt run --select model1+"

@@ -65,13 +65,28 @@ def filter_jobs_by_import_filter(
 
 
 def _job_definition_json_schema_extra(schema: dict) -> None:
-    """Make 'schedule' conditionally required based on job_type."""
+    """Make 'schedule' conditionally required based on job_type, and forbid setting
+    both self_deferring and deferring_job_definition_id -- mirrors
+    validate_self_deferring_exclusive() so IDEs/`jsonschema` can catch the conflict
+    without running Python."""
     schema["if"] = {
         "properties": {"job_type": {"enum": JOB_TYPES_WITHOUT_SCHEDULE}},
         "required": ["job_type"],
     }
     schema["then"] = {}
     schema["else"] = {"required": ["schedule"]}
+    schema["not"] = {
+        "allOf": [
+            {
+                "properties": {"self_deferring": {"const": True}},
+                "required": ["self_deferring"],
+            },
+            {
+                "properties": {"deferring_job_definition_id": {"not": {"type": "null"}}},
+                "required": ["deferring_job_definition_id"],
+            },
+        ]
+    }
 
 
 # Main model for loader
@@ -99,6 +114,10 @@ class JobDefinition(BaseModel):
     execution: Execution = Execution()
     deferring_job_definition_id: int | None = field_optional_int_allowed_as_string_in_schema
     deferring_environment_id: int | None = field_optional_int_allowed_as_string_in_schema
+    self_deferring: bool = Field(
+        default=False,
+        description="Defer this job to its own last successful run ('This Job' in the dbt Cloud UI). Mutually exclusive with deferring_job_definition_id.",
+    )
     run_generate_sources: bool
     run_lint: bool | None = False
     errors_on_lint_failure: bool | None = True
@@ -225,12 +244,31 @@ class JobDefinition(BaseModel):
                 payload.description = stored_desc
             else:
                 payload.name = f"{self.name} [[{self.identifier}]]"
+        # self_deferring isn't a dbt Cloud API field: it's a client-side alias for
+        # "point deferring_job_definition_id at this job's own id". If the id isn't
+        # known yet (brand-new job, not created on dbt Cloud), there's nothing to
+        # self-reference yet, so it's sent as null.
+        if self.self_deferring:
+            payload.deferring_job_definition_id = self.id
         return payload.model_dump_json(
-            exclude={"linked_id", "identifier", "custom_environment_variables"}
+            exclude={
+                "linked_id",
+                "identifier",
+                "custom_environment_variables",
+                "self_deferring",
+            }
         )
 
     def to_load_format(self, include_linked_id: bool = False):
         """Generate a dict following our YML format to dump as YML later."""
+
+        # A job self-deferring via a literal id (set before self_deferring existed,
+        # e.g. by hand in the dbt Cloud UI) must be exported using the new flag, not
+        # the job's own numeric id -- a YAML file tied to one job's id isn't portable
+        # to another project/environment, which defeats the point of importing it.
+        is_legacy_self_deferring = (
+            self.id is not None and self.deferring_job_definition_id == self.id
+        )
 
         self.linked_id = self.id
         exclude_dict = {
@@ -247,6 +285,9 @@ class JobDefinition(BaseModel):
             exclude_dict["linked_id"] = True
 
         data = self.model_dump(exclude=exclude_dict)
+        if is_legacy_self_deferring:
+            data["self_deferring"] = True
+            data["deferring_job_definition_id"] = None
         data["custom_environment_variables"] = []
         for env_var in self.custom_environment_variables:
             data["custom_environment_variables"].append({env_var.name: env_var.value})
@@ -255,6 +296,16 @@ class JobDefinition(BaseModel):
     def to_url(self, account_url: str) -> str:
         """Generate a URL for the job in dbt Cloud."""
         return f"{account_url}/deploy/{self.account_id}/projects/{self.project_id}/jobs/{self.id}"
+
+    @model_validator(mode="after")
+    def validate_self_deferring_exclusive(self):
+        """self_deferring and deferring_job_definition_id both point at the deferral
+        target; only one of them can be the source of truth for a given job."""
+        if self.self_deferring and self.deferring_job_definition_id is not None:
+            raise ValueError(
+                "'self_deferring' and 'deferring_job_definition_id' are mutually exclusive"
+            )
+        return self
 
     @model_validator(mode="after")
     def default_schedule_for_ci_merge(self):

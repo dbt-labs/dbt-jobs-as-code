@@ -153,6 +153,27 @@ class DBTCloud:
             return JobDefinition(**raw_data)
         return JobDefinition(**raw_data, identifier=job.identifier)
 
+    def set_self_deferring(self, job: JobDefinition, identifier: str) -> JobDefinition:
+        """Point a self-deferring job's deferral at itself.
+
+        Used right after creating a brand-new self-deferring job: its id didn't exist
+        yet when the create payload was built, so `deferring_job_definition_id` was
+        sent as null. Resolve the now-real id by identifier and patch it in.
+        """
+        mapping_job_identifier_job_id = self.build_mapping_job_identifier_job_id()
+        if identifier not in mapping_job_identifier_job_id:
+            # Most likely the preceding "create job" change failed, so there's
+            # nothing in dbt Cloud to point at itself yet. Raise the same exception
+            # type as the rest of this client so ChangeSet.apply() records this as
+            # one failed change instead of an unhandled error that aborts the run.
+            raise DBTCloudException(
+                f"Could not set up self-deferring for job '{identifier}': "
+                "the job was not found in dbt Cloud (did its creation fail?)"
+            )
+        job.id = mapping_job_identifier_job_id[identifier]
+        logger.info("Setting '{job_name}' to compare against itself (This Job)", job_name=job.name)
+        return self.update_job(job)
+
     def delete_job(self, job: JobDefinition) -> None:
         """Delete a dbt Cloud job."""
 
