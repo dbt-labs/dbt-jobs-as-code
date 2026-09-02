@@ -467,6 +467,24 @@ def build_change_set(options: BuildChangeSetOptions):
         )
         dbt_cloud_change_set.append(dbt_cloud_change)
 
+        # A brand-new self-deferring job has no id yet, so it can't self-reference
+        # in the create payload. Queue a follow-up patch that resolves the real id
+        # (by identifier, once the job above has actually been created) and points
+        # the job at itself. Distinct identifier suffix so this reads in logs/output
+        # as "job X's self-defer patch", not an unrelated second update to job X.
+        if defined_jobs[identifier].self_deferring:
+            dbt_cloud_change_set.append(
+                Change(
+                    identifier=f"{identifier}:self-defer",
+                    type="job",
+                    action="update",
+                    proj_id=defined_jobs[identifier].project_id,
+                    env_id=defined_jobs[identifier].environment_id,
+                    sync_function=dbt_cloud.set_self_deferring,
+                    parameters={"job": defined_jobs[identifier], "identifier": identifier},
+                )
+            )
+
     # Remove Deleted Jobs
     if not output_json:
         logger.info("Detected {count} deleted jobs.", count=len(deleted_jobs))
