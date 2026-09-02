@@ -28,6 +28,21 @@ def _job_to_dict(job: JobDefinition):
     return dict_vals
 
 
+def _is_effectively_self_deferring(job: JobDefinition, own_id: int | None) -> bool:
+    """Whether a job defers to itself ("This Job" in the dbt Cloud UI), regardless of
+    whether that's expressed via the `self_deferring` flag or (how this was done
+    before that flag existed) a literal `deferring_job_definition_id` equal to the
+    job's own dbt Cloud id."""
+    if job.self_deferring:
+        return True
+    return own_id is not None and job.deferring_job_definition_id == own_id
+
+
+def _normalize_self_deferring(job_dict: dict[str, Any]) -> None:
+    job_dict["self_deferring"] = True
+    job_dict["deferring_job_definition_id"] = None
+
+
 def check_job_mapping_same(
     source_job: JobDefinition, dest_job: JobDefinition
 ) -> tuple[bool, dict | None]:
@@ -40,6 +55,19 @@ def check_job_mapping_same(
     """
     source_job_dict = _job_to_dict(source_job)
     dest_job_dict = _job_to_dict(dest_job)
+
+    # dest_job.id is always known (it comes straight from the dbt Cloud API), even
+    # when source_job hasn't been matched to a cloud job yet. Use it to canonicalize
+    # "defers to itself" to the same shape on both sides before diffing, so the new
+    # self_deferring flag and a legacy hardcoded self-id don't show up as a false diff.
+    # Only touch the side that's actually self-deferring: if the other side defers to
+    # a genuinely different job, its deferring_job_definition_id must stay visible in
+    # the diff, otherwise a switch from self-deferring to a real cross-job target
+    # would report only a self_deferring flip and hide the actual target change.
+    if _is_effectively_self_deferring(source_job, dest_job.id):
+        _normalize_self_deferring(source_job_dict)
+    if _is_effectively_self_deferring(dest_job, dest_job.id):
+        _normalize_self_deferring(dest_job_dict)
 
     diffs = _get_mismatched_dict_entries(dest_job_dict, source_job_dict)
 
