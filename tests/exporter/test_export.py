@@ -52,6 +52,7 @@ jobs:
       timeout_seconds: 0
     deferring_job_definition_id:
     deferring_environment_id:
+    self_deferring: false
     run_generate_sources: true
     run_lint: false
     errors_on_lint_failure: true
