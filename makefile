@@ -13,4 +13,4 @@ lint:
 	uv run ruff format --check src tests
 
 typecheck:
-	uv run ty check src
+	uv run ty check src tests
