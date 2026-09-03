@@ -234,7 +234,7 @@ class TestUpdateCreateDescMode:
             captured["data"] = kwargs.get("data") or kwargs.get("json")
             return self._make_mock_response(job, use_desc_for_id=True)
 
-        client._session.post = capture_post
+        client._session.post = MagicMock(side_effect=capture_post)
         client.update_job(job)
 
         payload = json.loads(captured["data"])
@@ -252,7 +252,7 @@ class TestUpdateCreateDescMode:
             captured["data"] = kwargs.get("data") or kwargs.get("json")
             return self._make_mock_response(job, use_desc_for_id=True)
 
-        client._session.post = capture_post
+        client._session.post = MagicMock(side_effect=capture_post)
         client.create_job(job)
 
         payload = json.loads(captured["data"])
@@ -270,7 +270,7 @@ class TestUpdateCreateDescMode:
             captured["data"] = kwargs.get("data") or kwargs.get("json")
             return self._make_mock_response(job, use_desc_for_id=False)
 
-        client._session.post = capture_post
+        client._session.post = MagicMock(side_effect=capture_post)
         client.update_job(job)
 
         payload = json.loads(captured["data"])
@@ -288,7 +288,7 @@ class TestUpdateCreateDescMode:
             captured["data"] = kwargs.get("data") or kwargs.get("json")
             return self._make_mock_response(job, use_desc_for_id=False)
 
-        client._session.post = capture_post
+        client._session.post = MagicMock(side_effect=capture_post)
         client.create_job(job)
 
         payload = json.loads(captured["data"])
@@ -303,7 +303,7 @@ class TestUpdateCreateDescMode:
         def mock_post(**kwargs):
             return self._make_mock_response(job, use_desc_for_id=True)
 
-        client._session.post = mock_post
+        client._session.post = MagicMock(side_effect=mock_post)
         result = client.update_job(job)
 
         assert result.identifier == "daily_job"
@@ -318,9 +318,10 @@ class TestUpdateCreateDescMode:
         def mock_post(**kwargs):
             return self._make_mock_response(job, use_desc_for_id=True)
 
-        client._session.post = mock_post
+        client._session.post = MagicMock(side_effect=mock_post)
         result = client.create_job(job)
 
+        assert result is not None
         assert result.identifier == "daily_job"
         assert result.name == "Daily Job"
         assert result.description == "Runs nightly"
