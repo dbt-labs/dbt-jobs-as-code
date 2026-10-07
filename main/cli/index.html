@@ -742,6 +742,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#update-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      update-jobs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#validate" class="md-nav__link">
     <span class="md-ellipsis">
       validate
@@ -811,7 +820,7 @@
 <h1 id="cli-reference">CLI reference</h1>
 <p>This page provides documentation for our command line tools.</p>
 <h2 id="dbt-jobs-as-code">dbt-jobs-as-code</h2>
-<p>dbt-jobs-as-code 1.21.1.dev3+ga3d27f9</p>
+<p>dbt-jobs-as-code 1.21.1.dev7+g027099e</p>
 <p>A CLI to allow defining dbt Cloud jobs as code</p>
 <p><strong>Usage:</strong></p>
 <div class="highlight"><pre><span></span><code>dbt-jobs-as-code [OPTIONS] COMMAND [ARGS]...
@@ -967,7 +976,7 @@ When the new jobs have been created, this command can be used to deactivate the 
 <tr>
 <td><code>--include-linked-id</code></td>
 <td>boolean</td>
-<td>Include the job ID when exporting jobs.</td>
+<td>Include the job ID as <code>linked_id</code> when exporting jobs, to use the YAML with <code>link</code> or <code>update-jobs</code>.</td>
 <td><code>False</code></td>
 </tr>
 <tr>
@@ -1282,6 +1291,78 @@ All relevant jobs get the part [[...]] removed from their name</p>
 <td>text</td>
 <td>[Optional] The identifiers we want to unlink. If not provided, all jobs are unlinked.</td>
 <td>None</td>
+</tr>
+<tr>
+<td><code>--use-desc-for-id</code></td>
+<td>boolean</td>
+<td>Store the [[identifier]] tag in the job description instead of the job name.</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="update-jobs">update-jobs</h3>
+<p>Update existing dbt Cloud jobs from a YML file, matching each job by its <code>linked_id</code>.</p>
+<p>Typical flow: <code>import-jobs --include-linked-id &gt; jobs.yml</code>, edit the file, then <code>update-jobs jobs.yml</code>.
+The jobs don't need to be linked (no [[identifier]] added to their name).</p>
+<p>Unlike <code>sync</code>, this command never creates, deletes, links or unlinks jobs, and jobs not in
+the file are left untouched. Nothing is updated if any job in the file can't be matched.
+Use <code>--dry-run</code> to see the differences without applying them.</p>
+<p>CONFIG is the path to your YML jobs config file (also supports glob patterns for those files or a directory).</p>
+<p><strong>Usage:</strong></p>
+<div class="highlight"><pre><span></span><code>dbt-jobs-as-code update-jobs [OPTIONS] CONFIG
+</code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--disable-ssl-verification</code></td>
+<td>boolean</td>
+<td>N/A</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--vars-yml</code>, <code>-v</code></td>
+<td>text</td>
+<td>The path to your vars_yml YML file (or pattern for those files) when using a templated job YML file.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--project-id</code>, <code>-p</code></td>
+<td>integer</td>
+<td>[Optional] The ID of dbt Cloud project(s) to use for sync</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--environment-id</code>, <code>-e</code></td>
+<td>integer</td>
+<td>[Optional] The ID of dbt Cloud environment(s) to use for sync</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>boolean</td>
+<td>In dry run mode we don't update dbt Cloud.</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--fail-fast</code></td>
+<td>boolean</td>
+<td>Stop subsequent operations if any job fails to update.</td>
+<td><code>False</code></td>
 </tr>
 <tr>
 <td><code>--use-desc-for-id</code></td>

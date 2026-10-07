@@ -733,6 +733,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#update-a-parameter-on-many-existing-jobs-once-off" class="md-nav__link">
+    <span class="md-ellipsis">
+      Update a parameter on many existing jobs (once off)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#move-all-jobs-from-one-environment-to-another" class="md-nav__link">
     <span class="md-ellipsis">
       Move all jobs from one environment to another
@@ -1278,6 +1287,21 @@
     U -&gt;&gt; C: run `unlink` to remove the identifier from the jobs
 </code></pre>
 <hr />
+<h3 id="update-a-parameter-on-many-existing-jobs-once-off">Update a parameter on many existing jobs (once off)</h3>
+<p>To change the same parameter on many existing jobs, e.g. to enable <code>dbt_state</code> in <code>cost_optimization_features</code> for all the jobs of an environment, there is no need to link the jobs. The <code>update-jobs</code> command updates existing jobs in place, matching them by the <code>linked_id</code> added by <code>import-jobs --include-linked-id</code>.</p>
+<p>It doesn't rename the jobs and it never creates or deletes jobs, so jobs that are not in the YAML are left alone.</p>
+<pre class="mermaid"><code>sequenceDiagram
+    actor U as User
+    participant C as dbt Cloud
+
+    U -&gt;&gt; C: run `import-jobs --include-linked-id`
+    Note over U,C: Can specify the project, env and &lt;br&gt;whether to only import &lt;br&gt;"managed" jobs
+    C -&gt;&gt; U: get yaml file
+    Note over U: Update the parameter in the YAML&lt;br&gt;(remove the jobs that should not change)
+    U -&gt;&gt; C: run `update-jobs --dry-run` to review the differences
+    U -&gt;&gt; C: run `update-jobs` to update the jobs</code></pre>
+<p>If the jobs should afterwards be managed as code, run <code>link</code> on the same YAML file (the <code>linked_id</code> is still there), as in the other flows.</p>
+<hr />
 <h3 id="move-all-jobs-from-one-environment-to-another">Move all jobs from one environment to another</h3>
 <p>This flow can be useful for people who want to move all jobs from one environment/project to another. This can happen for example when going from a monorepo to a dbt-mesh and wanting to move some/all the jobs to the new dbt Cloud project.</p>
 <p>The initial steps are the same as for replicating jobs as a once off but we run a few extra commands to deactivate the jobs in the original project and envs.</p>
@@ -1332,7 +1356,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">October 27, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">October 7, 2026</span>
   </span>
 
     
