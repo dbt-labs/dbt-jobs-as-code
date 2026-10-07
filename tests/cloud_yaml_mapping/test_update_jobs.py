@@ -309,3 +309,18 @@ def test_cli_reports_no_files_found(tmp_path):
     result = CliRunner().invoke(cli, ["update-jobs", str(tmp_path / "nope.yml")])
 
     assert result.exit_code == 1
+
+
+def test_import_filter_prefix_of_a_managed_job_is_kept(tmp_path, mock_dbt_cloud):
+    """A job named `Job 1 [[prod:my-job]]` is exported under the key `my-job`: updating it
+    must not drop the `prod:` filter from its name in dbt Cloud."""
+    cloud_job = _cloud_job(1, name="Job 1 [[prod:my-job]]")
+    assert cloud_job.identifier == "my-job"
+    mock_dbt_cloud.get_jobs.return_value = [cloud_job]
+    config = _write_yaml(tmp_path, {"my-job": cloud_job}, **{"my-job": {"generate_docs": True}})
+
+    change_set = build_update_change_set(_options(config))
+
+    assert len(change_set) == 1
+    payload = change_set.root[0].parameters["job"].to_payload()
+    assert '"name":"Job 1 [[prod:my-job]]"' in payload

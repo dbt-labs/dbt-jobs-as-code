@@ -166,6 +166,7 @@ dbt-jobs-as-code update-jobs jobs.yml
 - all the jobs in the YAML are checked before anything is updated. If a job has no `linked_id`, if a `linked_id` is used twice or doesn't exist in dbt Cloud, the command fails and nothing is updated
 - jobs already managed with `sync` (with an `[[<identifier>]]`) can be updated if their key in the YAML is their identifier, which is what `import-jobs` generates. Their identifier is kept as is
 - `custom_environment_variables` in the YAML are not updated, use `sync` for those
+- like `sync`, each updated job is sent to dbt Cloud in full, so settings that this tool doesn't support yet and that were set in the UI could be reset on the jobs that are updated. Review the `--dry-run` output and the jobs updated
 - accepts `--dry-run` to see the differences without updating dbt Cloud, `--fail-fast` to stop at the first job failing to update, `-p`/`-e` to restrict the jobs of the YAML to specific projects/environments, and `--vars-yml` for templated YAML files
 - compared to `sync`, which makes dbt Cloud match the YAML (including creating and deleting jobs), `update-jobs` is meant for one-off changes. Use `sync` to manage jobs long-term
 

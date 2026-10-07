@@ -156,6 +156,9 @@ def build_update_change_set(options: UpdateJobsOptions) -> ChangeSet:
             f"❌ Job {key} ({cloud_job.id}) is different - Diff:\n"
             f"{json.dumps(diff_data, indent=2, default=json_serializer_type)}"
         )
+        # Keep the import filter of `[[filter:identifier]]` names, which the loaded jobs don't carry.
+        if cloud_job._filter_import and yaml_job.identifier:
+            yaml_job.identifier = f"{cloud_job._filter_import}:{yaml_job.identifier}"
         change_set.append(
             Change(
                 identifier=key,
