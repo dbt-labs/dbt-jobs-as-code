@@ -19,6 +19,8 @@ from dbt_jobs_as_code.cloud_yaml_mapping.update_jobs import (
     UpdateJobsError,
     UpdateJobsOptions,
     build_update_change_set,
+    changes_table,
+    log_apply_summary,
 )
 from dbt_jobs_as_code.cloud_yaml_mapping.validate_link import can_be_linked
 from dbt_jobs_as_code.exporter.export import export_jobs_yml
@@ -718,17 +720,17 @@ def update_jobs(
         return
 
     logger.info("-- UPDATE-JOBS -- {count} jobs to update.", count=len(change_set))
-    Console().log(change_set.to_table())
+    Console().log(changes_table(change_set))
 
     if dry_run:
         logger.info("-- UPDATE-JOBS -- Dry run, dbt Cloud has not been updated.")
         return
 
     change_set.apply(fail_fast=fail_fast)
+    log_apply_summary(change_set)
     if not change_set.apply_success:
         logger.error("-- UPDATE-JOBS -- There were some errors during the update. Check the logs.")
         sys.exit(1)
-    logger.success("-- UPDATE-JOBS -- Updated all jobs!")
 
 
 @cli.command()

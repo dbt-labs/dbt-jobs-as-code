@@ -9,6 +9,8 @@ from dbt_jobs_as_code.cloud_yaml_mapping.update_jobs import (
     UpdateJobsError,
     UpdateJobsOptions,
     build_update_change_set,
+    changes_table,
+    log_apply_summary,
 )
 from dbt_jobs_as_code.main import cli
 from dbt_jobs_as_code.schemas.common_types import Settings, Triggers
@@ -50,7 +52,10 @@ def _write_yaml(path, jobs: dict[str, JobDefinition], **per_job_edits) -> str:
 
 
 def _options(
-    config: str, project_ids: list[int] | None = None, environment_ids: list[int] | None = None
+    config: str,
+    project_ids: list[int] | None = None,
+    environment_ids: list[int] | None = None,
+    use_desc_for_id: bool = False,
 ) -> UpdateJobsOptions:
     return UpdateJobsOptions(
         config=config,
@@ -58,6 +63,7 @@ def _options(
         disable_ssl_verification=False,
         project_ids=project_ids or [],
         environment_ids=environment_ids or [],
+        use_desc_for_id=use_desc_for_id,
     )
 
 
@@ -324,3 +330,95 @@ def test_import_filter_prefix_of_a_managed_job_is_kept(tmp_path, mock_dbt_cloud)
     assert len(change_set) == 1
     payload = change_set.root[0].parameters["job"].to_payload()
     assert '"name":"Job 1 [[prod:my-job]]"' in payload
+
+
+def test_identifier_in_description_without_the_flag_is_rejected(tmp_path, mock_dbt_cloud):
+    """Jobs managed with --use-desc-for-id look unmanaged when the flag is forgotten, and the
+    YAML (exported with the flag) has a clean description: updating would strip the tag."""
+    exported_with_flag = _cloud_job(1, identifier="my-job", description="My description")
+    live_without_flag = _cloud_job(1, description="My description [[my-job]]")
+    assert live_without_flag.identifier is None
+    mock_dbt_cloud.get_jobs.return_value = [live_without_flag]
+    config = _write_yaml(tmp_path, {"my-job": exported_with_flag})
+
+    with pytest.raises(UpdateJobsError) as exc_info:
+        build_update_change_set(_options(config))
+
+    assert "--use-desc-for-id" in str(exc_info.value)
+
+
+def test_identifier_in_description_is_fine_with_the_flag(tmp_path, mock_dbt_cloud):
+    live_with_flag = _cloud_job(1, identifier="my-job", description="My description")
+    mock_dbt_cloud.get_jobs.return_value = [live_with_flag]
+    config = _write_yaml(
+        tmp_path, {"my-job": live_with_flag}, **{"my-job": {"generate_docs": True}}
+    )
+
+    change_set = build_update_change_set(_options(config, use_desc_for_id=True))
+
+    assert len(change_set) == 1
+
+
+def test_filtered_out_jobs_are_logged(tmp_path, mock_dbt_cloud):
+    cloud_jobs = {"import_1": _cloud_job(1), "import_2": _cloud_job(2, environment_id=457)}
+    mock_dbt_cloud.get_jobs.return_value = [cloud_jobs["import_2"]]
+    config = _write_yaml(tmp_path, cloud_jobs)
+
+    with patch("dbt_jobs_as_code.cloud_yaml_mapping.update_jobs.logger") as mock_logger:
+        build_update_change_set(_options(config, environment_ids=[457]))
+
+    assert mock_logger.info.call_args.args[0].startswith("Skipping {count} job(s)")
+    assert mock_logger.info.call_args.kwargs["count"] == 1
+
+
+def _change_set_for_two_jobs(tmp_path, mock_dbt_cloud):
+    cloud_jobs = {"import_1": _cloud_job(1), "import_2": _cloud_job(2)}
+    mock_dbt_cloud.get_jobs.return_value = list(cloud_jobs.values())
+    config = _write_yaml(
+        tmp_path, cloud_jobs, import_1={"generate_docs": True}, import_2={"generate_docs": True}
+    )
+    return build_update_change_set(_options(config))
+
+
+def test_changes_table_shows_the_dbt_cloud_job_ids(tmp_path, mock_dbt_cloud):
+    table = changes_table(_change_set_for_two_jobs(tmp_path, mock_dbt_cloud))
+
+    columns = {column.header: list(column.cells) for column in table.columns}
+    assert columns["Key"] == ["import_1", "import_2"]
+    assert columns["Job ID"] == ["1", "2"]
+    assert columns["Job name"] == ["Job 1", "Job 2"]
+
+
+def test_summary_lists_updated_and_not_updated_jobs(tmp_path, mock_dbt_cloud):
+    change_set = _change_set_for_two_jobs(tmp_path, mock_dbt_cloud)
+    mock_dbt_cloud.update_job.side_effect = [DBTCloudException("boom"), Mock()]
+    change_set.apply()
+
+    with patch("dbt_jobs_as_code.cloud_yaml_mapping.update_jobs.logger") as mock_logger:
+        log_apply_summary(change_set)
+
+    assert mock_logger.success.call_args.kwargs["jobs"] == "import_2 (job 2: Job 2)"
+    assert mock_logger.error.call_args.kwargs["jobs"] == "import_1 (job 1: Job 1)"
+
+
+def test_summary_counts_jobs_skipped_by_fail_fast_as_not_updated(tmp_path, mock_dbt_cloud):
+    change_set = _change_set_for_two_jobs(tmp_path, mock_dbt_cloud)
+    mock_dbt_cloud.update_job.side_effect = DBTCloudException("boom")
+    change_set.apply(fail_fast=True)
+
+    with patch("dbt_jobs_as_code.cloud_yaml_mapping.update_jobs.logger") as mock_logger:
+        log_apply_summary(change_set)
+
+    mock_logger.success.assert_not_called()
+    assert mock_logger.error.call_args.kwargs["count"] == 2
+
+
+def test_summary_when_everything_is_updated(tmp_path, mock_dbt_cloud):
+    change_set = _change_set_for_two_jobs(tmp_path, mock_dbt_cloud)
+    change_set.apply()
+
+    with patch("dbt_jobs_as_code.cloud_yaml_mapping.update_jobs.logger") as mock_logger:
+        log_apply_summary(change_set)
+
+    assert mock_logger.success.call_args.kwargs["count"] == 2
+    mock_logger.error.assert_not_called()

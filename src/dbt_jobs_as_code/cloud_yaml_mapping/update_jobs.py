@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from loguru import logger
 from rich.console import Console
+from rich.table import Table
 
 from dbt_jobs_as_code.client import DBTCloud
 from dbt_jobs_as_code.cloud_yaml_mapping.change_set import (
@@ -71,7 +72,7 @@ def _validate_yaml_jobs(jobs: dict[str, JobDefinition]) -> list[str]:
 
 
 def _validate_against_cloud(
-    key: str, yaml_job: JobDefinition, cloud_job: JobDefinition | None
+    key: str, yaml_job: JobDefinition, cloud_job: JobDefinition | None, use_desc_for_id: bool
 ) -> str | None:
     """Checks that need the live job. Returns an error message, or None if all good."""
     if cloud_job is None:
@@ -87,6 +88,17 @@ def _validate_against_cloud(
             f"identifier '{cloud_job.identifier}'. Use that identifier as the key in the YAML, "
             "or use `sync` for this job."
         )
+    # A job managed with --use-desc-for-id looks unmanaged when the flag is forgotten, and a
+    # YAML exported with the flag has a clean description: updating would strip the tag
+    # from the description, which silently unlinks the job.
+    if not use_desc_for_id and cloud_job.description:
+        tag = JobDefinition._extract_identifier_from_description(cloud_job.description)
+        if tag.identifier:
+            return (
+                f"Job '{key}': the description of job {yaml_job.linked_id} contains "
+                f"[[{tag.raw_identifier}]]. If your jobs are managed with the identifier in the "
+                "description, pass `--use-desc-for-id`, otherwise this update would unlink the job."
+            )
     return None
 
 
@@ -102,6 +114,11 @@ def build_update_change_set(options: UpdateJobsOptions) -> ChangeSet:
     config_files, vars_files = resolve_file_paths(options.config, options.yml_vars)
     configuration = load_job_configuration(config_files, vars_files or None)
     yaml_jobs = _select_yaml_jobs(configuration.jobs, options.project_ids, options.environment_ids)
+    if len(yaml_jobs) < len(configuration.jobs):
+        logger.info(
+            "Skipping {count} job(s) of the YAML outside of the project/environment filters",
+            count=len(configuration.jobs) - len(yaml_jobs),
+        )
 
     if not yaml_jobs:
         logger.warning("No jobs to update in the YAML (after the project/environment filters)")
@@ -133,7 +150,7 @@ def build_update_change_set(options: UpdateJobsOptions) -> ChangeSet:
     for key, yaml_job in yaml_jobs.items():
         assert yaml_job.linked_id is not None  # checked in _validate_yaml_jobs
         cloud_job = cloud_jobs.get(yaml_job.linked_id)
-        error = _validate_against_cloud(key, yaml_job, cloud_job)
+        error = _validate_against_cloud(key, yaml_job, cloud_job, options.use_desc_for_id)
         if error:
             errors.append(error)
         elif cloud_job is not None:
@@ -178,3 +195,45 @@ def build_update_change_set(options: UpdateJobsOptions) -> ChangeSet:
         )
 
     return change_set
+
+
+def _describe(change: Change) -> str:
+    job = change.parameters["job"]
+    return f"{change.identifier} (job {job.id}: {job.name})"
+
+
+def changes_table(change_set: ChangeSet) -> Table:
+    """The jobs about to be updated, with the dbt Cloud job ID so they can be told apart."""
+    table = Table(title="Jobs to update")
+    table.add_column("Key", style="cyan", no_wrap=True)
+    table.add_column("Job ID", style="green")
+    table.add_column("Job name", style="magenta")
+    table.add_column("Proj ID", style="yellow")
+    table.add_column("Env ID", style="red")
+    for change in change_set:
+        job = change.parameters["job"]
+        table.add_row(
+            change.identifier, str(job.id), job.name, str(change.proj_id), str(change.env_id)
+        )
+    return table
+
+
+def log_apply_summary(change_set: ChangeSet) -> None:
+    """Say which jobs were updated and which were not: the validation happens before
+    anything is updated, but dbt Cloud can still reject an individual update."""
+    applied = {applied_change["identifier"] for applied_change in change_set.applied_changes}
+    updated = [change for change in change_set if change.identifier in applied]
+    not_updated = [change for change in change_set if change.identifier not in applied]
+
+    if updated:
+        logger.success(
+            "Updated {count} job(s): {jobs}",
+            count=len(updated),
+            jobs=", ".join(_describe(change) for change in updated),
+        )
+    if not_updated:
+        logger.error(
+            "{count} job(s) were NOT updated (failed or skipped by --fail-fast): {jobs}",
+            count=len(not_updated),
+            jobs=", ".join(_describe(change) for change in not_updated),
+        )
