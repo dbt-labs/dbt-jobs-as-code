@@ -97,7 +97,7 @@ class JobDefinition(BaseModel):
 
     linked_id: int | None = Field(
         default=None,
-        description="The ID of the job in dbt Cloud that we want to link. Only used for the 'link' command.",
+        description="The ID of the existing job in dbt Cloud that this job refers to. Used by the 'link' command (to start managing the job with identifiers) and by the 'update-jobs' command (to update the job in place).",
     )
     id: int | None = None
     identifier: str | None = Field(

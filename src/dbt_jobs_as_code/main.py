@@ -9,16 +9,25 @@ from loguru import logger
 from rich.console import Console
 from ruamel.yaml import YAML
 
-from dbt_jobs_as_code.client import DBTCloud
+from dbt_jobs_as_code.client import DBTCloud, DBTCloudException, DBTCloudParamsException
 from dbt_jobs_as_code.cloud_yaml_mapping.change_set import (
     BuildChangeSetOptions,
     build_change_set,
     json_serializer_type,
 )
+from dbt_jobs_as_code.cloud_yaml_mapping.update_jobs import (
+    UpdateJobsError,
+    UpdateJobsOptions,
+    build_update_change_set,
+)
 from dbt_jobs_as_code.cloud_yaml_mapping.validate_link import can_be_linked
 from dbt_jobs_as_code.exporter.export import export_jobs_yml
 from dbt_jobs_as_code.importer import check_job_fields, fetch_jobs, get_account_id
-from dbt_jobs_as_code.loader.load import load_job_configuration, resolve_file_paths
+from dbt_jobs_as_code.loader.load import (
+    LoadingJobsYAMLError,
+    load_job_configuration,
+    resolve_file_paths,
+)
 from dbt_jobs_as_code.schemas.config import generate_config_schema
 from dbt_jobs_as_code.schemas.job import filter_jobs_by_import_filter
 
@@ -399,7 +408,7 @@ def validate(config, vars_yml, online, disable_ssl_verification, use_desc_for_id
 @click.option(
     "--include-linked-id",
     is_flag=True,
-    help="Include the job ID when exporting jobs.",
+    help="Include the job ID as `linked_id` when exporting jobs, to use the YAML with `link` or `update-jobs`.",
 )
 @click.option(
     "--managed-only",
@@ -647,6 +656,79 @@ def unlink(
         logger.info("No jobs to unlink")
     elif not dry_run:
         logger.success("Updated all jobs!")
+
+
+@cli.command()
+@option_disable_ssl_verification
+@click.argument("config", type=str)
+@option_vars_yml
+@option_project_ids
+@option_environment_ids
+@click.option("--dry-run", is_flag=True, help="In dry run mode we don't update dbt Cloud.")
+@click.option(
+    "--fail-fast",
+    is_flag=True,
+    help="Stop subsequent operations if any job fails to update.",
+)
+@option_use_desc_for_id
+def update_jobs(
+    config,
+    vars_yml,
+    project_id,
+    environment_id,
+    dry_run,
+    fail_fast,
+    disable_ssl_verification,
+    use_desc_for_id,
+):
+    """
+    Update existing dbt Cloud jobs from a YML file, matching each job by its `linked_id`.
+
+    Typical flow: `import-jobs --include-linked-id > jobs.yml`, edit the file, then `update-jobs jobs.yml`.
+    The jobs don't need to be linked (no [[identifier]] added to their name).
+
+    Unlike `sync`, this command never creates, deletes, links or unlinks jobs, and jobs not in
+    the file are left untouched. Nothing is updated if any job in the file can't be matched.
+    Use `--dry-run` to see the differences without applying them.
+
+    CONFIG is the path to your YML jobs config file (also supports glob patterns for those files or a directory).
+    """
+    try:
+        change_set = build_update_change_set(
+            UpdateJobsOptions(
+                config=config,
+                yml_vars=vars_yml,
+                disable_ssl_verification=disable_ssl_verification,
+                project_ids=list(project_id),
+                environment_ids=list(environment_id),
+                use_desc_for_id=use_desc_for_id,
+            )
+        )
+    except UpdateJobsError as e:
+        for error in e.errors:
+            logger.error(error)
+        logger.error("-- UPDATE-JOBS -- Nothing was updated.")
+        sys.exit(1)
+    except (LoadingJobsYAMLError, DBTCloudException, DBTCloudParamsException) as e:
+        logger.error(f"-- UPDATE-JOBS -- {e}")
+        sys.exit(1)
+
+    if len(change_set) == 0:
+        logger.success("-- UPDATE-JOBS -- No changes detected.")
+        return
+
+    logger.info("-- UPDATE-JOBS -- {count} jobs to update.", count=len(change_set))
+    Console().log(change_set.to_table())
+
+    if dry_run:
+        logger.info("-- UPDATE-JOBS -- Dry run, dbt Cloud has not been updated.")
+        return
+
+    change_set.apply(fail_fast=fail_fast)
+    if not change_set.apply_success:
+        logger.error("-- UPDATE-JOBS -- There were some errors during the update. Check the logs.")
+        sys.exit(1)
+    logger.success("-- UPDATE-JOBS -- Updated all jobs!")
 
 
 @cli.command()

@@ -1,6 +1,10 @@
 
 To see the details of all changes, head to the GitHub repo
 
+### 1.22
+
+- Add the `update-jobs` command to update existing dbt Cloud jobs from a YAML file, matching them by `linked_id`, without having to `link` them first. Useful to change a parameter on many jobs at once: `import-jobs --include-linked-id`, edit the YAML, `update-jobs`. See the [CLI reference](cli.md) and the [typical flows](typical_flows.md).
+
 ### 1.21
 
 - Add `self_deferring` to job definitions, to configure a job to defer to its own last successful run ("This Job" in the dbt Cloud UI) without hardcoding the job's own dbt Cloud ID.
