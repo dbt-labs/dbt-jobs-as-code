@@ -482,6 +482,29 @@ sequenceDiagram
 
 ---
 
+### Update a parameter on many existing jobs (once off)
+
+To change the same parameter on many existing jobs, e.g. to enable `dbt_state` in `cost_optimization_features` for all the jobs of an environment, there is no need to link the jobs. The `update-jobs` command updates existing jobs in place, matching them by the `linked_id` added by `import-jobs --include-linked-id`.
+
+It doesn't rename the jobs and it never creates or deletes jobs, so jobs that are not in the YAML are left alone.
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant C as dbt Cloud
+
+    U ->> C: run `import-jobs --include-linked-id`
+    Note over U,C: Can specify the project, env and <br>whether to only import <br>"managed" jobs
+    C ->> U: get yaml file
+    Note over U: Update the parameter in the YAML<br>(remove the jobs that should not change)
+    U ->> C: run `update-jobs --dry-run` to review the differences
+    U ->> C: run `update-jobs` to update the jobs
+```
+
+If the jobs should afterwards be managed as code, run `link` on the same YAML file (the `linked_id` is still there), as in the other flows.
+
+---
+
 ### Move all jobs from one environment to another
 
 This flow can be useful for people who want to move all jobs from one environment/project to another. This can happen for example when going from a monorepo to a dbt-mesh and wanting to move some/all the jobs to the new dbt Cloud project.

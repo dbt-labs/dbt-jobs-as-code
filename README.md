@@ -120,10 +120,10 @@ Queries dbt Cloud and provide the YAML definition for those jobs. It includes th
 
 - it is possible to restrict the list of dbt Cloud Job IDs by adding `... -j 101 -j 123 -j 234`
 - this command also accepts a list of project IDs or environments IDs to limit the command for: `dbt-jobs-as-code sync <config_file_or_pattern.yml> -p 1234 -p 2345 -e 4567 -e 5678`
-- this command accepts a `--include-linked-id` parameter to allow linking the jobs in the YAML to existing jobs in dbt Cloud, by renaming those
+- this command accepts a `--include-linked-id` parameter to add the dbt Cloud job ID of each job to the YAML as `linked_id`. That ID is what `link` (to manage the jobs with `sync`, by renaming them) and `update-jobs` (to update them in place, without renaming them) use to find the jobs in dbt Cloud
 - once the YAML has been retrieved, it is possible to copy/paste it in a local YAML file to create/update the local jobs definition.
 
-Once the configuration is imported, it is possible to "link" existing jobs by using the `link` command explained below.
+Once the configuration is imported, it is possible to "link" existing jobs by using the `link` command explained below, or to change them in place with `update-jobs`.
 
 #### `link`
 
@@ -147,6 +147,30 @@ Unlinking jobs removes the `[[ ... ]]` part of the job name (or description, whe
 ⚠️ This can't be rolled back by the tool. Doing a `unlink` followed by a `sync` will create new instances of the jobs, with the `[[<identifier>]]` part
 
 - it is possible to restrict the list of jobs to unlink by adding the job identifiers to unlink `... -i import_1 -i my_job_2`
+
+#### `update-jobs`
+
+Command: `dbt-jobs-as-code update-jobs <config_file_or_pattern.yml>`
+
+Updates existing dbt Cloud jobs from a YAML file, **without linking them**: no `[[ ... ]]` is added to the job names. This is useful to change a parameter on many jobs at once, e.g. to add `dbt_state` to the `cost_optimization_features` of all the jobs in an environment:
+
+```shell
+dbt-jobs-as-code import-jobs --account-id 1234 --environment-id 5678 --include-linked-id > jobs.yml
+# edit jobs.yml
+dbt-jobs-as-code update-jobs jobs.yml --dry-run
+dbt-jobs-as-code update-jobs jobs.yml
+```
+
+- each job in the YAML is matched with the dbt Cloud job having the ID set in its `linked_id` (added by `import-jobs --include-linked-id`). The key of the job in the YAML (`import_1`...) is only a label and is not stored in dbt Cloud
+- the command only updates existing jobs. It never creates, deletes, links or unlinks jobs, and the jobs in dbt Cloud that are not in the YAML are left untouched. Only the jobs that differ from dbt Cloud are updated
+- all the jobs in the YAML are checked before anything is updated. If a job has no `linked_id`, if a `linked_id` is used twice or doesn't exist in dbt Cloud, the command fails and nothing is updated
+- jobs already managed with `sync` (with an `[[<identifier>]]`) can be updated if their key in the YAML is their identifier, which is what `import-jobs` generates. Their identifier is kept as is
+- `custom_environment_variables` in the YAML are not updated, use `sync` for those
+- when jobs are managed with the identifier in the description, pass `--use-desc-for-id`: without it, the command refuses to update jobs whose description contains a `[[ ... ]]` tag, as that would remove the tag and unlink them
+- after updating, the command lists the jobs updated and, if any, the jobs that were not updated (for example because dbt Cloud rejected the change), so a partial failure is easy to follow up on
+- like `sync`, each updated job is sent to dbt Cloud in full, so settings that this tool doesn't support yet and that were set in the UI could be reset on the jobs that are updated. Review the `--dry-run` output and the jobs updated
+- accepts `--dry-run` to see the differences without updating dbt Cloud, `--fail-fast` to stop at the first job failing to update, `-p`/`-e` to restrict the jobs of the YAML to specific projects/environments, and `--vars-yml` for templated YAML files
+- compared to `sync`, which makes dbt Cloud match the YAML (including creating and deleting jobs), `update-jobs` is meant for one-off changes. Use `sync` to manage jobs long-term
 
 #### `deactivate-jobs`
 
@@ -205,6 +229,7 @@ The tool will raise errors if:
 | import-jobs     |          ✅           |            ✅             |                                       |                     |            |        ✅         |                       |             |          ✅           |         ✅          |
 | link            |                       |                           |                                       |                     |            |                   |                       |     ✅      |                       |         ✅          |
 | unlink          |                       |                           |                                       |                     |            |                   |          ✅           |     ✅      |                       |         ✅          |
+| update-jobs     |          ✅           |            ✅             |                                       |         ✅          |            |                   |                       |     ✅      |                       |         ✅          |
 | deactivate-jobs |                       |                           |                                       |                     |            |        ✅         |                       |             |                       |         ✅          |
 
 As a reminder using `--project-id` and/or `--environment-id` is not compatible with using `--limit-projects-envs-to-yml`.
