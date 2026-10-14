@@ -59,8 +59,7 @@ mkdocs = [
 [tool.uv]
 constraint-dependencies = [
     "idna>=3.15",  # CVE: bypass of CVE-2024-3651 fix in idna.encode()
-    "urllib3>=2.8.0",  # CVE: unbounded chunk buffering, proxy TLS config ignored, deflate infinite loop
-    "virtualenv>=21.7.13",  # CVE: command injection in activation scripts, unchecked seed wheels
+    "urllib3>=2.8.0",  # CVE: unbounded chunk buffering, proxy TLS config ignored, deflate infinite loop (dev/CI envs only, not published)
 ]
 
 [tool.pdm.build]
