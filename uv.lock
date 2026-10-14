@@ -6,7 +6,6 @@ requires-python = ">=3.10"
 constraints = [
     { name = "idna", specifier = ">=3.15" },
     { name = "urllib3", specifier = ">=2.8.0" },
-    { name = "virtualenv", specifier = ">=21.7.13" },
 ]
 
 [[package]]
