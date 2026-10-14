@@ -49,16 +49,18 @@ dev = [
 ]
 mkdocs = [
     "mkdocs-click>=0.8.1",
-    "mkdocs-material>=9.6.3",
+    "mkdocs-material>=9.7.7",
     "mike>=2.1.3",
     "mkdocs-git-revision-date-localized-plugin>=1.3.0",
-    "gitpython>=3.1.52",  # CVE: RCE via newline injection in config_writer()
-    "pymdown-extensions>=10.21.3",  # CVE: path traversal bypass in snippets
+    "gitpython>=3.1.62",  # CVE: RCE via newline injection in config_writer(), submodule path traversal
+    "pymdown-extensions>=11.0.1",  # CVE: path traversal bypass in snippets, ReDoS
 ]
 
 [tool.uv]
 constraint-dependencies = [
     "idna>=3.15",  # CVE: bypass of CVE-2024-3651 fix in idna.encode()
+    "urllib3>=2.8.0",  # CVE: unbounded chunk buffering, proxy TLS config ignored, deflate infinite loop
+    "virtualenv>=21.7.13",  # CVE: command injection in activation scripts, unchecked seed wheels
 ]
 
 [tool.pdm.build]
