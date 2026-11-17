@@ -1,7 +1,6 @@
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
-from typing_extensions import Self
 
 
 class CustomEnvironmentVariable(BaseModel):
